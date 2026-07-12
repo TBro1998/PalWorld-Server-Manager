@@ -5,7 +5,7 @@ import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, Pencil, Settings, ScrollText } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, Pencil, Settings, ScrollText, Terminal } from 'lucide-react'
 import { useTranslations } from '@/contexts/LanguageContext'
 
 interface ServerCardProps {
@@ -18,6 +18,7 @@ interface ServerCardProps {
   onEdit: (server: Server) => void
   onConfig: (server: Server) => void
   onLogs: (server: Server) => void
+  onInstallLogs: (server: Server) => void
 }
 
 const statusConfig = {
@@ -37,6 +38,7 @@ export function ServerCard({
   onEdit,
   onConfig,
   onLogs,
+  onInstallLogs,
 }: ServerCardProps) {
   const t = useTranslations('servers')
   const status = statusConfig[server.status]
@@ -131,10 +133,20 @@ export function ServerCard({
             </>
           )}
           {server.status === 'installing' && (
-            <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-              <div className="animate-spin mr-2">⏳</div>
-              {t('installing')}
-            </div>
+            <>
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                <div className="animate-spin mr-2">⏳</div>
+                {t('installing')}
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => onInstallLogs(server)}
+              >
+                <Terminal size={16} className="mr-1" />
+                {t('installLogs')}
+              </Button>
+            </>
           )}
           <Button size="sm" variant="secondary" onClick={() => onLogs(server)}>
             <ScrollText size={16} className="mr-1" />

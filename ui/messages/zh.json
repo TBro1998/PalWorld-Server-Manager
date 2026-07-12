@@ -74,6 +74,7 @@
     "install": "安装",
     "installUpdate": "安装/更新",
     "installing": "安装中...",
+    "installLogs": "安装日志",
     "loading": "正在加载服务器...",
     "empty": "还没有服务器，创建第一个服务器开始使用吧。",
     "confirmDelete": "确定要删除该服务器吗？",

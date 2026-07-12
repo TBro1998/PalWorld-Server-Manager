@@ -161,10 +161,13 @@ func (m *Manager) StartServer(serverID int64) error {
 	broadcaster := logger.NewBroadcastWriter(m.streams, serverID, logger.KindServer)
 	out := io.MultiWriter(capture, broadcaster)
 
+	// The Windows PalServer.exe launcher spawns the real server as a child
+	// process whose stdout we cannot capture, and the dedicated server writes its
+	// useful output to the Unreal Engine log file. So we discard the launcher's
+	// own stdio (leaving Stdout/Stderr nil) and instead tail the game log file
+	// into the server-kind pipeline once the process is up.
 	cmd := exec.Command(exe, args...)
 	cmd.Dir = srv.installPath
-	cmd.Stdout = out
-	cmd.Stderr = out
 	cmd.SysProcAttr = sysProcAttr()
 
 	if err := cmd.Start(); err != nil {
@@ -185,7 +188,13 @@ func (m *Manager) StartServer(serverID int64) error {
 	}
 	_ = m.clearError(serverID)
 
-	go m.monitor(serverID, &procHandle{cmd: cmd, pid: pid}, capture)
+	// Tail the game log file into the server-kind sinks. monitor stops the tailer
+	// and closes the capture when the process exits.
+	stopTail := make(chan struct{})
+	tailDone := make(chan struct{})
+	go tailFile(stopTail, tailDone, gameLogPath(srv.installPath), out)
+
+	go m.monitor(serverID, &procHandle{cmd: cmd, pid: pid}, capture, stopTail, tailDone)
 	return nil
 }
 

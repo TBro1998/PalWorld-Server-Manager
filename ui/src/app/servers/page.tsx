@@ -140,6 +140,7 @@ export default function ServersPage() {
               onEdit={(s) => setEditingServer(s)}
               onConfig={(s) => setConfigServer(s)}
               onLogs={(s) => setLogsServer(s)}
+              onInstallLogs={(s) => setInstallLogsServer(s)}
             />
           ))}
         </div>

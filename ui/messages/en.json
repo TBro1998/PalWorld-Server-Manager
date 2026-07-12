@@ -74,6 +74,7 @@
     "install": "Install",
     "installUpdate": "Install / Update",
     "installing": "Installing...",
+    "installLogs": "Install logs",
     "loading": "Loading servers...",
     "empty": "No servers yet. Create your first server to get started.",
     "confirmDelete": "Are you sure you want to delete this server?",

@@ -30,6 +30,15 @@ func serverExecutable(installPath string) (string, error) {
 	return exe, nil
 }
 
+// gameLogPath returns the Unreal Engine log file the Palworld dedicated server
+// writes under its install path: <installPath>/Pal/Saved/Logs/Pal.log. This is
+// the authoritative source of the server's runtime logs — on Windows the
+// PalServer.exe launcher spawns the real server as a child process whose stdout
+// cannot be captured, so we tail this file instead.
+func gameLogPath(installPath string) string {
+	return filepath.Join(installPath, "Pal", "Saved", "Logs", "Pal.log")
+}
+
 // IsInstalled reports whether a Palworld server is installed at installPath,
 // i.e. the platform launcher executable exists. It is the single check reused
 // by startup reconciliation and directory edits.
