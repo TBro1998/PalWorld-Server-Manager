@@ -1,7 +1,17 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 
-export default function HomePage() {
-  const t = useTranslations('app');
+type Props = {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function HomePage({ params }: Props) {
+  const { locale } = await params;
+
+  // Enable static rendering
+  setRequestLocale(locale);
+
+  const t = await getTranslations('app');
 
   return (
     <main className="min-h-screen p-8">
