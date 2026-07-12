@@ -81,7 +81,12 @@
     "statusInstalling": "安装中",
     "statusError": "错误",
     "config": "配置",
-    "needsInstall": "未安装服务端文件"
+    "needsInstall": "未安装服务端文件",
+    "logsTitle": "运行日志",
+    "logsEmpty": "暂无日志",
+    "logsLive": "实时",
+    "logsClear": "清空",
+    "logsClose": "关闭"
   },
   "addServer": {
     "title": "添加新服务器",

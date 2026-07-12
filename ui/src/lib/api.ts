@@ -54,6 +54,14 @@ export const serversApi = {
   updateConfig: (id: number, data: UpdateServerConfigData) =>
     apiClient.put(`/api/servers/${id}/config`, data),
   configSchema: () => apiClient.get<{ params: ConfigParamDef[] }>('/api/config/schema'),
+  getLogs: (id: number, lines = 200) =>
+    apiClient.get<{ serverId: number; logs: string[] }>(`/api/servers/${id}/logs`, {
+      params: { lines },
+    }),
+  // Relative URL for EventSource. EventSource cannot set Authorization headers;
+  // these endpoints currently require no JWT. If auth is enabled later, pass the
+  // token via a query param here instead (not implemented for now).
+  logStreamUrl: (id: number) => `/api/servers/${id}/logs/stream`,
 }
 
 export default apiClient;

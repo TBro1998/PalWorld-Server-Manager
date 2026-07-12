@@ -81,7 +81,12 @@
     "statusInstalling": "Installing",
     "statusError": "Error",
     "config": "Config",
-    "needsInstall": "Server files not installed"
+    "needsInstall": "Server files not installed",
+    "logsTitle": "Logs",
+    "logsEmpty": "No logs yet",
+    "logsLive": "Live",
+    "logsClear": "Clear",
+    "logsClose": "Close"
   },
   "addServer": {
     "title": "Add New Server",

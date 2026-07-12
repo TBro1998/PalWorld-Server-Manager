@@ -81,7 +81,12 @@
     "statusInstalling": "インストール中",
     "statusError": "エラー",
     "config": "設定",
-    "needsInstall": "サーバーファイル未インストール"
+    "needsInstall": "サーバーファイル未インストール",
+    "logsTitle": "ログ",
+    "logsEmpty": "ログがありません",
+    "logsLive": "ライブ",
+    "logsClear": "クリア",
+    "logsClose": "閉じる"
   },
   "addServer": {
     "title": "新しいサーバーを追加",

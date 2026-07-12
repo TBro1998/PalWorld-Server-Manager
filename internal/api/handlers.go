@@ -311,7 +311,14 @@ func (r *Router) InstallServer(c *gin.Context) {
 
 	// Start installation in background
 	go func() {
-		err := steamcmd.InstallPalworldServer(s.InstallPath, r.config.SteamCMDPath)
+		// Compose log sinks: persist to disk and broadcast live lines to SSE
+		// clients, mirroring the server-process logging pipeline.
+		capture := logger.NewCapture(id, r.config.LogDir)
+		broadcaster := logger.NewBroadcastWriter(r.streams, id)
+		out := io.MultiWriter(capture, broadcaster)
+		defer capture.Close()
+
+		err := steamcmd.InstallPalworldServer(s.InstallPath, r.config.SteamCMDPath, out)
 
 		// Update status based on installation result; mark installed on success.
 		newStatus := "stopped"
