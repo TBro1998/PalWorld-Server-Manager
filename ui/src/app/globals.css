@@ -5,48 +5,64 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 3.9%;
+  /* Palworld bright-cartoon palette: sky-blue ground, teal primary,
+     warm-sun accent, deep-navy ink text, chunky 1rem radius. */
+  --background: 200 65% 97%;
+  --foreground: 210 35% 22%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 3.9%;
+  --card-foreground: 210 35% 22%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 3.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --popover-foreground: 210 35% 22%;
+  --primary: 183 58% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 42 55% 93%;
+  --secondary-foreground: 210 35% 25%;
+  --muted: 200 35% 93%;
+  --muted-foreground: 210 16% 45%;
+  --accent: 38 92% 55%;
+  --accent-foreground: 25 60% 18%;
+  --destructive: 0 78% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 200 30% 84%;
+  --input: 200 30% 86%;
+  --ring: 183 58% 45%;
+  --radius: 1rem;
+  /* Semantic status colors (Palworld). */
+  --success: 145 55% 42%;
+  --success-foreground: 0 0% 100%;
+  --info: 205 80% 52%;
+  --info-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 25 60% 18%;
 }
 
 .dark {
-  --background: 0 0% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 0 0% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 0 0% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  /* Deep teal-navy dusk with brightened teal/amber glows. */
+  --background: 205 40% 12%;
+  --foreground: 195 30% 92%;
+  --card: 205 35% 16%;
+  --card-foreground: 195 30% 92%;
+  --popover: 205 35% 16%;
+  --popover-foreground: 195 30% 92%;
+  --primary: 183 62% 52%;
+  --primary-foreground: 205 45% 10%;
+  --secondary: 205 25% 24%;
+  --secondary-foreground: 195 30% 92%;
+  --muted: 205 25% 22%;
+  --muted-foreground: 200 15% 65%;
+  --accent: 40 90% 58%;
+  --accent-foreground: 205 45% 10%;
+  --destructive: 0 65% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 205 25% 26%;
+  --input: 205 25% 26%;
+  --ring: 183 62% 52%;
+  --success: 145 50% 50%;
+  --success-foreground: 205 45% 10%;
+  --info: 205 75% 60%;
+  --info-foreground: 205 45% 10%;
+  --warning: 40 90% 58%;
+  --warning-foreground: 205 45% 10%;
 }
 
 /*
@@ -75,9 +91,22 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 6px);
+
+  /* Rounded, friendly sans; Nunito (latin) injected via next/font, with a
+     system CJK fallback chain so zh/ja render without bundling CJK fonts. */
+  --font-sans: var(--font-nunito), "PingFang SC", "Microsoft YaHei",
+    "Hiragino Sans", "Noto Sans CJK SC", sans-serif;
 }
 
 @layer base {
@@ -86,6 +115,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
 }
 
@@ -101,5 +131,64 @@
     background-image:
       linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  /* Palworld sunny-sky backdrop: soft blue vertical wash + a couple of
+     low-opacity radial "sun/cloud" glows. Pure CSS — static-export safe. */
+  .bg-sky {
+    background-color: hsl(200 65% 97%);
+    background-image:
+      radial-gradient(
+        70% 55% at 85% 8%,
+        hsl(45 100% 85% / 0.55) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        60% 45% at 12% 4%,
+        hsl(183 70% 88% / 0.5) 0%,
+        transparent 55%
+      ),
+      linear-gradient(
+        180deg,
+        hsl(200 78% 90%) 0%,
+        hsl(200 62% 96%) 40%,
+        hsl(160 45% 96%) 100%
+      );
+    background-attachment: fixed;
+  }
+
+  .dark .bg-sky {
+    background-color: hsl(205 40% 12%);
+    background-image:
+      radial-gradient(
+        70% 55% at 85% 8%,
+        hsl(40 80% 45% / 0.18) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        60% 45% at 12% 4%,
+        hsl(183 70% 40% / 0.2) 0%,
+        transparent 55%
+      ),
+      linear-gradient(
+        180deg,
+        hsl(205 45% 14%) 0%,
+        hsl(205 40% 11%) 60%,
+        hsl(200 38% 10%) 100%
+      );
+    background-attachment: fixed;
+  }
+
+  /* Chunky, soft cartoon drop shadow for panels/cards. */
+  .shadow-pal {
+    box-shadow:
+      0 10px 30px -12px hsl(200 50% 30% / 0.28),
+      0 2px 6px -2px hsl(200 50% 30% / 0.12);
+  }
+
+  .dark .shadow-pal {
+    box-shadow:
+      0 12px 32px -12px hsl(0 0% 0% / 0.55),
+      0 2px 6px -2px hsl(0 0% 0% / 0.4);
   }
 }

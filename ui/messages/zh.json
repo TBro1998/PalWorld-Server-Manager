@@ -47,6 +47,20 @@
       }
     }
   },
+  "dashboard": {
+    "welcome": "欢迎回来",
+    "subtitle": "管理你的幻兽帕鲁服务器世界",
+    "manageServers": "管理服务器",
+    "addServer": "新增服务器",
+    "statTotal": "服务器总数",
+    "statRunning": "运行中",
+    "statStopped": "已停止",
+    "statAttention": "需要关注",
+    "serversOverview": "服务器概览",
+    "viewAll": "查看全部",
+    "empty": "还没有服务器，创建第一个，开启你的帕鲁之旅吧！",
+    "featuresTitle": "功能特性"
+  },
   "auth": {
     "login": "登录",
     "register": "注册",

@@ -1,12 +1,25 @@
+import { Nunito } from 'next/font/google';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Providers } from '@/components/Providers';
-import { Navbar } from '@/components/Navbar';
+import { AppShell } from '@/components/AppShell';
 import './globals.css';
+
+// Rounded, friendly sans for the Palworld cartoon look. Latin glyphs only;
+// CJK falls back to system fonts via the --font-sans chain in globals.css.
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-nunito',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Palworld Server Manager',
   description: 'Manage your Palworld dedicated servers',
 };
+
+// Apply the saved theme before first paint to avoid a light/dark flash.
+const themeInit = `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -14,14 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={nunito.variable}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>
         <LanguageProvider>
           <Providers>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-              <Navbar />
-              <main>{children}</main>
-            </div>
+            <AppShell>{children}</AppShell>
           </Providers>
         </LanguageProvider>
       </body>

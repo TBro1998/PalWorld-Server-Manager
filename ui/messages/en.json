@@ -47,6 +47,20 @@
       }
     }
   },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "subtitle": "Manage your Palworld server world",
+    "manageServers": "Manage Servers",
+    "addServer": "Add Server",
+    "statTotal": "Total Servers",
+    "statRunning": "Running",
+    "statStopped": "Stopped",
+    "statAttention": "Needs Attention",
+    "serversOverview": "Servers Overview",
+    "viewAll": "View all",
+    "empty": "No servers yet — create your first one and start your Palworld journey!",
+    "featuresTitle": "Features"
+  },
   "auth": {
     "login": "Login",
     "register": "Register",

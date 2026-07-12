@@ -1,16 +1,40 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { serversApi } from '@/lib/api'
 import { ServerCard } from '@/components/ServerCard'
 import { AddServerDialog } from '@/components/AddServerDialog'
 import { ServerSettingsDialog } from '@/components/ServerSettingsDialog'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Plus, AlertTriangle, RotateCw } from 'lucide-react'
 import { useTranslations } from '@/contexts/LanguageContext'
 import type { CreateServerData, Server } from '@/types/server'
+
+// A single shimmering placeholder card shown during the first load.
+function SkeletonCard() {
+  return (
+    <Card className="rounded-2xl border-2">
+      <CardContent className="space-y-4 p-6">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 animate-pulse rounded-xl bg-muted" />
+          <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-full animate-pulse rounded bg-muted" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+          <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function ServersPage() {
   const t = useTranslations('servers')
@@ -22,14 +46,17 @@ export default function ServersPage() {
   const [installLogsServer, setInstallLogsServer] = useState<Server | null>(null)
   const queryClient = useQueryClient()
 
-  // Fetch servers with auto-refetch every 5 seconds to update statuses
-  const { data: servers, isLoading } = useQuery({
+  // Fetch servers with auto-refetch every 5 seconds to update statuses.
+  // keepPreviousData keeps the previous list on screen across refetches so the
+  // grid does not flicker back to a loading/empty state while polling.
+  const { data: servers, isLoading, isError, refetch } = useQuery({
     queryKey: ['servers'],
     queryFn: async () => {
       const response = await serversApi.list()
       return response.data
     },
     refetchInterval: 5000,
+    placeholderData: keepPreviousData,
   })
 
   // Create server mutation
@@ -91,25 +118,49 @@ export default function ServersPage() {
   }
 
   const nextServerId = servers ? servers.length + 1 : 1
+  const count = servers?.length ?? 0
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          {t('title')}
-        </h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus size={20} className="mr-2" />
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
+      {/* Toolbar */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            {t('title')}
+          </h1>
+          {count > 0 && (
+            <span className="rounded-full bg-primary/15 px-3 py-1 text-sm font-bold text-primary">
+              {count}
+            </span>
+          )}
+        </div>
+        <Button onClick={() => setIsAddDialogOpen(true)} className="shadow-pal">
+          <Plus size={20} className="mr-1" />
           {t('add')}
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">{t('loading')}</p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
+      ) : isError ? (
+        <Card className="rounded-2xl border-2 border-destructive/40">
+          <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <p className="text-muted-foreground">{t('loading')}</p>
+            <Button variant="secondary" onClick={() => refetch()}>
+              <RotateCw size={16} className="mr-1" />
+              {t('restart')}
+            </Button>
+          </CardContent>
+        </Card>
       ) : servers && servers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {servers.map((server) => (
             <ServerCard
               key={server.id}
@@ -132,15 +183,18 @@ export default function ServersPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {t('empty')}
-          </p>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus size={20} className="mr-2" />
-            {t('add')}
-          </Button>
-        </div>
+        <Card className="rounded-2xl border-2 border-dashed shadow-none">
+          <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-4xl">
+              🐾
+            </div>
+            <p className="max-w-sm text-muted-foreground">{t('empty')}</p>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="shadow-pal">
+              <Plus size={20} className="mr-1" />
+              {t('add')}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       <AddServerDialog

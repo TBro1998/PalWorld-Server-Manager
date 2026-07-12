@@ -47,6 +47,20 @@
       }
     }
   },
+  "dashboard": {
+    "welcome": "おかえりなさい",
+    "subtitle": "あなたのPalworldサーバーの世界を管理",
+    "manageServers": "サーバーを管理",
+    "addServer": "サーバーを追加",
+    "statTotal": "サーバー総数",
+    "statRunning": "稼働中",
+    "statStopped": "停止中",
+    "statAttention": "要対応",
+    "serversOverview": "サーバー概要",
+    "viewAll": "すべて表示",
+    "empty": "サーバーがまだありません。最初の1台を作成してPalworldの旅を始めましょう！",
+    "featuresTitle": "機能"
+  },
   "auth": {
     "login": "ログイン",
     "register": "登録",

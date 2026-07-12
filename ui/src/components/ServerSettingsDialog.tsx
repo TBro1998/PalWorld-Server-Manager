@@ -208,7 +208,7 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
         </DialogHeader>
 
         {!server?.installed && (
-          <p className="text-sm text-amber-600 dark:text-amber-500">{t('notInstalledHint')}</p>
+          <p className="text-sm text-warning">{t('notInstalledHint')}</p>
         )}
 
         {/* Tab bar */}
@@ -245,7 +245,7 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
                   onChange={(e) => setInstallPath(e.target.value)}
                 />
                 {pathChanged && (
-                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                  <p className="text-sm text-warning">
                     {t('basics.pathChangedHint')}
                   </p>
                 )}
@@ -351,7 +351,7 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {rawMode && <p className="text-xs text-amber-600 dark:text-amber-500">{t('rawModeActive')}</p>}
+        {rawMode && <p className="text-xs text-warning">{t('rawModeActive')}</p>}
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saveMutation.isPending}>

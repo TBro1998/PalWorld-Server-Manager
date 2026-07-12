@@ -86,8 +86,8 @@ export function ServerLogsDialog({
               {server ? ` — ${server.name}` : ''}
             </span>
             {streamState === 'live' && (
-              <span className="flex items-center gap-1 text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="flex items-center gap-1 text-xs font-normal text-success">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
                 {t('logsLive')}
               </span>
             )}
@@ -96,7 +96,7 @@ export function ServerLogsDialog({
 
         <div
           ref={scrollRef}
-          className="max-h-[60vh] overflow-y-auto rounded-md bg-zinc-950 p-3 font-mono text-xs text-zinc-100"
+          className="max-h-[60vh] overflow-y-auto rounded-xl border border-border bg-zinc-950 p-3 font-mono text-xs text-zinc-100"
         >
           {lines.length === 0 ? (
             <div className="text-zinc-500">{t('logsEmpty')}</div>
