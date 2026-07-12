@@ -178,10 +178,6 @@
         "label": "Admin password",
         "desc": "Password used to obtain administrative privileges."
       },
-      "AllowConnectPlatform": {
-        "label": "Allow connect platform",
-        "desc": "Deprecated. Use CrossplayPlatforms instead."
-      },
       "bAllowClientMod": {
         "label": "Allow client mods",
         "desc": "Allow players with mods enabled to join the server."

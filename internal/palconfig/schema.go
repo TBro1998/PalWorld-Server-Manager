@@ -53,7 +53,6 @@ var Params = []ParamDef{
 
 	// ---- Server management ----
 	{Key: "AdminPassword", Type: TypeString, Default: "", Category: CatServerManagement},
-	{Key: "AllowConnectPlatform", Type: TypeRaw, Default: "Steam", Category: CatServerManagement},
 	{Key: "bAllowClientMod", Type: TypeBool, Default: "False", Category: CatServerManagement},
 	{Key: "bEnableBuildingPlayerUIdDisplay", Type: TypeBool, Default: "False", Category: CatServerManagement},
 	{Key: "bIsShowJoinLeftMessage", Type: TypeBool, Default: "True", Category: CatServerManagement},

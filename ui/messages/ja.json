@@ -178,10 +178,6 @@
         "label": "管理者パスワード",
         "desc": "管理者権限を得るためのパスワード。"
       },
-      "AllowConnectPlatform": {
-        "label": "接続許可プラットフォーム",
-        "desc": "非推奨。CrossplayPlatforms を使用。"
-      },
       "bAllowClientMod": {
         "label": "クライアントMOD許可",
         "desc": "MOD有効のプレイヤーの参加を許可。"

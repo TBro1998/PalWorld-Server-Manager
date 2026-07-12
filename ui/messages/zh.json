@@ -178,10 +178,6 @@
         "label": "管理员密码",
         "desc": "用于获取管理员权限的密码。"
       },
-      "AllowConnectPlatform": {
-        "label": "允许连接平台",
-        "desc": "已弃用。请改用 CrossplayPlatforms。"
-      },
       "bAllowClientMod": {
         "label": "允许客户端模组",
         "desc": "允许启用了模组的玩家加入服务器。"
