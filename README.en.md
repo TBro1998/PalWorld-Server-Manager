@@ -66,7 +66,7 @@ steamcmd_path: "./steamcmd"        # SteamCMD installation path
 palworld_base_path: "./palworld"   # Palworld server directory
 
 # Database
-database_path: "./data/palworld.db"
+database_path: "./palworld.db"
 
 # JWT secret (change in production)
 jwt_secret: "your-secure-secret-key"

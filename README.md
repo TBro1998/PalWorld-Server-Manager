@@ -66,7 +66,7 @@ steamcmd_path: "./steamcmd"        # SteamCMD 安装路径
 palworld_base_path: "./palworld"   # Palworld 服务器目录
 
 # 数据库
-database_path: "./data/palworld.db"
+database_path: "./palworld.db"
 
 # JWT 密钥（生产环境请修改）
 jwt_secret: "your-secure-secret-key"

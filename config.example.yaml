@@ -6,7 +6,7 @@ host: "127.0.0.1"  # Web 界面监听地址
 port: 8080          # Web 界面端口
 
 # 数据库设置
-database_path: "./data/palworld.db"  # SQLite 数据库路径
+database_path: "./palworld.db"  # SQLite 数据库路径
 
 # JWT 认证
 jwt_secret: "change-me-in-production"  # JWT 签名密钥（生产环境请务必修改！）

@@ -14,7 +14,7 @@ type Config struct {
 	Port int    `yaml:"port" env:"PORT" envDefault:"8080"`
 
 	// Database
-	DatabasePath string `yaml:"database_path" env:"DATABASE_PATH" envDefault:"./data/palworld.db"`
+	DatabasePath string `yaml:"database_path" env:"DATABASE_PATH" envDefault:"./palworld.db"`
 
 	// JWT
 	JWTSecret string `yaml:"jwt_secret" env:"JWT_SECRET" envDefault:"change-me-in-production"`

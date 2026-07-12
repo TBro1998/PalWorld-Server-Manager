@@ -66,7 +66,7 @@ steamcmd_path: "./steamcmd"        # SteamCMDインストールパス
 palworld_base_path: "./palworld"   # Palworldサーバーディレクトリ
 
 # データベース
-database_path: "./data/palworld.db"
+database_path: "./palworld.db"
 
 # JWTシークレット（本番環境では変更してください）
 jwt_secret: "your-secure-secret-key"
