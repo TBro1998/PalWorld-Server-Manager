@@ -140,6 +140,23 @@ func (c *Capture) pruneLocked() {
 	}
 }
 
+// ResetLog clears the current log file for a server's log kind, discarding any
+// previously captured output. It is used to start a fresh SteamCMD install/
+// update log each run so the previous run's output is not retained. A missing
+// file is not an error. Callers must ensure no Capture for this kind is actively
+// writing (SteamCMD installs run one at a time and close their capture when done).
+func ResetLog(logDir string, serverID int64, kind string) error {
+	dir := serverLogDir(logDir, serverID, kind)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(filepath.Join(dir, "current.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+
 // Close flushes and closes the underlying log file.
 func (c *Capture) Close() error {
 	c.mu.Lock()

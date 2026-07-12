@@ -109,9 +109,6 @@ export function ServerLogsDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setLines([])}>
-            {t('logsClear')}
-          </Button>
           <Button type="button" onClick={() => onOpenChange(false)}>
             {t('logsClose')}
           </Button>

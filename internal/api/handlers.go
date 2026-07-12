@@ -335,6 +335,13 @@ func (r *Router) InstallServer(c *gin.Context) {
 		return
 	}
 
+	// Clear the previous run's SteamCMD log so each install/update starts fresh;
+	// the prior output is not retained. Done synchronously before responding so a
+	// log fetch triggered by the client sees the cleared file.
+	if err := logger.ResetLog(r.config.LogDir, id, logger.KindSteamCMD); err != nil {
+		fmt.Printf("warning: failed to reset steamcmd log for server %d: %v\n", id, err)
+	}
+
 	// Start installation in background. The Manager owns the installing set and
 	// persists facts (last_error, installed); status is never written.
 	go func() {
