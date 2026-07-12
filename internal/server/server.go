@@ -23,7 +23,8 @@ type Server struct {
 // New creates a new server instance
 func New(cfg *config.Config, db *sql.DB, staticFiles embed.FS) *Server {
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	s := &Server{
 		config:      cfg,
@@ -39,6 +40,12 @@ func New(cfg *config.Config, db *sql.DB, staticFiles embed.FS) *Server {
 func (s *Server) setupRoutes() {
 	// API routes
 	apiRouter := api.NewRouter(s.db, s.config)
+
+	// Reconcile any stale "running" server state left over from a previous run.
+	if err := apiRouter.ProcessManager().ReconcileOnStartup(); err != nil {
+		fmt.Printf("warning: startup reconciliation failed: %v\n", err)
+	}
+
 	apiGroup := s.router.Group("/api")
 	apiRouter.RegisterRoutes(apiGroup)
 

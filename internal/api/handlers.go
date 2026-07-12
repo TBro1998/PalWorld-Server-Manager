@@ -2,10 +2,12 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
 	"github.com/gin-gonic/gin"
@@ -287,32 +289,121 @@ func (r *Router) InstallServer(c *gin.Context) {
 
 // StartServer starts a server
 func (r *Router) StartServer(c *gin.Context) {
-	// TODO: Implement start server logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Start server - to be implemented"})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	if err := r.process.StartServer(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Server started",
+		"serverId": id,
+		"status":   "running",
+	})
 }
 
 // StopServer stops a server
 func (r *Router) StopServer(c *gin.Context) {
-	// TODO: Implement stop server logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Stop server - to be implemented"})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	if err := r.process.StopServer(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Server stopped",
+		"serverId": id,
+		"status":   "stopped",
+	})
 }
 
 // RestartServer restarts a server
 func (r *Router) RestartServer(c *gin.Context) {
-	// TODO: Implement restart server logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Restart server - to be implemented"})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	if err := r.process.RestartServer(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Server restarted",
+		"serverId": id,
+		"status":   "running",
+	})
 }
 
-// GetLogs returns server logs
+// GetLogs returns the most recent server logs.
+// Optional query param: lines (default 200).
 func (r *Router) GetLogs(c *gin.Context) {
-	// TODO: Implement get logs logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Get logs - to be implemented"})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	lines := 200
+	if v := c.Query("lines"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			lines = n
+		}
+	}
+
+	logs, err := logger.ReadLogs(r.config.LogDir, id, lines)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read logs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"serverId": id,
+		"logs":     logs,
+	})
 }
 
-// StreamLogs streams server logs via SSE
+// StreamLogs streams live server logs via Server-Sent Events.
 func (r *Router) StreamLogs(c *gin.Context) {
-	// TODO: Implement SSE log streaming
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Stream logs - to be implemented"})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	clientID, ch := r.streams.Subscribe(id)
+	defer r.streams.Unsubscribe(id, clientID)
+
+	ctx := c.Request.Context()
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case line, ok := <-ch:
+			if !ok {
+				return false
+			}
+			c.SSEvent("log", line)
+			return true
+		case <-ctx.Done():
+			return false
+		}
+	})
 }
 
 // ListMods returns all mods for a server

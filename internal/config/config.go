@@ -23,6 +23,9 @@ type Config struct {
 	SteamCMDPath     string `yaml:"steamcmd_path" env:"STEAMCMD_PATH" envDefault:"./steamcmd"`
 	PalworldBasePath string `yaml:"palworld_base_path" env:"PALWORLD_BASE_PATH" envDefault:"./palworld"`
 
+	// Logging
+	LogDir string `yaml:"log_dir" env:"LOG_DIR" envDefault:"./logs"`
+
 	// Update settings (always enabled, update via UI)
 	GitHubRepo string `yaml:"github_repo" env:"GITHUB_REPO" envDefault:"TBro1998/PalWorld-Server-Manager"`
 }

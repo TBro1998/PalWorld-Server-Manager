@@ -5,20 +5,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
 )
 
 // Router handles API routing
 type Router struct {
-	db     *sql.DB
-	config *config.Config
+	db      *sql.DB
+	config  *config.Config
+	process *process.Manager
+	streams *logger.StreamManager
 }
 
 // NewRouter creates a new API router
 func NewRouter(db *sql.DB, cfg *config.Config) *Router {
+	streams := logger.NewStreamManager()
+	pm := process.NewManager(db, streams, cfg.LogDir)
 	return &Router{
-		db:     db,
-		config: cfg,
+		db:      db,
+		config:  cfg,
+		process: pm,
+		streams: streams,
 	}
+}
+
+// ProcessManager exposes the process manager for startup reconciliation.
+func (r *Router) ProcessManager() *process.Manager {
+	return r.process
 }
 
 // RegisterRoutes registers all API routes
