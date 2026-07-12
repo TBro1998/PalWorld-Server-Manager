@@ -20,7 +20,7 @@ Palworld専用サーバーのための包括的な管理ツール。MODサポー
 
 ### ダウンロードとインストール
 
-1. [Releases](https://github.com/zhuzhenghan/palworld-server-manager/releases) ページから最新バージョンをダウンロード
+1. [Releases](https://github.com/TBro1998/PalWorld-Server-Manager/releases) ページから最新バージョンをダウンロード
 2. ダウンロードしたアーカイブを任意のディレクトリに解凍
 3. `palworld-server-manager.exe`（Windows）をダブルクリックして実行
 

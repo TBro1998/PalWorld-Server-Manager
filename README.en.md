@@ -20,7 +20,7 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 ### Download & Install
 
-1. Go to the [Releases](https://github.com/zhuzhenghan/palworld-server-manager/releases) page and download the latest version
+1. Go to the [Releases](https://github.com/TBro1998/PalWorld-Server-Manager/releases) page and download the latest version
 2. Extract the downloaded archive to any directory
 3. Double-click to run `palworld-server-manager.exe` (Windows)
 

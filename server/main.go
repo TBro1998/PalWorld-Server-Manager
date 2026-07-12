@@ -4,9 +4,9 @@ import (
 	"embed"
 	"log"
 
-	"github.com/zhuzhenghan/palworld-server-manager/internal/config"
-	"github.com/zhuzhenghan/palworld-server-manager/internal/database"
-	"github.com/zhuzhenghan/palworld-server-manager/internal/server"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/database"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/server"
 )
 
 //go:embed all:../../ui/out

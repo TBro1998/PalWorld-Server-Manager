@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhuzhenghan/palworld-server-manager/internal/config"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 )
 
 // Router handles API routing

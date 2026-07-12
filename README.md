@@ -20,7 +20,7 @@
 
 ### 下载安装
 
-1. 前往 [Releases](https://github.com/zhuzhenghan/palworld-server-manager/releases) 页面下载最新版本
+1. 前往 [Releases](https://github.com/TBro1998/PalWorld-Server-Manager/releases) 页面下载最新版本
 2. 解压下载的压缩包到任意目录
 3. 双击运行 `palworld-server-manager.exe`（Windows）
 

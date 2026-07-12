@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhuzhenghan/palworld-server-manager/internal/api"
-	"github.com/zhuzhenghan/palworld-server-manager/internal/config"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 )
 
 // Server represents the HTTP server
