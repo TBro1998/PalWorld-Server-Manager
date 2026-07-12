@@ -55,7 +55,7 @@ func InstallPalworldServer(installPath string, steamCmdPath string, out io.Write
 	}
 
 	// Execute SteamCMD, routing its output to the caller-supplied writer.
-	fmt.Fprintf(out, "==> Installing Palworld dedicated server (app 2394010)...\n")
+	fmt.Fprintf(out, "==> Installing/updating Palworld dedicated server (app 2394010)...\n")
 
 	cmd := exec.Command(steamCmdExe, args...)
 	cmd.Stdout = out
@@ -66,6 +66,6 @@ func InstallPalworldServer(installPath string, steamCmdPath string, out io.Write
 		return fmt.Errorf("SteamCMD installation failed: %w", err)
 	}
 
-	fmt.Fprintf(out, "==> Installation complete\n")
+	fmt.Fprintf(out, "==> Install/update complete\n")
 	return nil
 }

@@ -89,7 +89,7 @@ export function ServerCard({
                 onClick={() => onInstall(server.id)}
               >
                 <Download size={16} className="mr-1" />
-                {t('install')}
+                {t('installUpdate')}
               </Button>
               <Button
                 size="sm"
