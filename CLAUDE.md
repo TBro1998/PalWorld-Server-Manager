@@ -218,6 +218,19 @@ When adding new config fields:
 
 ## Important Patterns
 
+### Platform Support: Windows Only (for now)
+
+**The project currently targets Windows only.** All development, testing, and
+releases assume a Windows environment.
+
+- Cross-platform (Linux) code paths already exist in the codebase (e.g.
+  `internal/process/platform_unix.go`, Linux branches in `internal/steamcmd/`).
+  **Keep this code** — it is retained for future Linux support, not to be removed.
+- When implementing new features, it is acceptable to prioritize the Windows
+  path. Linux support can lag behind but should not be actively broken.
+- Do not gate the build on Linux verification. Windows build + behavior is the
+  source of truth until cross-platform support is officially enabled.
+
 ### Single Binary Distribution
 
 The build creates a completely self-contained executable with no external dependencies (except SteamCMD for game server management). This is achieved through:
@@ -250,12 +263,15 @@ This is an **early-stage project**. Core structure is in place, but many feature
 - API routing skeleton
 - Frontend structure with i18n
 - Build system for single-binary distribution
+- SteamCMD integration for server installation (`internal/steamcmd/`)
+- Server lifecycle management: start/stop/restart with cross-platform process
+  handling and graceful shutdown (`internal/process/`)
+- Log capture with rotation and real-time SSE streaming (`internal/logger/`)
+- Startup reconciliation of stale server state
 
 **To Be Implemented:**
-- Server lifecycle management (start/stop/restart)
-- SteamCMD integration for server/mod installation
+- SteamCMD integration for mod installation
 - JWT authentication middleware
-- Real-time log streaming (SSE)
 - System monitoring (CPU/memory)
 - UI components and pages
 - RCON command interface (optional P2 feature)

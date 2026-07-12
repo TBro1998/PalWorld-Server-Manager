@@ -5,6 +5,7 @@ package process
 import (
 	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -18,28 +19,23 @@ func sysProcAttr() *syscall.SysProcAttr {
 }
 
 // isProcessAlive reports whether a process with the given PID is currently running.
+//
+// It queries tasklist in CSV format and checks whether the output contains the
+// quoted PID. A matching process produces a CSV row like
+// `"image.exe","<pid>","Console",...`; when no process matches, tasklist emits a
+// localized info message that will not contain `"<pid>"`. Matching on the quoted
+// PID keeps this locale-independent (non-English Windows included).
 func isProcessAlive(pid int) bool {
 	if pid <= 0 {
 		return false
 	}
-	// tasklist filtered by PID; if the PID is present the output contains it.
-	out, err := exec.Command("tasklist", "/FI", "PID eq "+strconv.Itoa(pid), "/NH").Output()
+	out, err := exec.Command(
+		"tasklist", "/FI", "PID eq "+strconv.Itoa(pid), "/NH", "/FO", "CSV",
+	).Output()
 	if err != nil {
 		return false
 	}
-	// When no task matches, tasklist prints "INFO: No tasks are running..."
-	return !containsNoTasks(out) && len(out) > 0
-}
-
-func containsNoTasks(out []byte) bool {
-	const marker = "No tasks are running"
-	s := string(out)
-	for i := 0; i+len(marker) <= len(s); i++ {
-		if s[i:i+len(marker)] == marker {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(string(out), `"`+strconv.Itoa(pid)+`"`)
 }
 
 // killProcess attempts a graceful shutdown of the process tree, escalating to a
