@@ -33,7 +33,10 @@ func (m *Manager) monitor(serverID int64, cmd *exec.Cmd, capture *logger.Capture
 
 // ReconcileOnStartup corrects stale state left over from a previous run of the
 // application. Any server marked running whose recorded PID is no longer alive
-// is reset to stopped. Should be called once during startup.
+// is reset to stopped. Additionally, any server still marked installing is an
+// orphan: the SteamCMD subprocess died with the previous application process
+// and cannot survive a restart, so it is reset to stopped unconditionally.
+// Should be called once during startup.
 func (m *Manager) ReconcileOnStartup() error {
 	rows, err := m.db.Query(`SELECT id, pid FROM servers WHERE status = ?`, StatusRunning)
 	if err != nil {
@@ -66,6 +69,18 @@ func (m *Manager) ReconcileOnStartup() error {
 			return err
 		}
 		fmt.Printf("reconciled server %d: marked stopped (pid %d not alive)\n", s.id, s.pid)
+	}
+
+	// Installs never survive an application restart: the SteamCMD subprocess died
+	// with the previous process, so any server still marked "installing" is
+	// orphaned. Reset it to stopped unconditionally so the user can retry.
+	// ReconcileInstalled (called next in server startup) then recomputes the
+	// `installed` flag from on-disk reality, so a partial install shows as
+	// "not installed" rather than stuck.
+	if _, err := m.db.Exec(
+		`UPDATE servers SET status = ?, pid = 0, updated_at = CURRENT_TIMESTAMP WHERE status = ?`,
+		StatusStopped, StatusInstalling); err != nil {
+		return err
 	}
 	return nil
 }
