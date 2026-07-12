@@ -51,10 +51,3 @@ echo ========================================
 echo.
 
 go run .
-if errorlevel 1 (
-    echo.
-    echo Error: Failed to start Go backend
-    exit /b 1
-)
-
-endlocal
