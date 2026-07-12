@@ -7,9 +7,11 @@ import { ServerCard } from '@/components/ServerCard'
 import { AddServerDialog } from '@/components/AddServerDialog'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { useTranslations } from '@/contexts/LanguageContext'
 import type { CreateServerData } from '@/types/server'
 
 export default function ServersPage() {
+  const t = useTranslations('servers')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const queryClient = useQueryClient()
 
@@ -76,7 +78,7 @@ export default function ServersPage() {
   })
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this server?')) {
+    if (window.confirm(t('confirmDelete'))) {
       deleteServerMutation.mutate(id)
     }
   }
@@ -87,17 +89,17 @@ export default function ServersPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Servers
+          {t('title')}
         </h1>
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus size={20} className="mr-2" />
-          Add Server
+          {t('add')}
         </Button>
       </div>
 
       {isLoading ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">Loading servers...</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('loading')}</p>
         </div>
       ) : servers && servers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -116,11 +118,11 @@ export default function ServersPage() {
       ) : (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            No servers yet. Create your first server to get started.
+            {t('empty')}
           </p>
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus size={20} className="mr-2" />
-            Add Server
+            {t('add')}
           </Button>
         </div>
       )}

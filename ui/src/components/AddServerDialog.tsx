@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
+import { useTranslations } from '@/contexts/LanguageContext'
 
 const createServerSchema = z.object({
   name: z.string().min(1, 'Server name is required'),
@@ -29,6 +32,7 @@ export function AddServerDialog({
   isLoading,
   nextServerId = 1,
 }: AddServerDialogProps) {
+  const t = useTranslations('addServer')
   const {
     register,
     handleSubmit,
@@ -50,24 +54,24 @@ export function AddServerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Server</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Server Name</Label>
+            <Label htmlFor="name">{t('nameLabel')}</Label>
             <Input
               id="name"
-              placeholder="My Palworld Server"
+              placeholder={t('namePlaceholder')}
               {...register('name')}
             />
             {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
+              <p className="text-sm text-destructive">{t('nameRequired')}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="installPath">Install Path</Label>
+            <Label htmlFor="installPath">{t('pathLabel')}</Label>
             <Input
               id="installPath"
               placeholder={`Server/${nextServerId}`}
@@ -77,7 +81,7 @@ export function AddServerDialog({
               <p className="text-sm text-destructive">{errors.installPath.message}</p>
             )}
             <p className="text-sm text-muted-foreground">
-              Leave install path empty to use default: Server/{nextServerId}
+              {t('pathHint')}: Server/{nextServerId}
             </p>
           </div>
 
@@ -88,10 +92,10 @@ export function AddServerDialog({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Server'}
+              {isLoading ? t('creating') : t('create')}
             </Button>
           </DialogFooter>
         </form>

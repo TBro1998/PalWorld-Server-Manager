@@ -4,11 +4,30 @@
     "description": "Manage your Palworld dedicated servers"
   },
   "nav": {
+    "home": "Home",
     "dashboard": "Dashboard",
     "servers": "Servers",
     "mods": "Mods",
     "settings": "Settings",
     "logout": "Logout"
+  },
+  "home": {
+    "subtitle": "A simple, powerful web tool that makes managing your Palworld dedicated servers effortless",
+    "getStarted": "Manage Servers",
+    "browseMods": "Browse Mods",
+    "featuresTitle": "Powerful Features",
+    "featuresSubtitle": "An all-in-one solution for every Palworld server management need",
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "Create your first Palworld server now and kick off an amazing gaming experience",
+    "ctaButton": "Create Server",
+    "features": {
+      "serverMgmt": { "title": "Server Management", "desc": "Start, stop, and restart your Palworld servers with one click" },
+      "modMgmt": { "title": "Mod Management", "desc": "Easily install and manage mods via the Steam Workshop" },
+      "monitor": { "title": "Real-time Monitoring", "desc": "Monitor server status, performance metrics, and player activity" },
+      "security": { "title": "Secure & Reliable", "desc": "JWT authentication and secure server management APIs" },
+      "deploy": { "title": "One-click Deployment", "desc": "Automated installation of SteamCMD and server files" },
+      "i18n": { "title": "Multi-language Support", "desc": "Available in Chinese, English, and Japanese" }
+    }
   },
   "auth": {
     "login": "Login",
@@ -20,9 +39,12 @@
   },
   "servers": {
     "list": "Server List",
+    "title": "Servers",
     "create": "Create Server",
+    "add": "Add Server",
     "name": "Server Name",
     "port": "Port",
+    "path": "Path",
     "status": "Status",
     "actions": "Actions",
     "start": "Start",
@@ -30,7 +52,27 @@
     "restart": "Restart",
     "delete": "Delete",
     "edit": "Edit",
-    "logs": "Logs"
+    "logs": "Logs",
+    "install": "Install",
+    "installing": "Installing...",
+    "loading": "Loading servers...",
+    "empty": "No servers yet. Create your first server to get started.",
+    "confirmDelete": "Are you sure you want to delete this server?",
+    "statusStopped": "Stopped",
+    "statusRunning": "Running",
+    "statusInstalling": "Installing",
+    "statusError": "Error"
+  },
+  "addServer": {
+    "title": "Add New Server",
+    "nameLabel": "Server Name",
+    "namePlaceholder": "My Palworld Server",
+    "nameRequired": "Server name is required",
+    "pathLabel": "Install Path",
+    "pathHint": "Leave empty to use the default path",
+    "cancel": "Cancel",
+    "create": "Create Server",
+    "creating": "Creating..."
   },
   "mods": {
     "list": "Mod List",

@@ -1,4 +1,13 @@
 @echo off
+
+:: Re-launch with stdin redirected from nul so pressing Ctrl+C exits
+:: immediately without the "Terminate batch job (Y/N)?" prompt.
+if not defined _PSM_NOPROMPT (
+    set "_PSM_NOPROMPT=1"
+    call "%~f0" %* <nul
+    exit /b %errorlevel%
+)
+
 setlocal enabledelayedexpansion
 
 echo ========================================

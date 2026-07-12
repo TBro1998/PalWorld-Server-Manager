@@ -4,11 +4,30 @@
     "description": "管理您的幻兽帕鲁专用服务器"
   },
   "nav": {
+    "home": "首页",
     "dashboard": "控制台",
     "servers": "服务器",
     "mods": "模组",
     "settings": "设置",
     "logout": "登出"
+  },
+  "home": {
+    "subtitle": "一个简单、强大的 Web 管理工具，让您轻松管理 Palworld 专用服务器",
+    "getStarted": "开始管理服务器",
+    "browseMods": "浏览模组",
+    "featuresTitle": "强大的功能特性",
+    "featuresSubtitle": "一站式解决方案，满足您所有的 Palworld 服务器管理需求",
+    "ctaTitle": "准备好开始了吗？",
+    "ctaSubtitle": "立即创建您的第一个 Palworld 服务器，开启精彩的游戏体验",
+    "ctaButton": "创建服务器",
+    "features": {
+      "serverMgmt": { "title": "服务器管理", "desc": "一键启动、停止和重启您的 Palworld 服务器" },
+      "modMgmt": { "title": "模组管理", "desc": "通过 Steam 创意工坊轻松安装和管理模组" },
+      "monitor": { "title": "实时监控", "desc": "监控服务器状态、性能指标和玩家活动" },
+      "security": { "title": "安全可靠", "desc": "JWT 认证和安全的服务器管理接口" },
+      "deploy": { "title": "一键部署", "desc": "自动化安装 SteamCMD 和服务器文件" },
+      "i18n": { "title": "多语言支持", "desc": "支持中文、英文、日文三种语言" }
+    }
   },
   "auth": {
     "login": "登录",
@@ -20,9 +39,12 @@
   },
   "servers": {
     "list": "服务器列表",
+    "title": "服务器",
     "create": "创建服务器",
+    "add": "添加服务器",
     "name": "服务器名称",
     "port": "端口",
+    "path": "路径",
     "status": "状态",
     "actions": "操作",
     "start": "启动",
@@ -30,7 +52,27 @@
     "restart": "重启",
     "delete": "删除",
     "edit": "编辑",
-    "logs": "日志"
+    "logs": "日志",
+    "install": "安装",
+    "installing": "安装中...",
+    "loading": "正在加载服务器...",
+    "empty": "还没有服务器，创建第一个服务器开始使用吧。",
+    "confirmDelete": "确定要删除该服务器吗？",
+    "statusStopped": "已停止",
+    "statusRunning": "运行中",
+    "statusInstalling": "安装中",
+    "statusError": "错误"
+  },
+  "addServer": {
+    "title": "添加新服务器",
+    "nameLabel": "服务器名称",
+    "namePlaceholder": "我的 Palworld 服务器",
+    "nameRequired": "请输入服务器名称",
+    "pathLabel": "安装路径",
+    "pathHint": "留空则使用默认路径",
+    "cancel": "取消",
+    "create": "创建服务器",
+    "creating": "创建中..."
   },
   "mods": {
     "list": "模组列表",

@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from '@/contexts/LanguageContext';
-import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Server, Package, Activity, Shield, Zap, Globe } from 'lucide-react';
@@ -9,50 +8,19 @@ import Link from 'next/link';
 
 export default function HomePage() {
   const t = useTranslations('app');
+  const th = useTranslations('home');
 
   const features = [
-    {
-      icon: Server,
-      title: '服务器管理',
-      description: '一键启动、停止和重启您的 Palworld 服务器',
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      icon: Package,
-      title: '模组管理',
-      description: '通过 Steam 创意工坊轻松安装和管理模组',
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      icon: Activity,
-      title: '实时监控',
-      description: '监控服务器状态、性能指标和玩家活动',
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      icon: Shield,
-      title: '安全可靠',
-      description: 'JWT 认证和安全的服务器管理接口',
-      color: 'from-orange-500 to-red-500',
-    },
-    {
-      icon: Zap,
-      title: '一键部署',
-      description: '自动化安装 SteamCMD 和服务器文件',
-      color: 'from-yellow-500 to-orange-500',
-    },
-    {
-      icon: Globe,
-      title: '多语言支持',
-      description: '支持中文、英文、日文三种语言',
-      color: 'from-indigo-500 to-purple-500',
-    },
+    { icon: Server, key: 'serverMgmt', color: 'from-blue-500 to-cyan-500' },
+    { icon: Package, key: 'modMgmt', color: 'from-purple-500 to-pink-500' },
+    { icon: Activity, key: 'monitor', color: 'from-green-500 to-emerald-500' },
+    { icon: Shield, key: 'security', color: 'from-orange-500 to-red-500' },
+    { icon: Zap, key: 'deploy', color: 'from-yellow-500 to-orange-500' },
+    { icon: Globe, key: 'i18n', color: 'from-indigo-500 to-purple-500' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Navbar />
-
+    <div>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20" />
@@ -69,19 +37,19 @@ export default function HomePage() {
               {t('description')}
             </p>
             <p className="text-lg text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
-              一个简单、强大的 Web 管理工具，让您轻松管理 Palworld 专用服务器
+              {th('subtitle')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/servers">
                 <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   <Server className="w-5 h-5 mr-2" />
-                  开始管理服务器
+                  {th('getStarted')}
                 </Button>
               </Link>
               <Button size="lg" variant="outline" className="text-lg px-8 py-6">
                 <Package className="w-5 h-5 mr-2" />
-                浏览模组
+                {th('browseMods')}
               </Button>
             </div>
           </div>
@@ -93,28 +61,28 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              强大的功能特性
+              {th('featuresTitle')}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              一站式解决方案，满足您所有的 Palworld 服务器管理需求
+              {th('featuresSubtitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => {
+            {features.map((feature) => {
               const Icon = feature.icon;
               return (
                 <Card
-                  key={index}
+                  key={feature.key}
                   className="border-2 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                 >
                   <CardHeader>
                     <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardTitle className="text-xl">{th(`features.${feature.key}.title`)}</CardTitle>
                     <CardDescription className="text-base">
-                      {feature.description}
+                      {th(`features.${feature.key}.desc`)}
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -129,15 +97,15 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-grid-pattern opacity-10" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            准备好开始了吗？
+            {th('ctaTitle')}
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            立即创建您的第一个 Palworld 服务器，开启精彩的游戏体验
+            {th('ctaSubtitle')}
           </p>
           <Link href="/servers">
             <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
               <Server className="w-5 h-5 mr-2" />
-              创建服务器
+              {th('ctaButton')}
             </Button>
           </Link>
         </div>

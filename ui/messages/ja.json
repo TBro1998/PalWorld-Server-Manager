@@ -4,11 +4,30 @@
     "description": "Palworld専用サーバーを管理する"
   },
   "nav": {
+    "home": "ホーム",
     "dashboard": "ダッシュボード",
     "servers": "サーバー",
     "mods": "MOD",
     "settings": "設定",
     "logout": "ログアウト"
+  },
+  "home": {
+    "subtitle": "Palworld専用サーバーを手軽に管理できる、シンプルで強力なWeb管理ツール",
+    "getStarted": "サーバーを管理する",
+    "browseMods": "MODを見る",
+    "featuresTitle": "強力な機能",
+    "featuresSubtitle": "Palworldサーバー管理のあらゆるニーズに応えるオールインワンソリューション",
+    "ctaTitle": "始める準備はできましたか？",
+    "ctaSubtitle": "今すぐ最初のPalworldサーバーを作成して、素晴らしいゲーム体験を始めましょう",
+    "ctaButton": "サーバーを作成",
+    "features": {
+      "serverMgmt": { "title": "サーバー管理", "desc": "ワンクリックでPalworldサーバーを起動・停止・再起動" },
+      "modMgmt": { "title": "MOD管理", "desc": "Steamワークショップから簡単にMODをインストール・管理" },
+      "monitor": { "title": "リアルタイム監視", "desc": "サーバー状態、パフォーマンス指標、プレイヤーの動きを監視" },
+      "security": { "title": "安全で信頼できる", "desc": "JWT認証と安全なサーバー管理API" },
+      "deploy": { "title": "ワンクリックデプロイ", "desc": "SteamCMDとサーバーファイルを自動インストール" },
+      "i18n": { "title": "多言語対応", "desc": "中国語・英語・日本語の3言語に対応" }
+    }
   },
   "auth": {
     "login": "ログイン",
@@ -20,9 +39,12 @@
   },
   "servers": {
     "list": "サーバーリスト",
+    "title": "サーバー",
     "create": "サーバー作成",
+    "add": "サーバーを追加",
     "name": "サーバー名",
     "port": "ポート",
+    "path": "パス",
     "status": "ステータス",
     "actions": "アクション",
     "start": "起動",
@@ -30,11 +52,31 @@
     "restart": "再起動",
     "delete": "削除",
     "edit": "編集",
-    "logs": "ログ"
+    "logs": "ログ",
+    "install": "インストール",
+    "installing": "インストール中...",
+    "loading": "サーバーを読み込み中...",
+    "empty": "まだサーバーがありません。最初のサーバーを作成して始めましょう。",
+    "confirmDelete": "このサーバーを削除してもよろしいですか？",
+    "statusStopped": "停止中",
+    "statusRunning": "稼働中",
+    "statusInstalling": "インストール中",
+    "statusError": "エラー"
+  },
+  "addServer": {
+    "title": "新しいサーバーを追加",
+    "nameLabel": "サーバー名",
+    "namePlaceholder": "マイPalworldサーバー",
+    "nameRequired": "サーバー名を入力してください",
+    "pathLabel": "インストールパス",
+    "pathHint": "空欄の場合はデフォルトパスを使用します",
+    "cancel": "キャンセル",
+    "create": "サーバーを作成",
+    "creating": "作成中..."
   },
   "mods": {
     "list": "MODリスト",
-    "install": "MODインストール",
+    "install": "MODをインストール",
     "workshopId": "ワークショップID",
     "name": "MOD名",
     "enabled": "有効",

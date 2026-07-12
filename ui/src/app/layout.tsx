@@ -1,6 +1,6 @@
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Providers } from '@/components/Providers';
-import Link from 'next/link';
+import { Navbar } from '@/components/Navbar';
 import './globals.css';
 
 export const metadata = {
@@ -18,19 +18,8 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <Providers>
-            <div className="min-h-screen bg-background">
-              <nav className="border-b">
-                <div className="container mx-auto px-4 py-4">
-                  <div className="flex items-center gap-6">
-                    <Link href="/" className="text-lg font-bold">
-                      Palworld Server Manager
-                    </Link>
-                    <Link href="/servers" className="text-sm hover:underline">
-                      Servers
-                    </Link>
-                  </div>
-                </div>
-              </nav>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+              <Navbar />
               <main>{children}</main>
             </div>
           </Providers>
