@@ -9,7 +9,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/server"
 )
 
-//go:embed all:../../ui/out
+//go:embed all:ui/out
 var staticFiles embed.FS
 
 func main() {

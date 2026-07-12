@@ -18,8 +18,8 @@ cd ui
 bun install
 bun run build  # Creates static export in ui/out/
 
-# 2. Build backend (embeds frontend automatically)
-cd ../server
+# 2. Build backend from project root (embeds frontend automatically)
+cd ..
 go mod download
 go build .
 ```
@@ -35,7 +35,7 @@ bun run lint # ESLint
 
 **Backend Development:**
 ```bash
-cd server
+# Run from project root
 go run .  # Run without building
 go build .
 ```
@@ -49,7 +49,7 @@ The application uses a **three-tier configuration priority**:
 2. Environment variables
 3. Hardcoded defaults (lowest priority)
 
-Configuration is loaded in `server/internal/config/config.go`. If `config.yaml` exists, it takes precedence over environment variables entirely.
+Configuration is loaded in `internal/config/config.go`. If `config.yaml` exists, it takes precedence over environment variables entirely.
 
 **Key Configuration Fields:**
 - `host` / `HOST` - Web interface listen address (default: 127.0.0.1)
@@ -65,16 +65,16 @@ Configuration is loaded in `server/internal/config/config.go`. If `config.yaml` 
 
 ### Backend Architecture (Go + Gin)
 
-**Entry Point:** `server/cmd/server/main.go`
+**Entry Point:** `main.go` (project root)
 - Loads configuration (config.yaml or env vars)
 - Initializes SQLite database with migrations
-- Embeds frontend static files via `//go:embed all:../../ui/out`
+- Embeds frontend static files via `//go:embed all:ui/out`
 - Starts HTTP server
 
 **Directory Structure:**
 ```
-server/
-├── cmd/server/          # Main entry point
+/ (project root)
+├── main.go             # Main entry point
 ├── internal/
 │   ├── api/            # HTTP handlers, routing (REST API endpoints)
 │   ├── config/         # Configuration loading (YAML + env priority)
@@ -84,7 +84,8 @@ server/
 │   ├── auth/           # JWT authentication (to be implemented)
 │   ├── steamcmd/       # SteamCMD integration (to be implemented)
 │   └── i18n/           # Backend i18n (to be implemented)
-└── pkg/                # Public packages (logger, utils - to be implemented)
+├── pkg/                # Public packages (logger, utils - to be implemented)
+└── ui/                 # Frontend (Next.js)
 ```
 
 **Key Components:**
@@ -145,7 +146,7 @@ ui/
 
 ## Database Schema
 
-**Tables** (see `server/internal/database/database.go`):
+**Tables** (see `internal/database/database.go`):
 
 1. **servers** - Palworld server instances
    - Tracks: name, install path, ports (game, query, RCON), status, PID
@@ -179,8 +180,8 @@ The frontend is **statically built and embedded** into the Go binary. This means
 
 ### Adding New API Endpoints
 
-1. Define handler in `server/internal/api/handlers.go`
-2. Register route in `server/internal/api/router.go:RegisterRoutes()`
+1. Define handler in `internal/api/handlers.go`
+2. Register route in `internal/api/router.go:RegisterRoutes()`
 3. Use `protected` group for authenticated endpoints
 4. Return JSON via `c.JSON(status, data)`
 
@@ -194,8 +195,8 @@ The frontend is **statically built and embedded** into the Go binary. This means
 ### Configuration Changes
 
 When adding new config fields:
-1. Update struct in `server/internal/config/config.go` with yaml/env tags
-2. Update `server/config.example.yaml` with example
+1. Update struct in `internal/config/config.go` with yaml/env tags
+2. Update `config.example.yaml` with example
 3. Document in README files if user-facing
 
 ## Important Patterns
