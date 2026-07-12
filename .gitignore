@@ -47,3 +47,4 @@ config.local.yml
 
 .claude/settings.local.json
 /Servers
+.kilo/kilo.jsonc
