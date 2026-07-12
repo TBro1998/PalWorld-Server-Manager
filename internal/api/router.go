@@ -50,12 +50,12 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 		}
 
 		// Mod management
-		mods := protected.Group("/servers/:serverId/mods")
+		mods := protected.Group("/servers/:id/mods")
 		{
 			mods.GET("", r.ListMods)
 			mods.POST("", r.InstallMod)
-			mods.DELETE("/:id", r.UninstallMod)
-			mods.PUT("/:id/toggle", r.ToggleMod)
+			mods.DELETE("/:modId", r.UninstallMod)
+			mods.PUT("/:modId/toggle", r.ToggleMod)
 		}
 
 		// System monitoring
