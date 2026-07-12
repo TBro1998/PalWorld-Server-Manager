@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { Switch } from './ui/switch'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
+import { Eye, EyeOff } from 'lucide-react'
 import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 import type { Server, ConfigParamDef, LaunchArgs } from '@/types/server'
@@ -20,6 +21,17 @@ interface ServerSettingsDialogProps {
 }
 
 const CATEGORIES = ['performances', 'serverManagement', 'features', 'gameBalances'] as const
+
+// OptionSettings keys promoted into the Basics tab. They are edited there (and
+// surfaced on the server card) instead of the generic serverManagement list, so
+// they are filtered out of that category to avoid duplicate editors.
+const BASICS_INI_KEYS = new Set<string>([
+  'ServerPassword',
+  'AdminPassword',
+  'ServerDescription',
+  'RESTAPIEnabled',
+  'RESTAPIPort',
+])
 
 export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSettingsDialogProps) {
   const t = useTranslations('serverConfig')
@@ -76,6 +88,14 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
     }
     return map
   }, [schemaData])
+
+  const paramByKey = useMemo(() => {
+    const map: Record<string, ConfigParamDef> = {}
+    for (const p of schemaData?.params ?? []) map[p.key] = p
+    return map
+  }, [schemaData])
+
+  const iniValue = (key: string) => settings[key] ?? paramByKey[key]?.default ?? ''
 
   // R7 save orchestration: metadata (update) then INI config (updateConfig).
   const saveMutation = useMutation({
@@ -236,13 +256,61 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
                 onChange={(v) => setLA({ port: v })}
                 numOrUndef={numOrUndef}
               />
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-serverpassword">{paramLabel('ServerPassword')}</Label>
+                <PasswordInput
+                  id="settings-serverpassword"
+                  value={iniValue('ServerPassword')}
+                  onChange={(v) => setSetting('ServerPassword', v)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-adminpassword">{paramLabel('AdminPassword')}</Label>
+                <PasswordInput
+                  id="settings-adminpassword"
+                  value={iniValue('AdminPassword')}
+                  onChange={(v) => setSetting('AdminPassword', v)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-serverdesc">{paramLabel('ServerDescription')}</Label>
+                <Textarea
+                  id="settings-serverdesc"
+                  value={iniValue('ServerDescription')}
+                  onChange={(e) => setSetting('ServerDescription', e.target.value)}
+                  className="min-h-[72px]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
+                <Label>{paramLabel('RESTAPIEnabled')}</Label>
+                <Switch
+                  checked={iniValue('RESTAPIEnabled') === 'True'}
+                  onCheckedChange={(c) => setSetting('RESTAPIEnabled', c ? 'True' : 'False')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-restport">{paramLabel('RESTAPIPort')}</Label>
+                <Input
+                  id="settings-restport"
+                  type="number"
+                  step="1"
+                  value={iniValue('RESTAPIPort')}
+                  onChange={(e) => setSetting('RESTAPIPort', e.target.value)}
+                  className="max-w-[220px]"
+                />
+              </div>
             </div>
           ) : isLoading ? (
             <p className="text-sm text-muted-foreground py-6 text-center">{t('loading')}</p>
           ) : CATEGORIES.includes(tab as (typeof CATEGORIES)[number]) ? (
             <div className="space-y-3">
               {(paramsByCategory[tab] ?? [])
-                .filter((p) => p.key !== 'ServerName')
+                .filter((p) => p.key !== 'ServerName' && !BASICS_INI_KEYS.has(p.key))
                 .map((p) => (
                 <div key={p.key} className="flex items-start justify-between gap-4 border-b border-dashed pb-2">
                   <div className="min-w-0">
@@ -295,6 +363,38 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// PasswordInput is a text input masked by default with a show/hide toggle.
+function PasswordInput({
+  id,
+  value,
+  onChange,
+}: {
+  id?: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [show, setShow] = useState(false)
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="pr-9"
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setShow((s) => !s)}
+        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground"
+      >
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
   )
 }
 

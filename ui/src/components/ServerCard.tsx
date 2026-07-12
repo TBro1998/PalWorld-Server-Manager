@@ -1,11 +1,13 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal, Eye, EyeOff } from 'lucide-react'
+import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 
 interface ServerCardProps {
@@ -38,6 +40,25 @@ const statusConfig = {
   error: { variant: 'destructive' as const, key: 'statusError' },
 }
 
+// SecretValue renders a password masked by default with a show/hide toggle.
+// Shows the `empty` placeholder when no value is set.
+function SecretValue({ value, empty }: { value: string; empty: string }) {
+  const [show, setShow] = useState(false)
+  if (!value) return <span className="text-gray-400">{empty}</span>
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="font-mono">{show ? value : '••••••'}</span>
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+      >
+        {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </span>
+  )
+}
+
 export function ServerCard({
   server,
   onInstall,
@@ -50,7 +71,18 @@ export function ServerCard({
   onInstallLogs,
 }: ServerCardProps) {
   const t = useTranslations('servers')
+  const tc = useTranslations('serverConfig')
   const status = statusConfig[server.status]
+
+  // Pull the INI config so the card can surface the basics-tab fields. Only
+  // meaningful once installed; backend returns registry defaults otherwise.
+  const { data: config } = useQuery({
+    queryKey: ['serverConfig', server.id],
+    queryFn: async () => (await serversApi.getConfig(server.id)).data,
+    enabled: server.installed,
+    staleTime: 30_000,
+  })
+  const settings = config?.settings ?? {}
   const idle = server.status === 'stopped' || server.status === 'error'
   const needsInstall =
     !server.installed &&
@@ -74,6 +106,28 @@ export function ServerCard({
           <div>
             <span className="font-medium">{t('port')}:</span> {parsePort(server.launch_args)}
           </div>
+          {config && (
+            <>
+              <div>
+                <span className="font-medium">{tc('params.ServerDescription.label')}:</span>{' '}
+                {settings.ServerDescription || <span className="text-gray-400">{t('notSet')}</span>}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium">{tc('params.ServerPassword.label')}:</span>{' '}
+                <SecretValue value={settings.ServerPassword ?? ''} empty={t('notSet')} />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium">{tc('params.AdminPassword.label')}:</span>{' '}
+                <SecretValue value={settings.AdminPassword ?? ''} empty={t('notSet')} />
+              </div>
+              <div>
+                <span className="font-medium">REST API:</span>{' '}
+                {settings.RESTAPIEnabled === 'True'
+                  ? `${t('enabled')} · ${t('port')} ${settings.RESTAPIPort || '8212'}`
+                  : t('disabled')}
+              </div>
+            </>
+          )}
           {needsInstall && (
             <div className="text-amber-600 dark:text-amber-500 font-medium">
               {t('needsInstall')}
