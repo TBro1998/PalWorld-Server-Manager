@@ -1,0 +1,46 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+*.log
+
+# SteamCMD
+steamcmd/
+
+# Palworld server files
+palworld/
+
+# Config
+config.yaml
+config.local.yml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

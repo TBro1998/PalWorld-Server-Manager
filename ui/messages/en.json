@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "Palworld Server Manager",
+    "description": "Manage your Palworld dedicated servers"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "servers": "Servers",
+    "mods": "Mods",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign In",
+    "registerButton": "Sign Up"
+  },
+  "servers": {
+    "list": "Server List",
+    "create": "Create Server",
+    "name": "Server Name",
+    "port": "Port",
+    "status": "Status",
+    "actions": "Actions",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "delete": "Delete",
+    "edit": "Edit",
+    "logs": "Logs"
+  },
+  "mods": {
+    "list": "Mod List",
+    "install": "Install Mod",
+    "workshopId": "Workshop ID",
+    "name": "Mod Name",
+    "enabled": "Enabled",
+    "disable": "Disable",
+    "enable": "Enable",
+    "uninstall": "Uninstall"
+  }
+}

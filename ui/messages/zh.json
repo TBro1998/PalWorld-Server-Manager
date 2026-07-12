@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "幻兽帕鲁服务器管理器",
+    "description": "管理您的幻兽帕鲁专用服务器"
+  },
+  "nav": {
+    "dashboard": "控制台",
+    "servers": "服务器",
+    "mods": "模组",
+    "settings": "设置",
+    "logout": "登出"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "username": "用户名",
+    "password": "密码",
+    "loginButton": "登录",
+    "registerButton": "注册"
+  },
+  "servers": {
+    "list": "服务器列表",
+    "create": "创建服务器",
+    "name": "服务器名称",
+    "port": "端口",
+    "status": "状态",
+    "actions": "操作",
+    "start": "启动",
+    "stop": "停止",
+    "restart": "重启",
+    "delete": "删除",
+    "edit": "编辑",
+    "logs": "日志"
+  },
+  "mods": {
+    "list": "模组列表",
+    "install": "安装模组",
+    "workshopId": "创意工坊 ID",
+    "name": "模组名称",
+    "enabled": "已启用",
+    "disable": "禁用",
+    "enable": "启用",
+    "uninstall": "卸载"
+  }
+}

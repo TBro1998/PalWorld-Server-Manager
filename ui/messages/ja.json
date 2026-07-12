@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "Palworldサーバーマネージャー",
+    "description": "Palworld専用サーバーを管理する"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "servers": "サーバー",
+    "mods": "MOD",
+    "settings": "設定",
+    "logout": "ログアウト"
+  },
+  "auth": {
+    "login": "ログイン",
+    "register": "登録",
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "loginButton": "ログイン",
+    "registerButton": "登録"
+  },
+  "servers": {
+    "list": "サーバーリスト",
+    "create": "サーバー作成",
+    "name": "サーバー名",
+    "port": "ポート",
+    "status": "ステータス",
+    "actions": "アクション",
+    "start": "起動",
+    "stop": "停止",
+    "restart": "再起動",
+    "delete": "削除",
+    "edit": "編集",
+    "logs": "ログ"
+  },
+  "mods": {
+    "list": "MODリスト",
+    "install": "MODインストール",
+    "workshopId": "ワークショップID",
+    "name": "MOD名",
+    "enabled": "有効",
+    "disable": "無効化",
+    "enable": "有効化",
+    "uninstall": "アンインストール"
+  }
+}
