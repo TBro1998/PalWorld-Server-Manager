@@ -42,8 +42,13 @@ func CheckAndInstall(steamcmdPath string) error {
 	// A freshly downloaded SteamCMD is only a bootstrap: on Windows it is a bare
 	// steamcmd.exe and on Linux a shell wrapper. It must be run once so it can
 	// self-update and unpack its full package before it can install game servers.
+	//
+	// This first run is best-effort: after self-updating, SteamCMD relaunches
+	// itself and the bootstrap process commonly exits non-zero (e.g. code 7 on
+	// Windows) even though the update succeeded. Treat a failure here as a
+	// warning — real problems will surface on the actual app install.
 	if err := runInitialUpdate(execPath); err != nil {
-		return fmt.Errorf("failed to run initial steamcmd update: %w", err)
+		fmt.Printf("Warning: initial SteamCMD update exited abnormally (%v); continuing\n", err)
 	}
 
 	fmt.Println("SteamCMD installed successfully")
