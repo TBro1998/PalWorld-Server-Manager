@@ -20,7 +20,7 @@ type Router struct {
 // NewRouter creates a new API router
 func NewRouter(db *sql.DB, cfg *config.Config) *Router {
 	streams := logger.NewStreamManager()
-	pm := process.NewManager(db, streams, cfg.LogDir)
+	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath)
 	return &Router{
 		db:      db,
 		config:  cfg,

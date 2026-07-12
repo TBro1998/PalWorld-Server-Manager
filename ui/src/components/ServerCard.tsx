@@ -40,7 +40,12 @@ export function ServerCard({
 }: ServerCardProps) {
   const t = useTranslations('servers')
   const status = statusConfig[server.status]
-  const needsInstall = !server.installed && server.status !== 'installing'
+  const idle = server.status === 'stopped' || server.status === 'error'
+  const needsInstall =
+    !server.installed &&
+    server.status !== 'installing' &&
+    server.status !== 'running'
+  const hasError = server.status === 'error' && !!server.last_error
 
   return (
     <Card>
@@ -63,11 +68,20 @@ export function ServerCard({
               {t('needsInstall')}
             </div>
           )}
+          {hasError && (
+            <div
+              className="text-red-600 dark:text-red-500 break-all"
+              title={server.last_error}
+            >
+              <span className="font-medium">{t('lastErrorLabel')}:</span>{' '}
+              {server.last_error}
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>
         <div className="flex gap-2 flex-wrap">
-          {server.status === 'stopped' && (
+          {idle && (
             <>
               <Button
                 size="sm"

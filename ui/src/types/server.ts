@@ -7,6 +7,7 @@ export interface Server {
   rcon_port: number
   rcon_enabled: boolean
   status: 'stopped' | 'running' | 'installing' | 'error'
+  last_error?: string
   pid: number
   launch_args: string
   installed: boolean

@@ -120,3 +120,39 @@ API StreamLogs
 ## 6. 数据库
 
 现有 servers 表已含 `status`、`pid` 字段，无需迁移。状态取值：`stopped` / `running` / `installing` / `error`。
+
+---
+
+## 7. 状态模型重构 v2：存事实，推导状态（2026-07-12）
+
+### 背景
+把运行时瞬态（`running` / `installing`）当作**权威状态**写入 DB，导致后端在安装过程中被关闭后 DB 永久停留 `installing`、前端卡死。`ReconcileOnStartup` 只能对 `running` 用 PID 存活兜底，对 `installing` 无解——因为安装子进程随后端一起死亡，没有可校验的持久进程。根因是把"活状态"固化进了持久层。
+
+### 新模型
+- **持久化的只有"事实"**：
+  - `pid`：上次由本工具启动的进程号（0 表示无）。
+  - `installed`：磁盘事实的缓存（launcher 是否存在）。
+  - `last_error`（**新增列**）：最近一次安装/启动失败信息；成功启动/安装/停止即清空。
+- **`status` 不再持久化为真值**，由 Manager 按内存态 + 事实**派生**：
+  1. 在内存 `installing` 集合 → `installing`
+  2. 在内存 `running` 表 → `running`
+  3. `last_error` 非空 → `error`
+  4. 否则 → `stopped`
+- **install 编排移入 Manager**：用内存 `installing` 集合跟踪；后端重启后不存在"安装中"记录，卡死**结构性消失**，无需对 installing 做任何 reconcile。
+- **running 按 PID 接管**：启动时对 `pid` 存活的记录登记为 `running` 并起轮询 monitor（非子进程无法 `Wait`，改用 `isProcessAlive` 轮询）；不存活则清零 pid。
+
+### 契约变化
+- **DB**：新增列 `last_error TEXT DEFAULT ''`（走 `addColumnIfMissing`，additive）。`status` 列保留但代码不再读写作为真值（旧的 stuck `installing` 行因 pid=0 且 last_error 空，自动派生为 stopped）。
+- **models.Server**：新增 `LastError string`；`Status` 字段仍在 JSON 输出中，但由派生填充而非 DB 扫描。
+- **process.Manager**：
+  - `NewManager(db, streams, logDir, steamcmdPath)`（新增 steamcmdPath）。
+  - `running map[int64]*procHandle`（procHandle 含 `cmd *exec.Cmd`（nil 表示接管的孤儿）与 `pid int`）。
+  - 新增 `installing map[int64]struct{}`、`IsInstalling(id)`、`DeriveStatus(id, lastError)`、`InstallServer(id, out io.Writer) error`。
+  - `StartServer`/`StopServer` 只持久化事实（pid、last_error），不再写 status。
+  - `ReconcileOnStartup` 改为**按 PID 接管**（存活登记 running + 轮询 monitor；死亡清零 pid），删除对 installing 的处理。
+- **API**：`ListServers`/`GetServer` 读 `last_error` 后派生 status 填入响应；`DeleteServer`/`UpdateServer`/`UpdateServerConfig` 的"必须 stopped"守卫改用派生状态；`InstallServer` 允许在 `stopped` 或 `error`（即非 installing/非 running）下发起，且不再写 status='installing'。
+- **前端**：`Server` 增加 `last_error?: string`；`error` 与 `stopped` 一样可操作（显示安装/启动/编辑/配置）；`error` 时在卡片展示 `last_error`。安装按钮在 `!installed` 且非 running/installing 时显示（覆盖 error 重试）。
+
+### 兼容性与回滚
+- 迁移 additive，旧库直接可用；旧 stuck 行自动愈合。
+- 若回滚，可恢复到写 status 的旧逻辑；`last_error` 列留存无害。

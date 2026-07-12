@@ -2,16 +2,30 @@ package process
 
 import (
 	"fmt"
-	"os/exec"
+	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 )
 
-// monitor waits for a server process to exit, then updates the database and
-// clears the running map. It also closes the log capture. Runs in its own
-// goroutine, one per started server.
-func (m *Manager) monitor(serverID int64, cmd *exec.Cmd, capture *logger.Capture) {
-	err := cmd.Wait()
+// pollInterval is how often adopted (cmd==nil) processes are polled for exit.
+const pollInterval = 3 * time.Second
+
+// monitor waits for a server process to exit, then clears the recorded pid and
+// removes the server from the running map. It also closes the log capture. Runs
+// in its own goroutine, one per started (or adopted) server. When h.cmd is nil
+// the process was adopted by PID and cannot be Wait()ed on, so its liveness is
+// polled instead.
+func (m *Manager) monitor(serverID int64, h *procHandle, capture *logger.Capture) {
+	if h.cmd != nil {
+		if err := h.cmd.Wait(); err != nil {
+			// Non-zero exit or signal-terminated (expected on graceful stop).
+			fmt.Printf("server %d process exited: %v\n", serverID, err)
+		}
+	} else {
+		for isProcessAlive(h.pid) {
+			time.Sleep(pollInterval)
+		}
+	}
 
 	m.mu.Lock()
 	delete(m.running, serverID)
@@ -21,66 +35,56 @@ func (m *Manager) monitor(serverID int64, cmd *exec.Cmd, capture *logger.Capture
 		capture.Close()
 	}
 
-	if err != nil {
-		// Non-zero exit or signal-terminated (expected on graceful stop).
-		fmt.Printf("server %d process exited: %v\n", serverID, err)
-	}
-
-	if updErr := m.updateStatus(serverID, StatusStopped, 0); updErr != nil {
-		fmt.Printf("warning: failed to mark server %d stopped: %v\n", serverID, updErr)
+	if err := m.setPID(serverID, 0); err != nil {
+		fmt.Printf("warning: failed to clear pid for server %d: %v\n", serverID, err)
 	}
 }
 
-// ReconcileOnStartup corrects stale state left over from a previous run of the
-// application. Any server marked running whose recorded PID is no longer alive
-// is reset to stopped. Additionally, any server still marked installing is an
-// orphan: the SteamCMD subprocess died with the previous application process
-// and cannot survive a restart, so it is reset to stopped unconditionally.
-// Should be called once during startup.
+// ReconcileOnStartup adopts server processes that survived a previous run of
+// the application, using persisted facts only. Any server with a recorded PID
+// that is still alive is re-registered as running with a polling monitor (an
+// orphan cannot be Wait()ed on); a recorded PID that is no longer alive is
+// cleared to 0. Installations are never reconciled: they are tracked purely in
+// memory, so a restart mid-install leaves no stuck record — such a server has
+// pid=0 and an empty last_error and therefore derives as "stopped", allowing a
+// clean retry. Should be called once during startup.
 func (m *Manager) ReconcileOnStartup() error {
-	rows, err := m.db.Query(`SELECT id, pid FROM servers WHERE status = ?`, StatusRunning)
+	rows, err := m.db.Query(`SELECT id, pid FROM servers WHERE pid > 0`)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	type stale struct {
+	type entry struct {
 		id  int64
 		pid int
 	}
-	var toReset []stale
-
+	var entries []entry
 	for rows.Next() {
-		var id int64
-		var pid int
-		if err := rows.Scan(&id, &pid); err != nil {
+		var e entry
+		if err := rows.Scan(&e.id, &e.pid); err != nil {
 			return err
 		}
-		if pid <= 0 || !isProcessAlive(pid) {
-			toReset = append(toReset, stale{id: id, pid: pid})
-		}
+		entries = append(entries, e)
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
 
-	for _, s := range toReset {
-		if err := m.updateStatus(s.id, StatusStopped, 0); err != nil {
-			return err
+	for _, e := range entries {
+		if isProcessAlive(e.pid) {
+			handle := &procHandle{cmd: nil, pid: e.pid}
+			m.mu.Lock()
+			m.running[e.id] = handle
+			m.mu.Unlock()
+			go m.monitor(e.id, &procHandle{cmd: nil, pid: e.pid}, nil)
+			fmt.Printf("reconciled server %d: adopted running process (pid %d)\n", e.id, e.pid)
+		} else {
+			if err := m.setPID(e.id, 0); err != nil {
+				return err
+			}
+			fmt.Printf("reconciled server %d: cleared stale pid %d (not alive)\n", e.id, e.pid)
 		}
-		fmt.Printf("reconciled server %d: marked stopped (pid %d not alive)\n", s.id, s.pid)
-	}
-
-	// Installs never survive an application restart: the SteamCMD subprocess died
-	// with the previous process, so any server still marked "installing" is
-	// orphaned. Reset it to stopped unconditionally so the user can retry.
-	// ReconcileInstalled (called next in server startup) then recomputes the
-	// `installed` flag from on-disk reality, so a partial install shows as
-	// "not installed" rather than stuck.
-	if _, err := m.db.Exec(
-		`UPDATE servers SET status = ?, pid = 0, updated_at = CURRENT_TIMESTAMP WHERE status = ?`,
-		StatusStopped, StatusInstalling); err != nil {
-		return err
 	}
 	return nil
 }

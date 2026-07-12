@@ -82,6 +82,7 @@
     "statusError": "Error",
     "config": "Config",
     "needsInstall": "Server files not installed",
+    "lastErrorLabel": "Last error",
     "logsTitle": "Logs",
     "logsEmpty": "No logs yet",
     "logsLive": "Live",

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // InstallPalworldServer downloads and installs Palworld dedicated server using SteamCMD.
@@ -18,6 +19,14 @@ import (
 func InstallPalworldServer(installPath string, steamCmdPath string, out io.Writer) error {
 	if out == nil {
 		out = io.Discard
+	}
+
+	// SteamCMD's +force_install_dir resolves a relative path against SteamCMD's
+	// own working directory, not ours, so a relative installPath would place the
+	// server files in the wrong location. Force an absolute path here to stay
+	// correct even for legacy rows that stored a relative path.
+	if abs, err := filepath.Abs(installPath); err == nil {
+		installPath = abs
 	}
 
 	// Create install directory if it doesn't exist

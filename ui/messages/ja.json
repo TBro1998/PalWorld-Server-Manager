@@ -82,6 +82,7 @@
     "statusError": "エラー",
     "config": "設定",
     "needsInstall": "サーバーファイル未インストール",
+    "lastErrorLabel": "前回のエラー",
     "logsTitle": "ログ",
     "logsEmpty": "ログがありません",
     "logsLive": "ライブ",

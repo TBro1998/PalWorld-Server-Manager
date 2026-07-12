@@ -11,10 +11,11 @@ type Server struct {
 	QueryPort   int       `json:"query_port" db:"query_port"`
 	RCONPort    int       `json:"rcon_port" db:"rcon_port"`
 	RCONEnabled bool      `json:"rcon_enabled" db:"rcon_enabled"`
-	Status      string    `json:"status" db:"status"` // running, stopped, installing
+	Status      string    `json:"status" db:"status"` // derived value (running/stopped/installing/error); NOT persisted
 	PID         int       `json:"pid" db:"pid"`
-	LaunchArgs  string    `json:"launch_args" db:"launch_args"` // JSON-encoded palconfig.LaunchArgs
-	Installed   bool      `json:"installed" db:"installed"`     // server files present at install_path
+	LaunchArgs  string    `json:"launch_args" db:"launch_args"`         // JSON-encoded palconfig.LaunchArgs
+	Installed   bool      `json:"installed" db:"installed"`             // server files present at install_path
+	LastError   string    `json:"last_error,omitempty" db:"last_error"` // last install/start failure; cleared on success
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }

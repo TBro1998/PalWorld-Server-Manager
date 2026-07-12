@@ -82,6 +82,7 @@
     "statusError": "错误",
     "config": "配置",
     "needsInstall": "未安装服务端文件",
+    "lastErrorLabel": "上次错误",
     "logsTitle": "运行日志",
     "logsEmpty": "暂无日志",
     "logsLive": "实时",
