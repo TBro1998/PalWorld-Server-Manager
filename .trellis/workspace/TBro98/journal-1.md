@@ -1,4 +1,4 @@
-# Journal - ZhuZhengHan (Part 1)
+# Journal - TBro98 (Part 1)
 
 > AI development session journal
 > Started: 2026-07-12

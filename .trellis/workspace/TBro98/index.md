@@ -1,4 +1,4 @@
-# Workspace Index - ZhuZhengHan
+# Workspace Index - TBro98
 
 > Journal tracking for AI development sessions.
 
