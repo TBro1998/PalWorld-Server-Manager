@@ -143,6 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "Worker threads",
+      "queryPort": "Query port (-QueryPort)",
       "publicLobby": "Community server (-publiclobby)"
     },
     "params": {

@@ -143,6 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "工作线程数",
+      "queryPort": "查询端口 (-QueryPort)",
       "publicLobby": "社区服务器 (-publiclobby)"
     },
     "params": {

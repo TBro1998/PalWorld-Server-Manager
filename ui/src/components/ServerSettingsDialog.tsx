@@ -263,6 +263,7 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
               <LaunchToggle label={t('launch.noAsyncLoadingThread')} checked={!!launchArgs.noAsyncLoadingThread} onChange={(c) => setLA({ noAsyncLoadingThread: c })} />
               <LaunchToggle label={t('launch.useMultithreadForDS')} checked={!!launchArgs.useMultithreadForDS} onChange={(c) => setLA({ useMultithreadForDS: c })} />
               <LaunchNumber label={t('launch.numberOfWorkerThreadsServer')} value={launchArgs.numberOfWorkerThreadsServer} onChange={(v) => setLA({ numberOfWorkerThreadsServer: v })} numOrUndef={numOrUndef} />
+              <LaunchNumber label={t('launch.queryPort')} value={launchArgs.queryPort} onChange={(v) => setLA({ queryPort: v })} numOrUndef={numOrUndef} placeholder="27015" />
               <LaunchToggle label={t('launch.publicLobby')} checked={!!launchArgs.publicLobby} onChange={(c) => setLA({ publicLobby: c })} />
             </div>
           ) : (
@@ -311,11 +312,13 @@ function LaunchNumber({
   value,
   onChange,
   numOrUndef,
+  placeholder,
 }: {
   label: string
   value: number | undefined
   onChange: (v: number | undefined) => void
   numOrUndef: (v: string) => number | undefined
+  placeholder?: string
 }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
@@ -323,6 +326,7 @@ function LaunchNumber({
       <Input
         type="number"
         value={value ?? ''}
+        placeholder={placeholder}
         onChange={(e) => onChange(numOrUndef(e.target.value))}
         className="max-w-[220px]"
       />

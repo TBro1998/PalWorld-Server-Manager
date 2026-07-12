@@ -32,6 +32,7 @@ export interface LaunchArgs {
   publicLobby?: boolean
   publicIP?: string
   publicPort?: number
+  queryPort?: number
   logFormat?: string
 }
 

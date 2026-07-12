@@ -143,6 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "ワーカースレッド数",
+      "queryPort": "クエリポート (-QueryPort)",
       "publicLobby": "コミュニティ鯖 (-publiclobby)"
     },
     "params": {

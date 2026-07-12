@@ -22,6 +22,7 @@ type LaunchArgs struct {
 	PublicLobby           bool   `json:"publicLobby,omitempty"`
 	PublicIP              string `json:"publicIP,omitempty"`
 	PublicPort            *int   `json:"publicPort,omitempty"`
+	QueryPort             *int   `json:"queryPort,omitempty"` // Steam query port, defaults to 27015 when unset
 	LogFormat             string `json:"logFormat,omitempty"` // "", "text", "json"
 }
 
@@ -77,6 +78,9 @@ func (a LaunchArgs) ToArgs() []string {
 	}
 	if a.PublicPort != nil {
 		args = append(args, "-publicport="+strconv.Itoa(*a.PublicPort))
+	}
+	if a.QueryPort != nil {
+		args = append(args, "-QueryPort="+strconv.Itoa(*a.QueryPort))
 	}
 	if a.LogFormat != "" {
 		args = append(args, "-logformat="+a.LogFormat)
