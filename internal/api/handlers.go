@@ -106,10 +106,12 @@ func (r *Router) CreateServer(c *gin.Context) {
 	// (SteamCMD, launch cwd, config I/O) always see a stable, absolute location.
 	installPath := absInstallPath(req.InstallPath)
 
+	// Status is never persisted as a truth source (it is derived); the status
+	// column keeps its schema DEFAULT and is omitted here. Only facts are stored.
 	now := time.Now()
 	result, err := r.db.Exec(
-		"INSERT INTO servers (name, install_path, port, query_port, rcon_port, rcon_enabled, status, pid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		req.Name, installPath, 8211, 27015, 25575, false, "stopped", 0, now, now,
+		"INSERT INTO servers (name, install_path, port, query_port, rcon_port, rcon_enabled, pid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		req.Name, installPath, 8211, 27015, 25575, false, 0, now, now,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
