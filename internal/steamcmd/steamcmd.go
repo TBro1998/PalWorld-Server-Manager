@@ -54,8 +54,16 @@ func CheckAndInstall(steamcmdPath string) error {
 // its own update. Output is streamed to the manager console so the (potentially
 // slow) first-run download is visible.
 func runInitialUpdate(execPath string) error {
-	cmd := exec.Command(execPath, "+quit")
-	cmd.Dir = filepath.Dir(execPath)
+	// Resolve to an absolute path: we set cmd.Dir below, and Go interprets a
+	// relative Path against cmd.Dir, which would look for steamcmd inside its
+	// own directory (steamcmd/steamcmd.exe) and fail.
+	absExec, err := filepath.Abs(execPath)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(absExec, "+quit")
+	cmd.Dir = filepath.Dir(absExec)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
