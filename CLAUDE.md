@@ -108,17 +108,15 @@ Configuration is loaded in `internal/config/config.go`. If `config.yaml` exists,
 ```
 ui/
 ├── src/
-│   ├── app/[locale]/   # App Router pages with i18n routing
-│   ├── components/     # React components (to be built)
+│   ├── app/            # App Router pages (direct routing, no locale prefix)
+│   ├── components/     # React components
+│   ├── contexts/       # React contexts (LanguageContext for i18n)
 │   ├── lib/
 │   │   ├── api.ts     # Axios client with JWT interceptors
 │   │   └── utils.ts   # Utilities (cn helper for Tailwind)
-│   ├── hooks/          # Custom React hooks (to be built)
-│   ├── stores/         # Zustand stores (to be built)
-│   ├── types/          # TypeScript type definitions (to be built)
-│   └── i18n/
-│       ├── routing.ts  # next-intl routing config
-│       └── request.ts  # i18n request handler
+│   ├── hooks/          # Custom React hooks
+│   ├── stores/         # Zustand stores
+│   └── types/          # TypeScript type definitions
 └── messages/           # Translation files (en.json, zh.json, ja.json)
 ```
 
@@ -127,7 +125,7 @@ ui/
 - **UI**: shadcn/ui + Radix UI components with Tailwind CSS v4
 - **State**: Zustand for global state, TanStack Query for server state
 - **Forms**: react-hook-form + zod validation
-- **i18n**: next-intl with locale routing (`[locale]` dynamic segment)
+- **i18n**: Custom React Context (`LanguageContext`) with UI-based language switching (no URL locale prefix)
 
 **API Client** (`ui/src/lib/api.ts`):
 - Axios instance with base URL `/api`
@@ -137,10 +135,14 @@ ui/
 
 ### Multi-language System
 
-**Frontend**: next-intl with three supported locales (en, zh, ja)
-- Routing: `/[locale]/...` pattern (e.g., `/zh/`, `/en/`, `/ja/`)
-- Messages: `ui/messages/{locale}.json` files
-- Static generation: all locales pre-rendered at build time
+**Frontend**: Custom React Context-based i18n with three supported locales (en, zh, ja)
+- Implementation: `LanguageContext` in `ui/src/contexts/LanguageContext.tsx`
+- Language switching: UI-based switcher component (no URL locale prefix)
+- Messages: `ui/messages/{locale}.json` files loaded dynamically
+- Storage: User's language preference saved in localStorage
+- Default locale: Chinese (zh)
+
+**Key Pattern**: Unlike typical next-intl implementations, this project uses in-app language switching to maintain clean URLs without locale prefixes (e.g., `/servers` instead of `/zh/servers`).
 
 **Backend**: Planned i18n for API error messages based on Accept-Language header
 
@@ -187,10 +189,25 @@ The frontend is **statically built and embedded** into the Go binary. This means
 
 ### Adding New Frontend Pages
 
-1. Create page in `ui/src/app/[locale]/your-page/page.tsx`
-2. Use `useTranslations()` hook for i18n
-3. Add translations to `ui/messages/{en,zh,ja}.json`
-4. API calls via `apiClient` from `ui/src/lib/api.ts`
+1. Create page in `ui/src/app/your-page/page.tsx` (no `[locale]` directory needed)
+2. Add `'use client'` directive if using client-side features
+3. Use `useTranslations()` hook from `@/contexts/LanguageContext` for i18n
+4. Add translations to `ui/messages/{en,zh,ja}.json`
+5. API calls via `apiClient` from `ui/src/lib/api.ts`
+6. Rebuild frontend: `cd ui && bun run build`
+
+**Example page structure:**
+```typescript
+'use client'
+
+import { useTranslations } from '@/contexts/LanguageContext';
+
+export default function YourPage() {
+  const t = useTranslations('yourSection');
+  
+  return <div>{t('key')}</div>;
+}
+```
 
 ### Configuration Changes
 

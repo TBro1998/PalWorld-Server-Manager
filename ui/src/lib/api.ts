@@ -1,9 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
-
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -37,15 +34,15 @@ apiClient.interceptors.response.use(
 import type { Server, CreateServerData, UpdateServerData } from '@/types/server'
 
 export const serversApi = {
-  list: () => apiClient.get<Server[]>('/servers'),
-  create: (data: CreateServerData) => apiClient.post<Server>('/servers', data),
-  get: (id: number) => apiClient.get<Server>(`/servers/${id}`),
-  update: (id: number, data: UpdateServerData) => apiClient.put<Server>(`/servers/${id}`, data),
-  delete: (id: number) => apiClient.delete(`/servers/${id}`),
-  install: (id: number) => apiClient.post(`/servers/${id}/install`),
-  start: (id: number) => apiClient.post(`/servers/${id}/start`),
-  stop: (id: number) => apiClient.post(`/servers/${id}/stop`),
-  restart: (id: number) => apiClient.post(`/servers/${id}/restart`),
+  list: () => apiClient.get<Server[]>('/api/servers'),
+  create: (data: CreateServerData) => apiClient.post<Server>('/api/servers', data),
+  get: (id: number) => apiClient.get<Server>(`/api/servers/${id}`),
+  update: (id: number, data: UpdateServerData) => apiClient.put<Server>(`/api/servers/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/api/servers/${id}`),
+  install: (id: number) => apiClient.post(`/api/servers/${id}/install`),
+  start: (id: number) => apiClient.post(`/api/servers/${id}/start`),
+  stop: (id: number) => apiClient.post(`/api/servers/${id}/stop`),
+  restart: (id: number) => apiClient.post(`/api/servers/${id}/restart`),
 }
 
 export default apiClient;
