@@ -7,6 +7,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/database"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/server"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
 )
 
 //go:embed all:ui/out
@@ -17,6 +18,12 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Check and install SteamCMD if not present
+	log.Println("Checking SteamCMD installation...")
+	if err := steamcmd.CheckAndInstall(cfg.SteamCMDPath); err != nil {
+		log.Fatalf("Failed to setup SteamCMD: %v", err)
 	}
 
 	// Initialize database
