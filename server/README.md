@@ -57,7 +57,7 @@ go build .
 
 ```bash
 cd ../ui
-npm run build
+pnpm run build
 ```
 
 然后构建 Go 二进制文件 - 它将自动包含前端。

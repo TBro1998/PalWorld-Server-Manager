@@ -15,8 +15,8 @@ PalWorld Server Manager (幻兽帕鲁服务器开服工具) is a web-based manag
 ```bash
 # 1. Build frontend first
 cd ui
-npm install
-npm run build  # Creates static export in ui/out/
+pnpm install
+pnpm run build  # Creates static export in ui/out/
 
 # 2. Build backend (embeds frontend automatically)
 cd ../server
@@ -29,8 +29,8 @@ go build .
 **Frontend Development:**
 ```bash
 cd ui
-npm run dev  # Development server on http://localhost:3000
-npm run lint # ESLint
+pnpm run dev  # Development server on http://localhost:3000
+pnpm run lint # ESLint
 ```
 
 **Backend Development:**
@@ -164,7 +164,7 @@ ui/
 
 The frontend is **statically built and embedded** into the Go binary. This means:
 
-1. Frontend changes require rebuilding: `cd ui && npm run build`
+1. Frontend changes require rebuilding: `cd ui && pnpm run build`
 2. The Go binary reads from `embed.FS`, not disk (after build)
 3. API calls use relative paths (`/api/*`) - no CORS needed
 4. Frontend routing handled by Next.js static export; API routing by Gin

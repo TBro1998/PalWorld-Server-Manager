@@ -32,8 +32,8 @@ ui/
 ## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
@@ -41,7 +41,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 This creates a static export in the `out/` directory, which is embedded into the Go binary.
