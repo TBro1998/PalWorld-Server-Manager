@@ -42,6 +42,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			servers.GET("/:id", r.GetServer)
 			servers.PUT("/:id", r.UpdateServer)
 			servers.DELETE("/:id", r.DeleteServer)
+			servers.POST("/:id/install", r.InstallServer)
 			servers.POST("/:id/start", r.StartServer)
 			servers.POST("/:id/stop", r.StopServer)
 			servers.POST("/:id/restart", r.RestartServer)
