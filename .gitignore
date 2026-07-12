@@ -45,4 +45,4 @@ config.local.yml
 *.swo
 *~
 
-.claude
+.claude/settings.local.json
