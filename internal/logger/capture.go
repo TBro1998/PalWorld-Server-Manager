@@ -17,8 +17,20 @@ const (
 	maxLogFiles = 10
 )
 
-// Capture implements io.Writer, persisting a server's stdout/stderr to a
-// rotating log file. It is safe for concurrent use.
+// Log kinds partition a server's output into independent streams so the game
+// server's runtime logs and SteamCMD's install/update logs never mix. Each kind
+// has its own on-disk directory and its own live SSE channel.
+const (
+	// KindServer is the running Palworld server's game log (tailed from the
+	// Unreal Engine log file, since the Windows launcher does not expose the
+	// real server's stdout).
+	KindServer = "server"
+	// KindSteamCMD is SteamCMD's install/update output for a server.
+	KindSteamCMD = "steamcmd"
+)
+
+// Capture implements io.Writer, persisting a server's log output to a rotating
+// log file. It is safe for concurrent use.
 type Capture struct {
 	serverID int64
 	dir      string
@@ -28,17 +40,18 @@ type Capture struct {
 	written int64
 }
 
-// NewCapture creates a Capture for the given server, writing under
-// <logDir>/server_<id>/current.log. The directory is created on first write.
-func NewCapture(serverID int64, logDir string) *Capture {
+// NewCapture creates a Capture for the given server and log kind, writing under
+// <logDir>/server_<id>/<kind>/current.log. The directory is created on first
+// write.
+func NewCapture(serverID int64, kind, logDir string) *Capture {
 	return &Capture{
 		serverID: serverID,
-		dir:      serverLogDir(logDir, serverID),
+		dir:      serverLogDir(logDir, serverID, kind),
 	}
 }
 
-func serverLogDir(logDir string, serverID int64) string {
-	return filepath.Join(logDir, fmt.Sprintf("server_%d", serverID))
+func serverLogDir(logDir string, serverID int64, kind string) string {
+	return filepath.Join(logDir, fmt.Sprintf("server_%d", serverID), kind)
 }
 
 func (c *Capture) currentPath() string {
@@ -139,13 +152,13 @@ func (c *Capture) Close() error {
 	return nil
 }
 
-// ReadLogs returns the last `lines` lines from a server's current log file.
-// If lines <= 0, a default of 200 is used.
-func ReadLogs(logDir string, serverID int64, lines int) ([]string, error) {
+// ReadLogs returns the last `lines` lines from a server's current log file for
+// the given log kind. If lines <= 0, a default of 200 is used.
+func ReadLogs(logDir string, serverID int64, kind string, lines int) ([]string, error) {
 	if lines <= 0 {
 		lines = 200
 	}
-	path := filepath.Join(serverLogDir(logDir, serverID), "current.log")
+	path := filepath.Join(serverLogDir(logDir, serverID, kind), "current.log")
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {

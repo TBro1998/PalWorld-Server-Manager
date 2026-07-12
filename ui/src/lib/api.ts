@@ -38,6 +38,7 @@ import type {
   ServerConfig,
   UpdateServerConfigData,
   ConfigParamDef,
+  LogKind,
 } from '@/types/server'
 
 export const serversApi = {
@@ -54,14 +55,17 @@ export const serversApi = {
   updateConfig: (id: number, data: UpdateServerConfigData) =>
     apiClient.put(`/api/servers/${id}/config`, data),
   configSchema: () => apiClient.get<{ params: ConfigParamDef[] }>('/api/config/schema'),
-  getLogs: (id: number, lines = 200) =>
-    apiClient.get<{ serverId: number; logs: string[] }>(`/api/servers/${id}/logs`, {
-      params: { lines },
+  // kind selects which log stream to read: 'server' (the running game process)
+  // or 'steamcmd' (install/update output). Defaults to 'server'.
+  getLogs: (id: number, kind: LogKind = 'server', lines = 200) =>
+    apiClient.get<{ serverId: number; kind: LogKind; logs: string[] }>(`/api/servers/${id}/logs`, {
+      params: { kind, lines },
     }),
   // Relative URL for EventSource. EventSource cannot set Authorization headers;
   // these endpoints currently require no JWT. If auth is enabled later, pass the
   // token via a query param here instead (not implemented for now).
-  logStreamUrl: (id: number) => `/api/servers/${id}/logs/stream`,
+  logStreamUrl: (id: number, kind: LogKind = 'server') =>
+    `/api/servers/${id}/logs/stream?kind=${kind}`,
 }
 
 export default apiClient;

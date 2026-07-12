@@ -156,8 +156,9 @@ func (m *Manager) StartServer(serverID int64) error {
 	args := launchArgs.ToArgs()
 
 	// Compose log sinks: persist to disk and broadcast live lines to SSE clients.
-	capture := logger.NewCapture(serverID, m.logDir)
-	broadcaster := logger.NewBroadcastWriter(m.streams, serverID)
+	// KindServer keeps the running server's output separate from SteamCMD logs.
+	capture := logger.NewCapture(serverID, logger.KindServer, m.logDir)
+	broadcaster := logger.NewBroadcastWriter(m.streams, serverID, logger.KindServer)
 	out := io.MultiWriter(capture, broadcaster)
 
 	cmd := exec.Command(exe, args...)

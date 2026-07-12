@@ -5,23 +5,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from './ui/button'
 import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
-import type { Server } from '@/types/server'
+import type { LogKind, Server } from '@/types/server'
 
 interface ServerLogsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   server: Server | null
+  // Which log stream to show: 'server' (running process) or 'steamcmd'
+  // (install/update output). Defaults to 'server'.
+  kind?: LogKind
 }
 
 type StreamState = 'connecting' | 'live' | 'closed'
 
-export function ServerLogsDialog({ open, onOpenChange, server }: ServerLogsDialogProps) {
+export function ServerLogsDialog({
+  open,
+  onOpenChange,
+  server,
+  kind = 'server',
+}: ServerLogsDialogProps) {
   const t = useTranslations('servers')
   const [lines, setLines] = useState<string[]>([])
   const [streamState, setStreamState] = useState<StreamState>('closed')
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
   const serverId = server?.id
+  const title = kind === 'steamcmd' ? t('steamcmdLogsTitle') : t('logsTitle')
 
   useEffect(() => {
     if (!open || serverId === undefined) return
@@ -30,9 +39,9 @@ export function ServerLogsDialog({ open, onOpenChange, server }: ServerLogsDialo
     setStreamState('connecting')
     setLines([])
 
-    // 1. Fetch historical logs.
+    // 1. Fetch historical logs for this kind.
     serversApi
-      .getLogs(serverId)
+      .getLogs(serverId, kind)
       .then((res) => {
         if (!cancelled) setLines(res.data.logs ?? [])
       })
@@ -42,7 +51,7 @@ export function ServerLogsDialog({ open, onOpenChange, server }: ServerLogsDialo
 
     // 2. Open the live SSE stream. Backend emits `c.SSEvent("log", line)`,
     // so we must listen for the named `log` event (not onmessage).
-    const es = new EventSource(serversApi.logStreamUrl(serverId))
+    const es = new EventSource(serversApi.logStreamUrl(serverId, kind))
     es.addEventListener('log', (e) => {
       setLines((prev) => [...prev, (e as MessageEvent).data])
     })
@@ -58,7 +67,7 @@ export function ServerLogsDialog({ open, onOpenChange, server }: ServerLogsDialo
       es.close()
       setStreamState('closed')
     }
-  }, [open, serverId])
+  }, [open, serverId, kind])
 
   // Auto-scroll to the bottom whenever new log lines arrive.
   useEffect(() => {
@@ -72,7 +81,7 @@ export function ServerLogsDialog({ open, onOpenChange, server }: ServerLogsDialo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>
-              {t('logsTitle')}
+              {title}
               {server ? ` — ${server.name}` : ''}
             </span>
             {streamState === 'live' && (

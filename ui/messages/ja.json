@@ -85,6 +85,7 @@
     "needsInstall": "サーバーファイル未インストール",
     "lastErrorLabel": "前回のエラー",
     "logsTitle": "ログ",
+    "steamcmdLogsTitle": "SteamCMD インストール/更新ログ",
     "logsEmpty": "ログがありません",
     "logsLive": "ライブ",
     "logsClear": "クリア",

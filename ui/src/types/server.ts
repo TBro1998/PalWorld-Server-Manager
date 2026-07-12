@@ -1,3 +1,8 @@
+// LogKind selects which log stream to read/stream for a server.
+// 'server'  -> the running Palworld process's stdout/stderr
+// 'steamcmd' -> SteamCMD install/update output
+export type LogKind = 'server' | 'steamcmd'
+
 export interface Server {
   id: number
   name: string

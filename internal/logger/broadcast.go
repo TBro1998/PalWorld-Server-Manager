@@ -11,15 +11,16 @@ import (
 type broadcastWriter struct {
 	streams  *StreamManager
 	serverID int64
+	kind     string
 
 	mu  sync.Mutex
 	buf bytes.Buffer
 }
 
 // NewBroadcastWriter returns an io.Writer that streams complete lines of output
-// to all SSE subscribers of the given server.
-func NewBroadcastWriter(streams *StreamManager, serverID int64) *broadcastWriter {
-	return &broadcastWriter{streams: streams, serverID: serverID}
+// to all SSE subscribers of the given server's stream of the given kind.
+func NewBroadcastWriter(streams *StreamManager, serverID int64, kind string) *broadcastWriter {
+	return &broadcastWriter{streams: streams, serverID: serverID, kind: kind}
 }
 
 func (w *broadcastWriter) Write(p []byte) (int, error) {
@@ -40,7 +41,7 @@ func (w *broadcastWriter) Write(p []byte) (int, error) {
 		if len(trimmed) > 0 && trimmed[len(trimmed)-1] == '\r' {
 			trimmed = trimmed[:len(trimmed)-1]
 		}
-		w.streams.Broadcast(w.serverID, trimmed)
+		w.streams.Broadcast(w.serverID, w.kind, trimmed)
 	}
 	return len(p), nil
 }

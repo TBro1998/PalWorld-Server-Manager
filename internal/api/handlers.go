@@ -339,9 +339,11 @@ func (r *Router) InstallServer(c *gin.Context) {
 	// persists facts (last_error, installed); status is never written.
 	go func() {
 		// Compose log sinks: persist to disk and broadcast live lines to SSE
-		// clients, mirroring the server-process logging pipeline.
-		capture := logger.NewCapture(id, r.config.LogDir)
-		broadcaster := logger.NewBroadcastWriter(r.streams, id)
+		// clients, mirroring the server-process logging pipeline. KindSteamCMD
+		// keeps install/update output on its own file and channel, separate from
+		// the running server's logs.
+		capture := logger.NewCapture(id, logger.KindSteamCMD, r.config.LogDir)
+		broadcaster := logger.NewBroadcastWriter(r.streams, id, logger.KindSteamCMD)
 		out := io.MultiWriter(capture, broadcaster)
 		defer capture.Close()
 
@@ -417,12 +419,31 @@ func (r *Router) RestartServer(c *gin.Context) {
 	})
 }
 
+// logKind resolves the ?kind= query param to a valid log kind, defaulting to
+// KindServer. The second return value is false for an unrecognized kind.
+func logKind(c *gin.Context) (string, bool) {
+	switch c.Query("kind") {
+	case "", logger.KindServer:
+		return logger.KindServer, true
+	case logger.KindSteamCMD:
+		return logger.KindSteamCMD, true
+	default:
+		return "", false
+	}
+}
+
 // GetLogs returns the most recent server logs.
-// Optional query param: lines (default 200).
+// Optional query params: kind (server|steamcmd, default server), lines (default 200).
 func (r *Router) GetLogs(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	kind, ok := logKind(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid log kind"})
 		return
 	}
 
@@ -433,7 +454,7 @@ func (r *Router) GetLogs(c *gin.Context) {
 		}
 	}
 
-	logs, err := logger.ReadLogs(r.config.LogDir, id, lines)
+	logs, err := logger.ReadLogs(r.config.LogDir, id, kind, lines)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read logs"})
 		return
@@ -441,15 +462,23 @@ func (r *Router) GetLogs(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"serverId": id,
+		"kind":     kind,
 		"logs":     logs,
 	})
 }
 
 // StreamLogs streams live server logs via Server-Sent Events.
+// Optional query param: kind (server|steamcmd, default server).
 func (r *Router) StreamLogs(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	kind, ok := logKind(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid log kind"})
 		return
 	}
 
@@ -458,8 +487,8 @@ func (r *Router) StreamLogs(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	c.Header("X-Accel-Buffering", "no")
 
-	clientID, ch := r.streams.Subscribe(id)
-	defer r.streams.Unsubscribe(id, clientID)
+	clientID, ch := r.streams.Subscribe(id, kind)
+	defer r.streams.Unsubscribe(id, kind, clientID)
 
 	ctx := c.Request.Context()
 	c.Stream(func(w io.Writer) bool {

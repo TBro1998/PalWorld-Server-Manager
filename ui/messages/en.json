@@ -85,6 +85,7 @@
     "needsInstall": "Server files not installed",
     "lastErrorLabel": "Last error",
     "logsTitle": "Logs",
+    "steamcmdLogsTitle": "SteamCMD install/update logs",
     "logsEmpty": "No logs yet",
     "logsLive": "Live",
     "logsClear": "Clear",

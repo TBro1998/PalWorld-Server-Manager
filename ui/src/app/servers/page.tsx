@@ -19,6 +19,9 @@ export default function ServersPage() {
   const [editingServer, setEditingServer] = useState<Server | null>(null)
   const [configServer, setConfigServer] = useState<Server | null>(null)
   const [logsServer, setLogsServer] = useState<Server | null>(null)
+  // SteamCMD install/update log viewer. Opens automatically on install/update
+  // and streams live SteamCMD output; separate from the server runtime logs.
+  const [installLogsServer, setInstallLogsServer] = useState<Server | null>(null)
   const queryClient = useQueryClient()
 
   // Fetch servers with auto-refetch every 5 seconds to update statuses
@@ -125,9 +128,10 @@ export default function ServersPage() {
               server={server}
               onInstall={(id) => {
                 installServerMutation.mutate(id)
-                // Auto-open the log viewer so the user sees SteamCMD output live.
+                // Auto-open the SteamCMD log viewer so the user sees install/
+                // update output live. This is separate from the server logs.
                 const s = servers?.find((x) => x.id === id)
-                if (s) setLogsServer(s)
+                if (s) setInstallLogsServer(s)
               }}
               onStart={(id) => startServerMutation.mutate(id)}
               onStop={(id) => stopServerMutation.mutate(id)}
@@ -179,6 +183,14 @@ export default function ServersPage() {
         open={logsServer !== null}
         onOpenChange={(open) => !open && setLogsServer(null)}
         server={logsServer}
+        kind="server"
+      />
+
+      <ServerLogsDialog
+        open={installLogsServer !== null}
+        onOpenChange={(open) => !open && setInstallLogsServer(null)}
+        server={installLogsServer}
+        kind="steamcmd"
       />
     </div>
   )
