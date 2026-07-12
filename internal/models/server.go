@@ -13,20 +13,22 @@ type Server struct {
 	RCONEnabled bool      `json:"rcon_enabled" db:"rcon_enabled"`
 	Status      string    `json:"status" db:"status"` // running, stopped, installing
 	PID         int       `json:"pid" db:"pid"`
+	LaunchArgs  string    `json:"launch_args" db:"launch_args"` // JSON-encoded palconfig.LaunchArgs
+	Installed   bool      `json:"installed" db:"installed"`     // server files present at install_path
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Mod represents a workshop mod
 type Mod struct {
-	ID         int64     `json:"id" db:"id"`
-	ServerID   int64     `json:"server_id" db:"server_id"`
-	WorkshopID string    `json:"workshop_id" db:"workshop_id"`
-	Name       string    `json:"name" db:"name"`
-	Enabled    bool      `json:"enabled" db:"enabled"`
-	InstallPath string   `json:"install_path" db:"install_path"`
-	CreatedAt  time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
+	ID          int64     `json:"id" db:"id"`
+	ServerID    int64     `json:"server_id" db:"server_id"`
+	WorkshopID  string    `json:"workshop_id" db:"workshop_id"`
+	Name        string    `json:"name" db:"name"`
+	Enabled     bool      `json:"enabled" db:"enabled"`
+	InstallPath string    `json:"install_path" db:"install_path"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // User represents an authenticated user

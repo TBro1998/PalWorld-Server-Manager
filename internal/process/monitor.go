@@ -69,3 +69,40 @@ func (m *Manager) ReconcileOnStartup() error {
 	}
 	return nil
 }
+
+// ReconcileInstalled refreshes the persisted `installed` flag for every server
+// by checking whether the launcher executable exists at its install path.
+// Called once at startup so the flag reflects on-disk reality without probing
+// on every API request.
+func (m *Manager) ReconcileInstalled() error {
+	rows, err := m.db.Query(`SELECT id, install_path FROM servers`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type entry struct {
+		id          int64
+		installPath string
+	}
+	var servers []entry
+	for rows.Next() {
+		var e entry
+		if err := rows.Scan(&e.id, &e.installPath); err != nil {
+			return err
+		}
+		servers = append(servers, e)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, s := range servers {
+		installed := IsInstalled(s.installPath)
+		if _, err := m.db.Exec(
+			`UPDATE servers SET installed = ? WHERE id = ?`, installed, s.id); err != nil {
+			return err
+		}
+	}
+	return nil
+}

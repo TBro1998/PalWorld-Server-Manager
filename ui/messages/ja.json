@@ -21,12 +21,30 @@
     "ctaSubtitle": "今すぐ最初のPalworldサーバーを作成して、素晴らしいゲーム体験を始めましょう",
     "ctaButton": "サーバーを作成",
     "features": {
-      "serverMgmt": { "title": "サーバー管理", "desc": "ワンクリックでPalworldサーバーを起動・停止・再起動" },
-      "modMgmt": { "title": "MOD管理", "desc": "Steamワークショップから簡単にMODをインストール・管理" },
-      "monitor": { "title": "リアルタイム監視", "desc": "サーバー状態、パフォーマンス指標、プレイヤーの動きを監視" },
-      "security": { "title": "安全で信頼できる", "desc": "JWT認証と安全なサーバー管理API" },
-      "deploy": { "title": "ワンクリックデプロイ", "desc": "SteamCMDとサーバーファイルを自動インストール" },
-      "i18n": { "title": "多言語対応", "desc": "中国語・英語・日本語の3言語に対応" }
+      "serverMgmt": {
+        "title": "サーバー管理",
+        "desc": "ワンクリックでPalworldサーバーを起動・停止・再起動"
+      },
+      "modMgmt": {
+        "title": "MOD管理",
+        "desc": "Steamワークショップから簡単にMODをインストール・管理"
+      },
+      "monitor": {
+        "title": "リアルタイム監視",
+        "desc": "サーバー状態、パフォーマンス指標、プレイヤーの動きを監視"
+      },
+      "security": {
+        "title": "安全で信頼できる",
+        "desc": "JWT認証と安全なサーバー管理API"
+      },
+      "deploy": {
+        "title": "ワンクリックデプロイ",
+        "desc": "SteamCMDとサーバーファイルを自動インストール"
+      },
+      "i18n": {
+        "title": "多言語対応",
+        "desc": "中国語・英語・日本語の3言語に対応"
+      }
     }
   },
   "auth": {
@@ -61,7 +79,9 @@
     "statusStopped": "停止中",
     "statusRunning": "稼働中",
     "statusInstalling": "インストール中",
-    "statusError": "エラー"
+    "statusError": "エラー",
+    "config": "設定",
+    "needsInstall": "サーバーファイル未インストール"
   },
   "addServer": {
     "title": "新しいサーバーを追加",
@@ -83,5 +103,426 @@
     "disable": "無効化",
     "enable": "有効化",
     "uninstall": "アンインストール"
+  },
+  "editServer": {
+    "title": "サーバー編集",
+    "nameLabel": "サーバー名",
+    "pathLabel": "インストール先",
+    "pathChangedHint": "ディレクトリを変更しました。保存時にサーバーファイルの有無を再確認します。",
+    "portLabel": "ゲームポート",
+    "queryPortLabel": "クエリポート",
+    "rconPortLabel": "RCONポート",
+    "rconEnabledLabel": "RCONを有効化",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saving": "保存中..."
+  },
+  "serverConfig": {
+    "title": "サーバー設定",
+    "loading": "設定を読み込み中...",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saving": "保存中...",
+    "notInstalledHint": "サーバーファイルが未インストールです。設定編集の前にインストールしてください。",
+    "rawHint": "生の OptionSettings 行を編集します。生テキストの保存は構造化フォームより優先されます。",
+    "rawModeActive": "生テキストモード：保存時は生の OptionSettings 行を使用します。",
+    "tabs": {
+      "performances": "性能",
+      "serverManagement": "サーバー",
+      "features": "機能",
+      "gameBalances": "バランス",
+      "launch": "起動引数",
+      "raw": "生テキスト"
+    },
+    "launch": {
+      "port": "ポート (-port)",
+      "players": "最大人数 (-players)",
+      "usePerfThreads": "-useperfthreads",
+      "noAsyncLoadingThread": "-NoAsyncLoadingThread",
+      "useMultithreadForDS": "-UseMultithreadForDS",
+      "numberOfWorkerThreadsServer": "ワーカースレッド数",
+      "publicLobby": "コミュニティ鯖 (-publiclobby)",
+      "publicIP": "公開IP (-publicip)",
+      "publicPort": "公開ポート (-publicport)",
+      "logFormat": "ログ形式 (-logformat)"
+    },
+    "params": {
+      "BaseCampMaxNum": {
+        "label": "拠点総数",
+        "desc": "サーバー全体の拠点数の上限。"
+      },
+      "BaseCampMaxNumInGuild": {
+        "label": "ギルド毎の拠点数",
+        "desc": "ギルド毎の最大拠点数（既定4、最大10）。増やすと負荷増。"
+      },
+      "BaseCampWorkerMaxNum": {
+        "label": "拠点毎のパル数",
+        "desc": "拠点毎の最大パル数（最大50）。増やすと負荷増。"
+      },
+      "ItemContainerForceMarkDirtyInterval": {
+        "label": "コンテナ同期間隔",
+        "desc": "コンテナUIを開いている間の強制再同期間隔（秒）。"
+      },
+      "MaxBuildingLimitNum": {
+        "label": "プレイヤー毎の建築上限",
+        "desc": "プレイヤー毎の建築数上限（0=無制限）。"
+      },
+      "PhysicsActiveDropItemMaxNum": {
+        "label": "物理ドロップ上限",
+        "desc": "物理挙動を使うドロップ品の最大数。"
+      },
+      "ServerReplicatePawnCullDistance": {
+        "label": "パル同期距離",
+        "desc": "プレイヤーからのパル同期距離（cm、5000-15000）。"
+      },
+      "AdminPassword": {
+        "label": "管理者パスワード",
+        "desc": "管理者権限を得るためのパスワード。"
+      },
+      "AllowConnectPlatform": {
+        "label": "接続許可プラットフォーム",
+        "desc": "非推奨。CrossplayPlatforms を使用。"
+      },
+      "bAllowClientMod": {
+        "label": "クライアントMOD許可",
+        "desc": "MOD有効のプレイヤーの参加を許可。"
+      },
+      "bEnableBuildingPlayerUIdDisplay": {
+        "label": "建築者ID表示",
+        "desc": "建築物に作成者のプレイヤーIDを表示。"
+      },
+      "bIsShowJoinLeftMessage": {
+        "label": "入退室メッセージ表示",
+        "desc": "参加/退出時にゲーム内メッセージを表示。"
+      },
+      "bIsUseBackupSaveData": {
+        "label": "ワールドバックアップ",
+        "desc": "ワールドバックアップを有効化（ディスク負荷増）。"
+      },
+      "ChatPostLimitPerMinute": {
+        "label": "チャット上限/分",
+        "desc": "1分間に許可されるチャット数の上限。"
+      },
+      "CrossplayPlatforms": {
+        "label": "クロスプレイ対象",
+        "desc": "接続を許可するプラットフォーム 例(Steam,Xbox,PS5,Mac)。"
+      },
+      "LogFormatType": {
+        "label": "ログ形式",
+        "desc": "ログ出力形式：Text または Json。"
+      },
+      "PublicIP": {
+        "label": "公開IP",
+        "desc": "コミュニティ鯖：外部公開IPを明示指定。"
+      },
+      "PublicPort": {
+        "label": "公開ポート",
+        "desc": "コミュニティ鯖：外部公開ポートを明示指定。"
+      },
+      "RCONEnabled": {
+        "label": "RCON有効",
+        "desc": "RCONリモート管理を有効化。"
+      },
+      "RCONPort": {
+        "label": "RCONポート",
+        "desc": "RCONで使用するポート番号。"
+      },
+      "RESTAPIEnabled": {
+        "label": "REST API有効",
+        "desc": "REST APIを有効化。"
+      },
+      "RESTAPIPort": {
+        "label": "REST APIポート",
+        "desc": "REST APIの待受ポート。"
+      },
+      "ServerDescription": {
+        "label": "サーバー説明",
+        "desc": "サーバーの説明文。"
+      },
+      "ServerName": {
+        "label": "サーバー名",
+        "desc": "サーバーの表示名。"
+      },
+      "ServerPassword": {
+        "label": "サーバーパスワード",
+        "desc": "サーバーへのログインに必要なパスワード。"
+      },
+      "ServerPlayerMaxNum": {
+        "label": "最大プレイヤー数",
+        "desc": "参加できる最大プレイヤー数。"
+      },
+      "AutoResetGuildTimeNoOnlinePlayers": {
+        "label": "ギルド自動リセット時間",
+        "desc": "ギルド自動リセットまでのオフライン時間。"
+      },
+      "bAllowEnhanceStat_Attack": {
+        "label": "攻撃ステ振り許可",
+        "desc": "攻撃へのステータス振り分けを許可。"
+      },
+      "bAllowEnhanceStat_Health": {
+        "label": "HPステ振り許可",
+        "desc": "HPへのステータス振り分けを許可。"
+      },
+      "bAllowEnhanceStat_Stamina": {
+        "label": "スタミナステ振り許可",
+        "desc": "スタミナへのステータス振り分けを許可。"
+      },
+      "bAllowEnhanceStat_Weight": {
+        "label": "積載ステ振り許可",
+        "desc": "積載量へのステータス振り分けを許可。"
+      },
+      "bAllowEnhanceStat_WorkSpeed": {
+        "label": "作業速度ステ振り許可",
+        "desc": "作業速度へのステータス振り分けを許可。"
+      },
+      "bAllowGlobalPalboxExport": {
+        "label": "グローバルパルボックス書出",
+        "desc": "グローバルパルボックスへの保存を許可。"
+      },
+      "bAllowGlobalPalboxImport": {
+        "label": "グローバルパルボックス読込",
+        "desc": "グローバルパルボックスからの読込を許可。"
+      },
+      "bAutoResetGuildNoOnlinePlayers": {
+        "label": "オフラインギルド自動リセット",
+        "desc": "メンバー未ログインで建築/拠点パルを自動削除。"
+      },
+      "bBuildAreaLimit": {
+        "label": "建築エリア制限",
+        "desc": "ファストトラベル地点付近などの建築を禁止。"
+      },
+      "bCharacterRecreateInHardcore": {
+        "label": "ハードコア再作成",
+        "desc": "ハードコアで死亡時にキャラ再作成を許可。"
+      },
+      "bDisplayPvPItemNumOnWorldMap_BaseCamp": {
+        "label": "PvP品表示(拠点)",
+        "desc": "マップに拠点毎のPvP専用アイテム数を表示。"
+      },
+      "bDisplayPvPItemNumOnWorldMap_Player": {
+        "label": "PvP品表示(プレイヤー)",
+        "desc": "マップにプレイヤー位置とPvP品数を表示。"
+      },
+      "bEnableFastTravel": {
+        "label": "ファストトラベル有効",
+        "desc": "ファストトラベルを有効化。"
+      },
+      "bEnableFastTravelOnlyBaseCamp": {
+        "label": "拠点間のみFT",
+        "desc": "ファストトラベルを拠点間のみに制限。"
+      },
+      "bEnableInvaderEnemy": {
+        "label": "侵入者有効",
+        "desc": "侵入者の敵を有効化。"
+      },
+      "bEnableVoiceChat": {
+        "label": "ボイスチャット有効",
+        "desc": "ゲーム内ボイスチャットを有効化。"
+      },
+      "bExistPlayerAfterLogout": {
+        "label": "ログアウト後も残留",
+        "desc": "ログアウト時にその場で睡眠状態になる。"
+      },
+      "bHardcore": {
+        "label": "ハードコア",
+        "desc": "ハードコアを有効化。死亡で復活不可。"
+      },
+      "bInvisibleOtherGuildBaseCampAreaFX": {
+        "label": "拠点範囲FX非表示",
+        "desc": "拠点範囲境界の表示を切替。"
+      },
+      "bIsPvP": {
+        "label": "PvP有効",
+        "desc": "対人戦（PvP）を有効化。"
+      },
+      "bIsRandomizerPalLevelRandom": {
+        "label": "パルLv完全ランダム",
+        "desc": "有効で野生パルのレベルが完全ランダム。"
+      },
+      "bIsStartLocationSelectByMap": {
+        "label": "開始地点選択可",
+        "desc": "開始地点の選択を許可。"
+      },
+      "bShowPlayerList": {
+        "label": "プレイヤー一覧表示",
+        "desc": "ESCメニューでプレイヤー一覧を有効化。"
+      },
+      "RandomizerSeed": {
+        "label": "ランダム化シード",
+        "desc": "パル出現ランダム化のシード値。"
+      },
+      "RandomizerType": {
+        "label": "ランダム化タイプ",
+        "desc": "出現ランダム化：None / Region / All。"
+      },
+      "VoiceChatMaxVolumeDistance": {
+        "label": "ボイス最大音量距離",
+        "desc": "ボイス音量が減衰しなくなる距離。"
+      },
+      "VoiceChatZeroVolumeDistance": {
+        "label": "ボイス無音距離",
+        "desc": "ボイス音量がゼロになる距離。"
+      },
+      "AdditionalDropItemNumWhenPlayerKillingInPvPMode": {
+        "label": "PvP撃破ドロップ数",
+        "desc": "PvP撃破時の特別ドロップ数量。"
+      },
+      "AdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "PvP撃破ドロップ品",
+        "desc": "PvP撃破時にドロップするアイテムID。"
+      },
+      "bAdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "PvP撃破ドロップ有効",
+        "desc": "PvPでプレイヤー撃破時に特別品をドロップ。"
+      },
+      "BlockRespawnTime": {
+        "label": "リスポーンCT",
+        "desc": "死亡後リスポーンまでのCT（秒）。"
+      },
+      "bPalLost": {
+        "label": "死亡でパル喪失",
+        "desc": "死亡時にパルを永久喪失。"
+      },
+      "BuildObjectDamageRate": {
+        "label": "建築ダメージ倍率",
+        "desc": "建築物への与ダメージ倍率。"
+      },
+      "BuildObjectDeteriorationDamageRate": {
+        "label": "建築劣化倍率",
+        "desc": "建築物の劣化速度倍率。"
+      },
+      "CollectionDropRate": {
+        "label": "採集ドロップ倍率",
+        "desc": "採集アイテムのドロップ倍率。"
+      },
+      "CollectionObjectHpRate": {
+        "label": "採集物HP倍率",
+        "desc": "採集オブジェのHP倍率。"
+      },
+      "CollectionObjectRespawnSpeedRate": {
+        "label": "採集再生倍率",
+        "desc": "採集オブジェの再生間隔倍率。"
+      },
+      "DayTimeSpeedRate": {
+        "label": "昼の速度",
+        "desc": "昼の進行速度倍率。"
+      },
+      "DeathPenalty": {
+        "label": "死亡ペナルティ",
+        "desc": "None / Item / ItemAndEquipment / All。"
+      },
+      "DenyTechnologyList": {
+        "label": "禁止テクノロジー",
+        "desc": "テクノロジーIDで特定技術を無効化。"
+      },
+      "EnemyDropItemRate": {
+        "label": "敵ドロップ倍率",
+        "desc": "ドロップ数量倍率。"
+      },
+      "EquipmentDurabilityDamageRate": {
+        "label": "耐久消耗倍率",
+        "desc": "装備の耐久消耗倍率。"
+      },
+      "ExpRate": {
+        "label": "経験値倍率",
+        "desc": "経験値取得倍率。"
+      },
+      "GuildPlayerMaxNum": {
+        "label": "ギルド最大人数",
+        "desc": "ギルド毎の最大人数。"
+      },
+      "GuildRejoinCooldownMinutes": {
+        "label": "ギルド再加入CT",
+        "desc": "ギルド再加入のCT（分）。"
+      },
+      "ItemCorruptionMultiplier": {
+        "label": "アイテム腐敗倍率",
+        "desc": "アイテム腐敗速度倍率。"
+      },
+      "ItemWeightRate": {
+        "label": "アイテム重量倍率",
+        "desc": "アイテム重量倍率。"
+      },
+      "MonsterFarmActionSpeedRate": {
+        "label": "牧場産出倍率",
+        "desc": "放牧の生産速度倍率。"
+      },
+      "NightTimeSpeedRate": {
+        "label": "夜の速度",
+        "desc": "夜の進行速度倍率。"
+      },
+      "PalAutoHPRegeneRate": {
+        "label": "パルHP回復倍率",
+        "desc": "パルの自然HP回復倍率。"
+      },
+      "PalAutoHpRegeneRateInSleep": {
+        "label": "パル睡眠HP回復",
+        "desc": "パル睡眠中のHP回復倍率。"
+      },
+      "PalCaptureRate": {
+        "label": "捕獲倍率",
+        "desc": "捕獲率倍率。"
+      },
+      "PalDamageRateAttack": {
+        "label": "パル攻撃倍率",
+        "desc": "パルの与ダメージ倍率。"
+      },
+      "PalDamageRateDefense": {
+        "label": "パル被ダメ倍率",
+        "desc": "パルの被ダメージ倍率。"
+      },
+      "PalEggDefaultHatchingTime": {
+        "label": "孵化時間",
+        "desc": "巨大な卵の孵化時間（時間）。"
+      },
+      "PalSpawnNumRate": {
+        "label": "パル出現倍率",
+        "desc": "パル出現率倍率（性能に影響）。"
+      },
+      "PalStaminaDecreaceRate": {
+        "label": "パルスタミナ消耗",
+        "desc": "パルのスタミナ消耗倍率。"
+      },
+      "PalStomachDecreaceRate": {
+        "label": "パル空腹消耗",
+        "desc": "パルの空腹消耗倍率。"
+      },
+      "PlayerAutoHPRegeneRate": {
+        "label": "プレイヤーHP回復",
+        "desc": "プレイヤーの自然HP回復倍率。"
+      },
+      "PlayerAutoHpRegeneRateInSleep": {
+        "label": "プレイヤー睡眠回復",
+        "desc": "プレイヤー睡眠中のHP回復倍率。"
+      },
+      "PlayerDamageRateAttack": {
+        "label": "プレイヤー攻撃倍率",
+        "desc": "プレイヤーの与ダメージ倍率。"
+      },
+      "PlayerDamageRateDefense": {
+        "label": "プレイヤー被ダメ倍率",
+        "desc": "プレイヤーの被ダメージ倍率。"
+      },
+      "PlayerStaminaDecreaceRate": {
+        "label": "プレイヤースタミナ消耗",
+        "desc": "プレイヤーのスタミナ消耗倍率。"
+      },
+      "PlayerStomachDecreaceRate": {
+        "label": "プレイヤー空腹消耗",
+        "desc": "プレイヤーの空腹消耗倍率。"
+      },
+      "RespawnPenaltyDurationThreshold": {
+        "label": "リスポーン罰しきい値",
+        "desc": "リスポーン罰適用の生存時間しきい値（秒）。"
+      },
+      "RespawnPenaltyTimeScale": {
+        "label": "リスポーン罰倍率",
+        "desc": "リスポーンCTに適用する倍率。"
+      },
+      "SupplyDropSpan": {
+        "label": "補給間隔",
+        "desc": "隕石/補給ドロップの間隔（分）。"
+      }
+    }
   }
 }

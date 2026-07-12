@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
 	"github.com/gin-gonic/gin"
 )
@@ -25,9 +28,19 @@ func (r *Router) Register(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Register endpoint - to be implemented"})
 }
 
+const serverColumns = "id, name, install_path, port, query_port, rcon_port, rcon_enabled, status, pid, launch_args, installed, created_at, updated_at"
+
+func scanServer(sc interface {
+	Scan(dest ...any) error
+}) (models.Server, error) {
+	var s models.Server
+	err := sc.Scan(&s.ID, &s.Name, &s.InstallPath, &s.Port, &s.QueryPort, &s.RCONPort, &s.RCONEnabled, &s.Status, &s.PID, &s.LaunchArgs, &s.Installed, &s.CreatedAt, &s.UpdatedAt)
+	return s, err
+}
+
 // ListServers returns all servers
 func (r *Router) ListServers(c *gin.Context) {
-	rows, err := r.db.Query("SELECT id, name, install_path, port, query_port, rcon_port, rcon_enabled, status, pid, created_at, updated_at FROM servers ORDER BY created_at DESC")
+	rows, err := r.db.Query("SELECT " + serverColumns + " FROM servers ORDER BY created_at DESC")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query servers"})
 		return
@@ -36,8 +49,7 @@ func (r *Router) ListServers(c *gin.Context) {
 
 	var servers []models.Server
 	for rows.Next() {
-		var s models.Server
-		err := rows.Scan(&s.ID, &s.Name, &s.InstallPath, &s.Port, &s.QueryPort, &s.RCONPort, &s.RCONEnabled, &s.Status, &s.PID, &s.CreatedAt, &s.UpdatedAt)
+		s, err := scanServer(rows)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan server"})
 			return
@@ -121,12 +133,7 @@ func (r *Router) GetServer(c *gin.Context) {
 		return
 	}
 
-	var s models.Server
-	err = r.db.QueryRow(
-		"SELECT id, name, install_path, port, query_port, rcon_port, rcon_enabled, status, pid, created_at, updated_at FROM servers WHERE id = ?",
-		id,
-	).Scan(&s.ID, &s.Name, &s.InstallPath, &s.Port, &s.QueryPort, &s.RCONPort, &s.RCONEnabled, &s.Status, &s.PID, &s.CreatedAt, &s.UpdatedAt)
-
+	s, err := scanServer(r.db.QueryRow("SELECT "+serverColumns+" FROM servers WHERE id = ?", id))
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
@@ -139,16 +146,20 @@ func (r *Router) GetServer(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
-// UpdateServerRequest represents the request body for updating a server
+// UpdateServerRequest represents the request body for updating a server.
+// InstallPath and LaunchArgs are optional (pointer) so clients can omit them.
 type UpdateServerRequest struct {
-	Name        string `json:"name"`
-	Port        int    `json:"port"`
-	QueryPort   int    `json:"queryPort"`
-	RCONPort    int    `json:"rconPort"`
-	RCONEnabled bool   `json:"rconEnabled"`
+	Name        string           `json:"name"`
+	Port        int              `json:"port"`
+	QueryPort   int              `json:"queryPort"`
+	RCONPort    int              `json:"rconPort"`
+	RCONEnabled bool             `json:"rconEnabled"`
+	InstallPath *string          `json:"installPath,omitempty"`
+	LaunchArgs  *json.RawMessage `json:"launchArgs,omitempty"`
 }
 
-// UpdateServer updates a server
+// UpdateServer updates a server's metadata and, optionally, its install
+// directory and launch arguments.
 func (r *Router) UpdateServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -162,36 +173,67 @@ func (r *Router) UpdateServer(c *gin.Context) {
 		return
 	}
 
-	// Check if server exists
-	var exists bool
-	err = r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM servers WHERE id = ?)", id).Scan(&exists)
-	if err != nil || !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+	// Load current directory and status.
+	var curPath, status string
+	err = r.db.QueryRow("SELECT install_path, status FROM servers WHERE id = ?", id).Scan(&curPath, &status)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
 		return
 	}
 
-	// Update server
-	_, err = r.db.Exec(
+	now := time.Now()
+
+	// Base metadata always updates.
+	if _, err = r.db.Exec(
 		"UPDATE servers SET name = ?, port = ?, query_port = ?, rcon_port = ?, rcon_enabled = ?, updated_at = ? WHERE id = ?",
-		req.Name, req.Port, req.QueryPort, req.RCONPort, req.RCONEnabled, time.Now(), id,
-	)
-	if err != nil {
+		req.Name, req.Port, req.QueryPort, req.RCONPort, req.RCONEnabled, now, id,
+	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update server"})
 		return
 	}
 
-	// Fetch and return updated server
-	var s models.Server
-	err = r.db.QueryRow(
-		"SELECT id, name, install_path, port, query_port, rcon_port, rcon_enabled, status, pid, created_at, updated_at FROM servers WHERE id = ?",
-		id,
-	).Scan(&s.ID, &s.Name, &s.InstallPath, &s.Port, &s.QueryPort, &s.RCONPort, &s.RCONEnabled, &s.Status, &s.PID, &s.CreatedAt, &s.UpdatedAt)
+	// Install directory change: only allowed while stopped; recompute installed.
+	if req.InstallPath != nil && *req.InstallPath != curPath {
+		if status != "stopped" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot change install directory while server is " + status})
+			return
+		}
+		installed := process.IsInstalled(*req.InstallPath)
+		if _, err = r.db.Exec(
+			"UPDATE servers SET install_path = ?, installed = ?, updated_at = ? WHERE id = ?",
+			*req.InstallPath, installed, now, id,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update install path"})
+			return
+		}
+	}
 
+	// Launch arguments: validate then store canonical JSON.
+	if req.LaunchArgs != nil {
+		parsed, perr := palconfig.ParseLaunchArgs(string(*req.LaunchArgs))
+		if perr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": perr.Error()})
+			return
+		}
+		canonical, _ := parsed.Marshal()
+		if _, err = r.db.Exec(
+			"UPDATE servers SET launch_args = ?, updated_at = ? WHERE id = ?",
+			canonical, now, id,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update launch args"})
+			return
+		}
+	}
+
+	s, err := scanServer(r.db.QueryRow("SELECT "+serverColumns+" FROM servers WHERE id = ?", id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query updated server"})
 		return
 	}
-
 	c.JSON(http.StatusOK, s)
 }
 
@@ -271,19 +313,21 @@ func (r *Router) InstallServer(c *gin.Context) {
 	go func() {
 		err := steamcmd.InstallPalworldServer(s.InstallPath, r.config.SteamCMDPath)
 
-		// Update status based on installation result
+		// Update status based on installation result; mark installed on success.
 		newStatus := "stopped"
+		installed := true
 		if err != nil {
 			newStatus = "error"
+			installed = false
 		}
 
-		r.db.Exec("UPDATE servers SET status = ?, updated_at = ? WHERE id = ?", newStatus, time.Now(), id)
+		r.db.Exec("UPDATE servers SET status = ?, installed = ?, updated_at = ? WHERE id = ?", newStatus, installed, time.Now(), id)
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{
-		"message": "Server installation started",
+		"message":  "Server installation started",
 		"serverId": id,
-		"status": "installing",
+		"status":   "installing",
 	})
 }
 
@@ -404,6 +448,150 @@ func (r *Router) StreamLogs(c *gin.Context) {
 			return false
 		}
 	})
+}
+
+// ServerConfigResponse is returned by GetServerConfig.
+type ServerConfigResponse struct {
+	Settings   map[string]string    `json:"settings"`
+	LaunchArgs palconfig.LaunchArgs `json:"launchArgs"`
+	Raw        string               `json:"raw"`
+	Installed  bool                 `json:"installed"`
+}
+
+// UpdateServerConfigRequest is the body for PUT /servers/:id/config.
+// Provide either Settings (structured) or Raw (verbatim OptionSettings line);
+// LaunchArgs is optional and applies in both modes.
+type UpdateServerConfigRequest struct {
+	Settings   map[string]string     `json:"settings,omitempty"`
+	Raw        *string               `json:"raw,omitempty"`
+	LaunchArgs *palconfig.LaunchArgs `json:"launchArgs,omitempty"`
+}
+
+func (r *Router) loadServerPathState(id int64) (installPath, status, launchArgs string, installed bool, err error) {
+	err = r.db.QueryRow(
+		"SELECT install_path, status, launch_args, installed FROM servers WHERE id = ?", id,
+	).Scan(&installPath, &status, &launchArgs, &installed)
+	return
+}
+
+// GetServerConfig returns the effective PalWorldSettings values, launch args,
+// and the raw OptionSettings line. Seeds the INI from defaults when needed.
+func (r *Router) GetServerConfig(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	installPath, _, launchArgsJSON, installed, err := r.loadServerPathState(id)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
+		return
+	}
+
+	launchArgs, _ := palconfig.ParseLaunchArgs(launchArgsJSON)
+
+	// Without an install path we cannot touch disk; return registry defaults.
+	if installPath == "" {
+		defaults := palconfig.Defaults()
+		c.JSON(http.StatusOK, ServerConfigResponse{
+			Settings:   defaults,
+			LaunchArgs: launchArgs,
+			Raw:        palconfig.RawLine(defaults),
+			Installed:  installed,
+		})
+		return
+	}
+
+	settings, err := palconfig.LoadSettings(installPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	raw, err := palconfig.LoadRaw(installPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ServerConfigResponse{
+		Settings:   settings,
+		LaunchArgs: launchArgs,
+		Raw:        raw,
+		Installed:  installed,
+	})
+}
+
+// UpdateServerConfig writes PalWorldSettings.ini (structured or raw) and
+// optionally updates launch args. Only allowed while the server is stopped.
+func (r *Router) UpdateServerConfig(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+
+	var req UpdateServerConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	installPath, status, _, _, err := r.loadServerPathState(id)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
+		return
+	}
+
+	if status != "stopped" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot edit config while server is " + status})
+		return
+	}
+	if installPath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Set an install directory before editing config"})
+		return
+	}
+
+	// Write INI (raw takes precedence over structured settings).
+	if req.Raw != nil {
+		if err := palconfig.SaveRaw(installPath, *req.Raw); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	} else if req.Settings != nil {
+		if err := palconfig.SaveSettings(installPath, req.Settings); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// Optional launch args.
+	if req.LaunchArgs != nil {
+		canonical, _ := req.LaunchArgs.Marshal()
+		if _, err := r.db.Exec(
+			"UPDATE servers SET launch_args = ?, updated_at = ? WHERE id = ?",
+			canonical, time.Now(), id,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update launch args"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Config saved", "serverId": id})
+}
+
+// GetConfigSchema returns the OptionSettings parameter registry that drives the
+// structured config form (keys, types, defaults, categories, enum options).
+func (r *Router) GetConfigSchema(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"params": palconfig.Params})
 }
 
 // ListMods returns all mods for a server

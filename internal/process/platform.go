@@ -29,3 +29,14 @@ func serverExecutable(installPath string) (string, error) {
 	}
 	return exe, nil
 }
+
+// IsInstalled reports whether a Palworld server is installed at installPath,
+// i.e. the platform launcher executable exists. It is the single check reused
+// by startup reconciliation and directory edits.
+func IsInstalled(installPath string) bool {
+	if installPath == "" {
+		return false
+	}
+	_, err := serverExecutable(installPath)
+	return err == nil
+}

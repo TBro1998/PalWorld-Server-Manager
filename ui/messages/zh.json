@@ -21,12 +21,30 @@
     "ctaSubtitle": "立即创建您的第一个 Palworld 服务器，开启精彩的游戏体验",
     "ctaButton": "创建服务器",
     "features": {
-      "serverMgmt": { "title": "服务器管理", "desc": "一键启动、停止和重启您的 Palworld 服务器" },
-      "modMgmt": { "title": "模组管理", "desc": "通过 Steam 创意工坊轻松安装和管理模组" },
-      "monitor": { "title": "实时监控", "desc": "监控服务器状态、性能指标和玩家活动" },
-      "security": { "title": "安全可靠", "desc": "JWT 认证和安全的服务器管理接口" },
-      "deploy": { "title": "一键部署", "desc": "自动化安装 SteamCMD 和服务器文件" },
-      "i18n": { "title": "多语言支持", "desc": "支持中文、英文、日文三种语言" }
+      "serverMgmt": {
+        "title": "服务器管理",
+        "desc": "一键启动、停止和重启您的 Palworld 服务器"
+      },
+      "modMgmt": {
+        "title": "模组管理",
+        "desc": "通过 Steam 创意工坊轻松安装和管理模组"
+      },
+      "monitor": {
+        "title": "实时监控",
+        "desc": "监控服务器状态、性能指标和玩家活动"
+      },
+      "security": {
+        "title": "安全可靠",
+        "desc": "JWT 认证和安全的服务器管理接口"
+      },
+      "deploy": {
+        "title": "一键部署",
+        "desc": "自动化安装 SteamCMD 和服务器文件"
+      },
+      "i18n": {
+        "title": "多语言支持",
+        "desc": "支持中文、英文、日文三种语言"
+      }
     }
   },
   "auth": {
@@ -61,7 +79,9 @@
     "statusStopped": "已停止",
     "statusRunning": "运行中",
     "statusInstalling": "安装中",
-    "statusError": "错误"
+    "statusError": "错误",
+    "config": "配置",
+    "needsInstall": "未安装服务端文件"
   },
   "addServer": {
     "title": "添加新服务器",
@@ -83,5 +103,426 @@
     "disable": "禁用",
     "enable": "启用",
     "uninstall": "卸载"
+  },
+  "editServer": {
+    "title": "编辑服务器",
+    "nameLabel": "服务器名称",
+    "pathLabel": "安装目录",
+    "pathChangedHint": "目录已更改。保存时将重新检测该目录下是否已安装服务端文件。",
+    "portLabel": "游戏端口",
+    "queryPortLabel": "查询端口",
+    "rconPortLabel": "RCON端口",
+    "rconEnabledLabel": "启用RCON",
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "保存中..."
+  },
+  "serverConfig": {
+    "title": "服务器配置",
+    "loading": "正在加载配置...",
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "保存中...",
+    "notInstalledHint": "服务端文件尚未安装，请先安装服务器再编辑配置。",
+    "rawHint": "编辑原始 OptionSettings 行。保存原始文本将覆盖结构化表单。",
+    "rawModeActive": "已进入原始文本模式：保存将使用原始 OptionSettings 行。",
+    "tabs": {
+      "performances": "性能",
+      "serverManagement": "服务器",
+      "features": "玩法",
+      "gameBalances": "平衡",
+      "launch": "启动参数",
+      "raw": "原始文本"
+    },
+    "launch": {
+      "port": "端口 (-port)",
+      "players": "最大玩家数 (-players)",
+      "usePerfThreads": "-useperfthreads",
+      "noAsyncLoadingThread": "-NoAsyncLoadingThread",
+      "useMultithreadForDS": "-UseMultithreadForDS",
+      "numberOfWorkerThreadsServer": "工作线程数",
+      "publicLobby": "社区服务器 (-publiclobby)",
+      "publicIP": "公网IP (-publicip)",
+      "publicPort": "公网端口 (-publicport)",
+      "logFormat": "日志格式 (-logformat)"
+    },
+    "params": {
+      "BaseCampMaxNum": {
+        "label": "基地总数",
+        "desc": "服务器内基地总数上限。"
+      },
+      "BaseCampMaxNumInGuild": {
+        "label": "每公会基地数",
+        "desc": "每个公会的最大基地数（默认4，最大10）。越高负载越大。"
+      },
+      "BaseCampWorkerMaxNum": {
+        "label": "每基地帕鲁数",
+        "desc": "每个基地最大帕鲁数（最大50）。越高负载越大。"
+      },
+      "ItemContainerForceMarkDirtyInterval": {
+        "label": "容器同步间隔",
+        "desc": "打开容器界面时强制重新同步的间隔（秒）。"
+      },
+      "MaxBuildingLimitNum": {
+        "label": "每玩家建筑上限",
+        "desc": "每个玩家的建筑数量上限（0=无限）。"
+      },
+      "PhysicsActiveDropItemMaxNum": {
+        "label": "物理掉落物上限",
+        "desc": "可使用物理效果的掉落物最大数量。"
+      },
+      "ServerReplicatePawnCullDistance": {
+        "label": "帕鲁同步距离",
+        "desc": "帕鲁与玩家的同步距离，单位厘米（5000-15000）。"
+      },
+      "AdminPassword": {
+        "label": "管理员密码",
+        "desc": "用于获取管理员权限的密码。"
+      },
+      "AllowConnectPlatform": {
+        "label": "允许连接平台",
+        "desc": "已弃用。请改用 CrossplayPlatforms。"
+      },
+      "bAllowClientMod": {
+        "label": "允许客户端模组",
+        "desc": "允许启用了模组的玩家加入服务器。"
+      },
+      "bEnableBuildingPlayerUIdDisplay": {
+        "label": "显示建造者ID",
+        "desc": "在建筑上显示建造者的玩家ID。"
+      },
+      "bIsShowJoinLeftMessage": {
+        "label": "显示进出消息",
+        "desc": "玩家进出时显示游戏内消息。"
+      },
+      "bIsUseBackupSaveData": {
+        "label": "启用世界备份",
+        "desc": "启用世界备份（会增加磁盘负载）。"
+      },
+      "ChatPostLimitPerMinute": {
+        "label": "每分钟聊天上限",
+        "desc": "每分钟允许的最大聊天消息数。"
+      },
+      "CrossplayPlatforms": {
+        "label": "跨平台联机",
+        "desc": "允许连接的平台，例如 (Steam,Xbox,PS5,Mac)。"
+      },
+      "LogFormatType": {
+        "label": "日志格式",
+        "desc": "日志输出格式：Text 或 Json。"
+      },
+      "PublicIP": {
+        "label": "公网IP",
+        "desc": "社区服务器：显式指定外部公网IP。"
+      },
+      "PublicPort": {
+        "label": "公网端口",
+        "desc": "社区服务器：显式指定外部公网端口。"
+      },
+      "RCONEnabled": {
+        "label": "启用RCON",
+        "desc": "启用 RCON 远程管理。"
+      },
+      "RCONPort": {
+        "label": "RCON端口",
+        "desc": "RCON 使用的端口号。"
+      },
+      "RESTAPIEnabled": {
+        "label": "启用REST API",
+        "desc": "启用 REST API。"
+      },
+      "RESTAPIPort": {
+        "label": "REST API端口",
+        "desc": "REST API 的监听端口。"
+      },
+      "ServerDescription": {
+        "label": "服务器描述",
+        "desc": "服务器描述文本。"
+      },
+      "ServerName": {
+        "label": "服务器名称",
+        "desc": "服务器的显示名称。"
+      },
+      "ServerPassword": {
+        "label": "服务器密码",
+        "desc": "登录服务器所需的密码。"
+      },
+      "ServerPlayerMaxNum": {
+        "label": "最大玩家数",
+        "desc": "可加入服务器的最大玩家数。"
+      },
+      "AutoResetGuildTimeNoOnlinePlayers": {
+        "label": "公会自动重置时间",
+        "desc": "触发公会自动重置前的离线小时数。"
+      },
+      "bAllowEnhanceStat_Attack": {
+        "label": "允许加点·攻击",
+        "desc": "允许将属性点分配到攻击。"
+      },
+      "bAllowEnhanceStat_Health": {
+        "label": "允许加点·生命",
+        "desc": "允许将属性点分配到生命值。"
+      },
+      "bAllowEnhanceStat_Stamina": {
+        "label": "允许加点·耐力",
+        "desc": "允许将属性点分配到耐力。"
+      },
+      "bAllowEnhanceStat_Weight": {
+        "label": "允许加点·负重",
+        "desc": "允许将属性点分配到负重。"
+      },
+      "bAllowEnhanceStat_WorkSpeed": {
+        "label": "允许加点·工作速度",
+        "desc": "允许将属性点分配到工作速度。"
+      },
+      "bAllowGlobalPalboxExport": {
+        "label": "允许全局帕鲁盒导出",
+        "desc": "允许保存到全局帕鲁盒。"
+      },
+      "bAllowGlobalPalboxImport": {
+        "label": "允许全局帕鲁盒导入",
+        "desc": "允许从全局帕鲁盒加载。"
+      },
+      "bAutoResetGuildNoOnlinePlayers": {
+        "label": "自动重置离线公会",
+        "desc": "若无公会成员登录则自动删除建筑与基地帕鲁。"
+      },
+      "bBuildAreaLimit": {
+        "label": "建造区域限制",
+        "desc": "禁止在快速旅行点等附近建造。"
+      },
+      "bCharacterRecreateInHardcore": {
+        "label": "硬核可重建角色",
+        "desc": "硬核模式死亡后允许重建角色。"
+      },
+      "bDisplayPvPItemNumOnWorldMap_BaseCamp": {
+        "label": "地图显示PvP物品·基地",
+        "desc": "在地图上显示每个基地的PvP专用物品数量。"
+      },
+      "bDisplayPvPItemNumOnWorldMap_Player": {
+        "label": "地图显示PvP物品·玩家",
+        "desc": "在地图上显示玩家位置与PvP物品数量。"
+      },
+      "bEnableFastTravel": {
+        "label": "启用快速旅行",
+        "desc": "启用快速旅行。"
+      },
+      "bEnableFastTravelOnlyBaseCamp": {
+        "label": "仅基地间快速旅行",
+        "desc": "将快速旅行限制为仅基地之间。"
+      },
+      "bEnableInvaderEnemy": {
+        "label": "启用入侵者",
+        "desc": "启用入侵者敌人。"
+      },
+      "bEnableVoiceChat": {
+        "label": "启用语音聊天",
+        "desc": "启用游戏内语音聊天。"
+      },
+      "bExistPlayerAfterLogout": {
+        "label": "登出后留存睡眠",
+        "desc": "登出后玩家在原地进入睡眠状态。"
+      },
+      "bHardcore": {
+        "label": "硬核模式",
+        "desc": "启用硬核模式；死亡后不可复活。"
+      },
+      "bInvisibleOtherGuildBaseCampAreaFX": {
+        "label": "隐藏基地范围特效",
+        "desc": "切换基地范围边界的显示。"
+      },
+      "bIsPvP": {
+        "label": "启用PvP",
+        "desc": "启用玩家对战。"
+      },
+      "bIsRandomizerPalLevelRandom": {
+        "label": "随机帕鲁等级",
+        "desc": "启用后野生帕鲁等级完全随机。"
+      },
+      "bIsStartLocationSelectByMap": {
+        "label": "可选出生点",
+        "desc": "允许玩家选择出生地点。"
+      },
+      "bShowPlayerList": {
+        "label": "显示玩家列表",
+        "desc": "在ESC菜单启用玩家列表。"
+      },
+      "RandomizerSeed": {
+        "label": "随机化种子",
+        "desc": "帕鲁刷新随机化的种子值。"
+      },
+      "RandomizerType": {
+        "label": "随机化模式",
+        "desc": "刷新随机化模式：None / Region / All。"
+      },
+      "VoiceChatMaxVolumeDistance": {
+        "label": "语音满音量距离",
+        "desc": "语音音量不再衰减的距离。"
+      },
+      "VoiceChatZeroVolumeDistance": {
+        "label": "语音零音量距离",
+        "desc": "语音音量降为零的距离。"
+      },
+      "AdditionalDropItemNumWhenPlayerKillingInPvPMode": {
+        "label": "PvP击杀掉落数量",
+        "desc": "PvP击杀专属掉落物的数量。"
+      },
+      "AdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "PvP击杀掉落物",
+        "desc": "PvP击杀掉落的物品ID。"
+      },
+      "bAdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "PvP击杀掉落开关",
+        "desc": "PvP中玩家被击杀时掉落特殊物品。"
+      },
+      "BlockRespawnTime": {
+        "label": "复活冷却",
+        "desc": "死亡后可复活前的冷却（秒）。"
+      },
+      "bPalLost": {
+        "label": "死亡失去帕鲁",
+        "desc": "死亡时永久失去帕鲁。"
+      },
+      "BuildObjectDamageRate": {
+        "label": "建筑伤害倍率",
+        "desc": "对建筑的伤害倍率。"
+      },
+      "BuildObjectDeteriorationDamageRate": {
+        "label": "建筑劣化倍率",
+        "desc": "建筑劣化速度倍率。"
+      },
+      "CollectionDropRate": {
+        "label": "采集掉落倍率",
+        "desc": "可采集物品掉落倍率。"
+      },
+      "CollectionObjectHpRate": {
+        "label": "采集物血量倍率",
+        "desc": "可采集物体的血量倍率。"
+      },
+      "CollectionObjectRespawnSpeedRate": {
+        "label": "采集重生倍率",
+        "desc": "可采集物体重生间隔倍率。"
+      },
+      "DayTimeSpeedRate": {
+        "label": "白天流速",
+        "desc": "白天时间流逝速度倍率。"
+      },
+      "DeathPenalty": {
+        "label": "死亡惩罚",
+        "desc": "None / Item / ItemAndEquipment / All。"
+      },
+      "DenyTechnologyList": {
+        "label": "禁用科技",
+        "desc": "按科技ID禁用特定科技。"
+      },
+      "EnemyDropItemRate": {
+        "label": "敌人掉落倍率",
+        "desc": "掉落物品数量倍率。"
+      },
+      "EquipmentDurabilityDamageRate": {
+        "label": "耐久损耗倍率",
+        "desc": "装备耐久损耗倍率。"
+      },
+      "ExpRate": {
+        "label": "经验倍率",
+        "desc": "经验获取倍率。"
+      },
+      "GuildPlayerMaxNum": {
+        "label": "公会最大人数",
+        "desc": "每个公会最大玩家数。"
+      },
+      "GuildRejoinCooldownMinutes": {
+        "label": "公会重入冷却",
+        "desc": "公会重新加入冷却（分钟）。"
+      },
+      "ItemCorruptionMultiplier": {
+        "label": "物品腐坏倍率",
+        "desc": "物品腐坏速度倍率。"
+      },
+      "ItemWeightRate": {
+        "label": "物品重量倍率",
+        "desc": "物品重量倍率。"
+      },
+      "MonsterFarmActionSpeedRate": {
+        "label": "牧场产出倍率",
+        "desc": "放牧产出速度倍率。"
+      },
+      "NightTimeSpeedRate": {
+        "label": "夜晚流速",
+        "desc": "夜晚时间流逝速度倍率。"
+      },
+      "PalAutoHPRegeneRate": {
+        "label": "帕鲁回血倍率",
+        "desc": "帕鲁自然回血倍率。"
+      },
+      "PalAutoHpRegeneRateInSleep": {
+        "label": "帕鲁睡眠回血",
+        "desc": "帕鲁睡眠时回血倍率。"
+      },
+      "PalCaptureRate": {
+        "label": "捕获倍率",
+        "desc": "捕获率倍率。"
+      },
+      "PalDamageRateAttack": {
+        "label": "帕鲁攻击倍率",
+        "desc": "帕鲁造成伤害倍率。"
+      },
+      "PalDamageRateDefense": {
+        "label": "帕鲁承伤倍率",
+        "desc": "帕鲁承受伤害倍率。"
+      },
+      "PalEggDefaultHatchingTime": {
+        "label": "孵化时间",
+        "desc": "孵化巨型蛋所需时间（小时）。"
+      },
+      "PalSpawnNumRate": {
+        "label": "帕鲁刷新倍率",
+        "desc": "帕鲁刷新率倍率（影响性能）。"
+      },
+      "PalStaminaDecreaceRate": {
+        "label": "帕鲁耐力消耗",
+        "desc": "帕鲁耐力消耗倍率。"
+      },
+      "PalStomachDecreaceRate": {
+        "label": "帕鲁饥饿消耗",
+        "desc": "帕鲁饥饿消耗倍率。"
+      },
+      "PlayerAutoHPRegeneRate": {
+        "label": "玩家回血倍率",
+        "desc": "玩家自然回血倍率。"
+      },
+      "PlayerAutoHpRegeneRateInSleep": {
+        "label": "玩家睡眠回血",
+        "desc": "玩家睡眠时回血倍率。"
+      },
+      "PlayerDamageRateAttack": {
+        "label": "玩家攻击倍率",
+        "desc": "玩家造成伤害倍率。"
+      },
+      "PlayerDamageRateDefense": {
+        "label": "玩家承伤倍率",
+        "desc": "玩家承受伤害倍率。"
+      },
+      "PlayerStaminaDecreaceRate": {
+        "label": "玩家耐力消耗",
+        "desc": "玩家耐力消耗倍率。"
+      },
+      "PlayerStomachDecreaceRate": {
+        "label": "玩家饥饿消耗",
+        "desc": "玩家饥饿消耗倍率。"
+      },
+      "RespawnPenaltyDurationThreshold": {
+        "label": "复活惩罚阈值",
+        "desc": "应用复活惩罚的存活时间阈值（秒）。"
+      },
+      "RespawnPenaltyTimeScale": {
+        "label": "复活惩罚倍率",
+        "desc": "复活冷却时间的倍率。"
+      },
+      "SupplyDropSpan": {
+        "label": "补给间隔",
+        "desc": "陨石/补给掉落间隔（分钟）。"
+      }
+    }
   }
 }

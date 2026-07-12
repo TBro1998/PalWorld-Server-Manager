@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
 )
 
 // Server status values persisted in the servers table.
@@ -50,13 +51,14 @@ type serverRow struct {
 	installPath string
 	status      string
 	pid         int
+	launchArgs  string
 }
 
 func (m *Manager) loadServer(serverID int64) (*serverRow, error) {
 	row := m.db.QueryRow(
-		`SELECT install_path, status, pid FROM servers WHERE id = ?`, serverID)
+		`SELECT install_path, status, pid, launch_args FROM servers WHERE id = ?`, serverID)
 	var s serverRow
-	if err := row.Scan(&s.installPath, &s.status, &s.pid); err != nil {
+	if err := row.Scan(&s.installPath, &s.status, &s.pid, &s.launchArgs); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("server %d not found", serverID)
 		}
@@ -95,12 +97,19 @@ func (m *Manager) StartServer(serverID int64) error {
 		return err
 	}
 
+	// Build launch arguments from the persisted configuration.
+	launchArgs, err := palconfig.ParseLaunchArgs(srv.launchArgs)
+	if err != nil {
+		return fmt.Errorf("server %d: %w", serverID, err)
+	}
+	args := launchArgs.ToArgs()
+
 	// Compose log sinks: persist to disk and broadcast live lines to SSE clients.
 	capture := logger.NewCapture(serverID, m.logDir)
 	broadcaster := logger.NewBroadcastWriter(m.streams, serverID)
 	out := io.MultiWriter(capture, broadcaster)
 
-	cmd := exec.Command(exe)
+	cmd := exec.Command(exe, args...)
 	cmd.Dir = srv.installPath
 	cmd.Stdout = out
 	cmd.Stderr = out

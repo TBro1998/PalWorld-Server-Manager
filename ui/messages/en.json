@@ -21,12 +21,30 @@
     "ctaSubtitle": "Create your first Palworld server now and kick off an amazing gaming experience",
     "ctaButton": "Create Server",
     "features": {
-      "serverMgmt": { "title": "Server Management", "desc": "Start, stop, and restart your Palworld servers with one click" },
-      "modMgmt": { "title": "Mod Management", "desc": "Easily install and manage mods via the Steam Workshop" },
-      "monitor": { "title": "Real-time Monitoring", "desc": "Monitor server status, performance metrics, and player activity" },
-      "security": { "title": "Secure & Reliable", "desc": "JWT authentication and secure server management APIs" },
-      "deploy": { "title": "One-click Deployment", "desc": "Automated installation of SteamCMD and server files" },
-      "i18n": { "title": "Multi-language Support", "desc": "Available in Chinese, English, and Japanese" }
+      "serverMgmt": {
+        "title": "Server Management",
+        "desc": "Start, stop, and restart your Palworld servers with one click"
+      },
+      "modMgmt": {
+        "title": "Mod Management",
+        "desc": "Easily install and manage mods via the Steam Workshop"
+      },
+      "monitor": {
+        "title": "Real-time Monitoring",
+        "desc": "Monitor server status, performance metrics, and player activity"
+      },
+      "security": {
+        "title": "Secure & Reliable",
+        "desc": "JWT authentication and secure server management APIs"
+      },
+      "deploy": {
+        "title": "One-click Deployment",
+        "desc": "Automated installation of SteamCMD and server files"
+      },
+      "i18n": {
+        "title": "Multi-language Support",
+        "desc": "Available in Chinese, English, and Japanese"
+      }
     }
   },
   "auth": {
@@ -61,7 +79,9 @@
     "statusStopped": "Stopped",
     "statusRunning": "Running",
     "statusInstalling": "Installing",
-    "statusError": "Error"
+    "statusError": "Error",
+    "config": "Config",
+    "needsInstall": "Server files not installed"
   },
   "addServer": {
     "title": "Add New Server",
@@ -83,5 +103,426 @@
     "disable": "Disable",
     "enable": "Enable",
     "uninstall": "Uninstall"
+  },
+  "editServer": {
+    "title": "Edit Server",
+    "nameLabel": "Server name",
+    "pathLabel": "Install directory",
+    "pathChangedHint": "Directory changed. Save will re-check whether server files exist there.",
+    "portLabel": "Game port",
+    "queryPortLabel": "Query port",
+    "rconPortLabel": "RCON port",
+    "rconEnabledLabel": "Enable RCON",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving..."
+  },
+  "serverConfig": {
+    "title": "Server Config",
+    "loading": "Loading config...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "notInstalledHint": "Server files are not installed; install the server before editing config.",
+    "rawHint": "Edit the raw OptionSettings line. Saving raw overrides the structured form.",
+    "rawModeActive": "Raw text mode active: saving will use the raw OptionSettings line.",
+    "tabs": {
+      "performances": "Performance",
+      "serverManagement": "Server",
+      "features": "Features",
+      "gameBalances": "Balance",
+      "launch": "Launch args",
+      "raw": "Raw"
+    },
+    "launch": {
+      "port": "Port (-port)",
+      "players": "Max players (-players)",
+      "usePerfThreads": "-useperfthreads",
+      "noAsyncLoadingThread": "-NoAsyncLoadingThread",
+      "useMultithreadForDS": "-UseMultithreadForDS",
+      "numberOfWorkerThreadsServer": "Worker threads",
+      "publicLobby": "Community server (-publiclobby)",
+      "publicIP": "Public IP (-publicip)",
+      "publicPort": "Public port (-publicport)",
+      "logFormat": "Log format (-logformat)"
+    },
+    "params": {
+      "BaseCampMaxNum": {
+        "label": "Base camp total",
+        "desc": "Total number of bases across the server."
+      },
+      "BaseCampMaxNumInGuild": {
+        "label": "Bases per guild",
+        "desc": "Maximum bases per guild (default 4, max 10). Higher raises load."
+      },
+      "BaseCampWorkerMaxNum": {
+        "label": "Pals per base",
+        "desc": "Maximum Pals per base (max 50). Higher raises load."
+      },
+      "ItemContainerForceMarkDirtyInterval": {
+        "label": "Container resync interval",
+        "desc": "How often to force re-sync while a container UI is open (seconds)."
+      },
+      "MaxBuildingLimitNum": {
+        "label": "Building cap per player",
+        "desc": "Per-player building count cap (0 = unlimited)."
+      },
+      "PhysicsActiveDropItemMaxNum": {
+        "label": "Physics drop item cap",
+        "desc": "Maximum dropped items that can use physics behavior."
+      },
+      "ServerReplicatePawnCullDistance": {
+        "label": "Pal sync distance",
+        "desc": "Pal sync distance from players in cm (5000-15000)."
+      },
+      "AdminPassword": {
+        "label": "Admin password",
+        "desc": "Password used to obtain administrative privileges."
+      },
+      "AllowConnectPlatform": {
+        "label": "Allow connect platform",
+        "desc": "Deprecated. Use CrossplayPlatforms instead."
+      },
+      "bAllowClientMod": {
+        "label": "Allow client mods",
+        "desc": "Allow players with mods enabled to join the server."
+      },
+      "bEnableBuildingPlayerUIdDisplay": {
+        "label": "Show builder ID",
+        "desc": "Display the creator's player ID on structures."
+      },
+      "bIsShowJoinLeftMessage": {
+        "label": "Show join/leave messages",
+        "desc": "Show in-game messages when players join/leave."
+      },
+      "bIsUseBackupSaveData": {
+        "label": "Enable world backups",
+        "desc": "Enable world backups (increases disk load)."
+      },
+      "ChatPostLimitPerMinute": {
+        "label": "Chat limit / min",
+        "desc": "Maximum chat messages allowed per minute."
+      },
+      "CrossplayPlatforms": {
+        "label": "Crossplay platforms",
+        "desc": "Allowed platforms to connect, e.g. (Steam,Xbox,PS5,Mac)."
+      },
+      "LogFormatType": {
+        "label": "Log format",
+        "desc": "Log output format: Text or Json."
+      },
+      "PublicIP": {
+        "label": "Public IP",
+        "desc": "Community server: explicit external public IP."
+      },
+      "PublicPort": {
+        "label": "Public port",
+        "desc": "Community server: explicit external public port."
+      },
+      "RCONEnabled": {
+        "label": "Enable RCON",
+        "desc": "Enable RCON remote administration."
+      },
+      "RCONPort": {
+        "label": "RCON port",
+        "desc": "Port number used for RCON."
+      },
+      "RESTAPIEnabled": {
+        "label": "Enable REST API",
+        "desc": "Enable the REST API."
+      },
+      "RESTAPIPort": {
+        "label": "REST API port",
+        "desc": "Listening port for the REST API."
+      },
+      "ServerDescription": {
+        "label": "Server description",
+        "desc": "Server description text."
+      },
+      "ServerName": {
+        "label": "Server name",
+        "desc": "Display name of the server."
+      },
+      "ServerPassword": {
+        "label": "Server password",
+        "desc": "Password required to log in to the server."
+      },
+      "ServerPlayerMaxNum": {
+        "label": "Max players",
+        "desc": "Maximum number of players who can join."
+      },
+      "AutoResetGuildTimeNoOnlinePlayers": {
+        "label": "Guild auto-reset time",
+        "desc": "Offline hours before auto guild reset triggers."
+      },
+      "bAllowEnhanceStat_Attack": {
+        "label": "Allow Attack points",
+        "desc": "Allow allocating stat points to Attack."
+      },
+      "bAllowEnhanceStat_Health": {
+        "label": "Allow HP points",
+        "desc": "Allow allocating stat points to HP."
+      },
+      "bAllowEnhanceStat_Stamina": {
+        "label": "Allow Stamina points",
+        "desc": "Allow allocating stat points to Stamina."
+      },
+      "bAllowEnhanceStat_Weight": {
+        "label": "Allow Weight points",
+        "desc": "Allow allocating stat points to Carry Weight."
+      },
+      "bAllowEnhanceStat_WorkSpeed": {
+        "label": "Allow WorkSpeed points",
+        "desc": "Allow allocating stat points to Work Speed."
+      },
+      "bAllowGlobalPalboxExport": {
+        "label": "Allow Palbox export",
+        "desc": "Allow saving to the Global Palbox."
+      },
+      "bAllowGlobalPalboxImport": {
+        "label": "Allow Palbox import",
+        "desc": "Allow loading from the Global Palbox."
+      },
+      "bAutoResetGuildNoOnlinePlayers": {
+        "label": "Auto-reset offline guild",
+        "desc": "Auto-delete structures/base Pals if no member logs in."
+      },
+      "bBuildAreaLimit": {
+        "label": "Build area limit",
+        "desc": "Prevent building near fast-travel points etc."
+      },
+      "bCharacterRecreateInHardcore": {
+        "label": "Recreate in Hardcore",
+        "desc": "Allow recreating your character on death in Hardcore."
+      },
+      "bDisplayPvPItemNumOnWorldMap_BaseCamp": {
+        "label": "Show PvP items (base)",
+        "desc": "Show PvP-exclusive item counts per base on the map."
+      },
+      "bDisplayPvPItemNumOnWorldMap_Player": {
+        "label": "Show PvP items (player)",
+        "desc": "Show player locations and PvP item counts on the map."
+      },
+      "bEnableFastTravel": {
+        "label": "Enable fast travel",
+        "desc": "Enable fast travel."
+      },
+      "bEnableFastTravelOnlyBaseCamp": {
+        "label": "Fast travel bases only",
+        "desc": "Restrict fast travel to between bases only."
+      },
+      "bEnableInvaderEnemy": {
+        "label": "Enable invaders",
+        "desc": "Enable invader enemies."
+      },
+      "bEnableVoiceChat": {
+        "label": "Enable voice chat",
+        "desc": "Enable in-game voice chat."
+      },
+      "bExistPlayerAfterLogout": {
+        "label": "Sleep on logout",
+        "desc": "Player enters sleeping state at location on logout."
+      },
+      "bHardcore": {
+        "label": "Hardcore",
+        "desc": "Enable Hardcore; no respawn on death."
+      },
+      "bInvisibleOtherGuildBaseCampAreaFX": {
+        "label": "Hide base area FX",
+        "desc": "Toggle display of base area boundaries."
+      },
+      "bIsPvP": {
+        "label": "Enable PvP",
+        "desc": "Enable player-vs-player."
+      },
+      "bIsRandomizerPalLevelRandom": {
+        "label": "Random Pal levels",
+        "desc": "Fully random wild Pal levels when enabled."
+      },
+      "bIsStartLocationSelectByMap": {
+        "label": "Choose start location",
+        "desc": "Allow players to choose their starting location."
+      },
+      "bShowPlayerList": {
+        "label": "Show player list",
+        "desc": "Enable the player list on the ESC menu."
+      },
+      "RandomizerSeed": {
+        "label": "Randomizer seed",
+        "desc": "Seed for Pal spawn randomization."
+      },
+      "RandomizerType": {
+        "label": "Randomizer type",
+        "desc": "Spawn randomization: None / Region / All."
+      },
+      "VoiceChatMaxVolumeDistance": {
+        "label": "Voice max-volume dist",
+        "desc": "Distance where voice volume no longer attenuates."
+      },
+      "VoiceChatZeroVolumeDistance": {
+        "label": "Voice zero-volume dist",
+        "desc": "Distance where voice volume becomes zero."
+      },
+      "AdditionalDropItemNumWhenPlayerKillingInPvPMode": {
+        "label": "PvP kill drop count",
+        "desc": "Quantity of the special PvP kill drop item."
+      },
+      "AdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "PvP kill drop item",
+        "desc": "Item ID dropped on PvP kill."
+      },
+      "bAdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "label": "Drop on PvP kill",
+        "desc": "Drop a special item when a player is killed in PvP."
+      },
+      "BlockRespawnTime": {
+        "label": "Respawn cooldown",
+        "desc": "Cooldown before respawn after death (seconds)."
+      },
+      "bPalLost": {
+        "label": "Lose Pals on death",
+        "desc": "Permanently lose Pals on death."
+      },
+      "BuildObjectDamageRate": {
+        "label": "Building damage rate",
+        "desc": "Damage multiplier to buildings."
+      },
+      "BuildObjectDeteriorationDamageRate": {
+        "label": "Building decay rate",
+        "desc": "Building decay speed multiplier."
+      },
+      "CollectionDropRate": {
+        "label": "Gather drop rate",
+        "desc": "Gatherable items drop multiplier."
+      },
+      "CollectionObjectHpRate": {
+        "label": "Gather object HP",
+        "desc": "Gatherable objects health multiplier."
+      },
+      "CollectionObjectRespawnSpeedRate": {
+        "label": "Gather respawn rate",
+        "desc": "Gatherable objects respawn interval multiplier."
+      },
+      "DayTimeSpeedRate": {
+        "label": "Day speed",
+        "desc": "Daytime progression speed multiplier."
+      },
+      "DeathPenalty": {
+        "label": "Death penalty",
+        "desc": "None / Item / ItemAndEquipment / All."
+      },
+      "DenyTechnologyList": {
+        "label": "Denied technologies",
+        "desc": "Disable specific technologies by Technology ID."
+      },
+      "EnemyDropItemRate": {
+        "label": "Enemy drop rate",
+        "desc": "Dropped item quantity multiplier."
+      },
+      "EquipmentDurabilityDamageRate": {
+        "label": "Durability loss rate",
+        "desc": "Equipment durability loss multiplier."
+      },
+      "ExpRate": {
+        "label": "EXP rate",
+        "desc": "EXP gain multiplier."
+      },
+      "GuildPlayerMaxNum": {
+        "label": "Guild max players",
+        "desc": "Maximum players per guild."
+      },
+      "GuildRejoinCooldownMinutes": {
+        "label": "Guild rejoin cooldown",
+        "desc": "Guild rejoin cooldown (minutes)."
+      },
+      "ItemCorruptionMultiplier": {
+        "label": "Item corruption rate",
+        "desc": "Item corruption speed multiplier."
+      },
+      "ItemWeightRate": {
+        "label": "Item weight rate",
+        "desc": "Item weight multiplier."
+      },
+      "MonsterFarmActionSpeedRate": {
+        "label": "Ranch speed rate",
+        "desc": "Grazing item production speed multiplier."
+      },
+      "NightTimeSpeedRate": {
+        "label": "Night speed",
+        "desc": "Nighttime progression speed multiplier."
+      },
+      "PalAutoHPRegeneRate": {
+        "label": "Pal HP regen",
+        "desc": "Pal natural HP regen multiplier."
+      },
+      "PalAutoHpRegeneRateInSleep": {
+        "label": "Pal HP regen (sleep)",
+        "desc": "Pal HP regen while sleeping multiplier."
+      },
+      "PalCaptureRate": {
+        "label": "Capture rate",
+        "desc": "Capture rate multiplier."
+      },
+      "PalDamageRateAttack": {
+        "label": "Pal attack rate",
+        "desc": "Damage dealt by Pals multiplier."
+      },
+      "PalDamageRateDefense": {
+        "label": "Pal defense rate",
+        "desc": "Damage taken by Pals multiplier."
+      },
+      "PalEggDefaultHatchingTime": {
+        "label": "Egg hatch time",
+        "desc": "Time to hatch a Huge Egg (hours)."
+      },
+      "PalSpawnNumRate": {
+        "label": "Pal spawn rate",
+        "desc": "Pal spawn rate multiplier (affects performance)."
+      },
+      "PalStaminaDecreaceRate": {
+        "label": "Pal stamina drain",
+        "desc": "Pal stamina depletion multiplier."
+      },
+      "PalStomachDecreaceRate": {
+        "label": "Pal hunger drain",
+        "desc": "Pal hunger depletion multiplier."
+      },
+      "PlayerAutoHPRegeneRate": {
+        "label": "Player HP regen",
+        "desc": "Player natural HP regen multiplier."
+      },
+      "PlayerAutoHpRegeneRateInSleep": {
+        "label": "Player HP regen (sleep)",
+        "desc": "Player HP regen while sleeping multiplier."
+      },
+      "PlayerDamageRateAttack": {
+        "label": "Player attack rate",
+        "desc": "Damage dealt by players multiplier."
+      },
+      "PlayerDamageRateDefense": {
+        "label": "Player defense rate",
+        "desc": "Damage taken by players multiplier."
+      },
+      "PlayerStaminaDecreaceRate": {
+        "label": "Player stamina drain",
+        "desc": "Player stamina depletion multiplier."
+      },
+      "PlayerStomachDecreaceRate": {
+        "label": "Player hunger drain",
+        "desc": "Player hunger depletion multiplier."
+      },
+      "RespawnPenaltyDurationThreshold": {
+        "label": "Respawn penalty threshold",
+        "desc": "Survival-time threshold (s) for respawn penalty."
+      },
+      "RespawnPenaltyTimeScale": {
+        "label": "Respawn penalty scale",
+        "desc": "Multiplier applied to respawn cooldown."
+      },
+      "SupplyDropSpan": {
+        "label": "Supply drop interval",
+        "desc": "Meteorite / supply drop interval (minutes)."
+      }
+    }
   }
 }

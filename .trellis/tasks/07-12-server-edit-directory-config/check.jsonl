@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "校验 launch_args/installed/config 在 DB↔API↔process↔前端各层格式与语义一致，无裸字段直接透传"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "检查是否复用既有 serverExecutable/安装流程，未重复造轮子，palconfig 参数注册表为唯一真源"}

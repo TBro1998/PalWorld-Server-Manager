@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本特性跨 DB(launch_args列/迁移)→API(config端点/installed计算)→process(启动参数拼接)→前端(表单/schema) 多层，需按跨层指南校验数据格式一致性"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "改目录与安装检测须复用 process.serverExecutable 与 steamcmd.InstallPalworldServer，避免重复实现；INI/schema 作为单一真源"}

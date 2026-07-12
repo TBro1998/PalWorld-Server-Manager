@@ -3,10 +3,10 @@ package api
 import (
 	"database/sql"
 
-	"github.com/gin-gonic/gin"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
+	"github.com/gin-gonic/gin"
 )
 
 // Router handles API routing
@@ -61,7 +61,12 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			servers.POST("/:id/restart", r.RestartServer)
 			servers.GET("/:id/logs", r.GetLogs)
 			servers.GET("/:id/logs/stream", r.StreamLogs)
+			servers.GET("/:id/config", r.GetServerConfig)
+			servers.PUT("/:id/config", r.UpdateServerConfig)
 		}
+
+		// Config schema (drives the structured config form)
+		protected.GET("/config/schema", r.GetConfigSchema)
 
 		// Mod management
 		mods := protected.Group("/servers/:id/mods")

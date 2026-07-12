@@ -5,7 +5,7 @@ import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, Pencil, Settings } from 'lucide-react'
 import { useTranslations } from '@/contexts/LanguageContext'
 
 interface ServerCardProps {
@@ -15,6 +15,8 @@ interface ServerCardProps {
   onStop: (id: number) => void
   onRestart: (id: number) => void
   onDelete: (id: number) => void
+  onEdit: (server: Server) => void
+  onConfig: (server: Server) => void
 }
 
 const statusConfig = {
@@ -31,9 +33,12 @@ export function ServerCard({
   onStop,
   onRestart,
   onDelete,
+  onEdit,
+  onConfig,
 }: ServerCardProps) {
   const t = useTranslations('servers')
   const status = statusConfig[server.status]
+  const needsInstall = !server.installed && server.status !== 'installing'
 
   return (
     <Card>
@@ -51,6 +56,11 @@ export function ServerCard({
           <div>
             <span className="font-medium">{t('port')}:</span> {server.port}
           </div>
+          {needsInstall && (
+            <div className="text-amber-600 dark:text-amber-500 font-medium">
+              {t('needsInstall')}
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>
@@ -59,7 +69,7 @@ export function ServerCard({
             <>
               <Button
                 size="sm"
-                variant="secondary"
+                variant={needsInstall ? 'default' : 'secondary'}
                 onClick={() => onInstall(server.id)}
               >
                 <Download size={16} className="mr-1" />
@@ -69,9 +79,18 @@ export function ServerCard({
                 size="sm"
                 variant="default"
                 onClick={() => onStart(server.id)}
+                disabled={!server.installed}
               >
                 <Play size={16} className="mr-1" />
                 {t('start')}
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => onEdit(server)}>
+                <Pencil size={16} className="mr-1" />
+                {t('edit')}
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => onConfig(server)}>
+                <Settings size={16} className="mr-1" />
+                {t('config')}
               </Button>
             </>
           )}

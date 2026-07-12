@@ -46,3 +46,4 @@ config.local.yml
 *~
 
 .claude/settings.local.json
+Server/

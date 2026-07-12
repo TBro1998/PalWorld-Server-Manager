@@ -7,9 +7,9 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
+	"github.com/gin-gonic/gin"
 )
 
 // Server represents the HTTP server
@@ -44,6 +44,10 @@ func (s *Server) setupRoutes() {
 	// Reconcile any stale "running" server state left over from a previous run.
 	if err := apiRouter.ProcessManager().ReconcileOnStartup(); err != nil {
 		fmt.Printf("warning: startup reconciliation failed: %v\n", err)
+	}
+	// Refresh the persisted `installed` flag from on-disk reality.
+	if err := apiRouter.ProcessManager().ReconcileInstalled(); err != nil {
+		fmt.Printf("warning: installed reconciliation failed: %v\n", err)
 	}
 
 	apiGroup := s.router.Group("/api")

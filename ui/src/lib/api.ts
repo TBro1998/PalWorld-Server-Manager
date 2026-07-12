@@ -31,7 +31,14 @@ apiClient.interceptors.response.use(
 );
 
 // Server API functions
-import type { Server, CreateServerData, UpdateServerData } from '@/types/server'
+import type {
+  Server,
+  CreateServerData,
+  UpdateServerData,
+  ServerConfig,
+  UpdateServerConfigData,
+  ConfigParamDef,
+} from '@/types/server'
 
 export const serversApi = {
   list: () => apiClient.get<Server[]>('/api/servers'),
@@ -43,6 +50,10 @@ export const serversApi = {
   start: (id: number) => apiClient.post(`/api/servers/${id}/start`),
   stop: (id: number) => apiClient.post(`/api/servers/${id}/stop`),
   restart: (id: number) => apiClient.post(`/api/servers/${id}/restart`),
+  getConfig: (id: number) => apiClient.get<ServerConfig>(`/api/servers/${id}/config`),
+  updateConfig: (id: number, data: UpdateServerConfigData) =>
+    apiClient.put(`/api/servers/${id}/config`, data),
+  configSchema: () => apiClient.get<{ params: ConfigParamDef[] }>('/api/config/schema'),
 }
 
 export default apiClient;
