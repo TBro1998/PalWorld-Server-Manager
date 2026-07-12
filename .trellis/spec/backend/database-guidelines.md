@@ -6,71 +6,77 @@
 
 ## Overview
 
-- Driver: `modernc.org/sqlite`（纯 Go，无 CGO）。DB 通过 `database.Initialize(dbPath)` 打开并在启动时 `migrate()`。
-- 无 ORM：直接用 `database/sql` 的 `db.Query` / `db.QueryRow` / `db.Exec`，手写 SQL。
-- 迁移即代码：schema 变更写在 `internal/database/database.go` 的 `migrate()` 里，随进程启动幂等执行。
+- ORM: **GORM**（`gorm.io/gorm`）。Driver：`github.com/glebarez/sqlite`（纯 Go，无 CGO，底层 `modernc.org/sqlite`）。
+- DB 通过 `database.Initialize(dbPath)` 打开，返回 `*gorm.DB`，并在启动时 `migrate()` 跑 `AutoMigrate`。
+- 迁移即代码：schema 由 `internal/models` 的结构体定义，`AutoMigrate(&Server{}, &Mod{}, &User{})` 随进程启动幂等执行。
+- 关闭：`*gorm.DB` 无 `Close()`；取底层 `sqlDB, _ := db.DB(); sqlDB.Close()`。
+
+---
+
+## Models
+
+### Convention: 每个持久化字段必须显式 `gorm:"column:<name>"`
+
+**What**: `internal/models` 的 Server/Mod/User 为每个入库字段写死 `column` tag。
+
+**Why**: 代码在 `Select`/`Where`/`Update`/`Order` 里大量用**裸字符串列名**（如 `Update("pid", 0)`、`Select("install_path","pid","launch_args")`、`Order("created_at DESC")`）。这些字符串必须与 GORM 实际建的列名逐一对齐，否则运行期报 `no such column`，编译期发现不了。
+
+> **Gotcha（已踩）**: `PID int` 若不加 column tag，GORM 命名策略会生成 `p_id`（`PID` 不在 GORM 的 initialism 列表里），而代码里写的是 `"pid"` → `Create` 成功但 `Update("pid", ...)` 报 `no such column: pid`。显式 `gorm:"column:pid"` 消除该分歧。旧 `db:"..."` tag 对 GORM 无效，不要依赖。
+
+**Rule**: 新增/改动入库字段时，同时确认三处一致：结构体 `column` tag、代码里引用该列的裸字符串、`json` tag（对外契约）。改完 `go build ./...` 并跑 `internal/database` 的迁移/CRUD 测试。
+
+### Convention: 派生字段用 `gorm:"-"`，不要用 `gorm.Model`
+
+**What**: `Server.Status` 标 `gorm:"-"`（派生值，见 `process.DeriveStatus`），从不入库/出库。模型用显式字段而非内嵌 `gorm.Model`。
+
+**Why**:
+- `Status` 是运行期从内存状态 + `pid`/`last_error` 派生的，持久化会造成双源真相。
+- `gorm.Model` 内嵌 `DeletedAt` 会触发**软删除**，改变 `DeleteServer` 的硬删语义。项目要硬删，故不用 `gorm.Model`。
 
 ---
 
 ## Query Patterns
 
-### Convention: `serverColumns` 常量必须与 `scanServer` 的 Scan 目标严格对齐
+### Convention: 部分列更新用单列 `Update` 或 `Updates(map)`，禁用 `Updates(struct)`
 
-**What**: `internal/api/handlers.go` 用一个 `serverColumns` 字符串常量集中定义 `servers` 表的查询列，所有 `SELECT` 复用它；`scanServer` 按同一顺序 `Scan(...)` 到 `models.Server`。
+**What**: 只改个别列时用 `db.Model(&models.Server{}).Where("id = ?", id).Update("col", val)`，多列用 `Updates(map[string]any{...})`。
 
-**Why**: 列清单与 Scan 目标是两处手写、必须一一对应的隐式契约。任何一侧增删/改序而另一侧没同步，会导致运行期列错位（字段被写进错误目标或 `Scan` 报错），且编译期无法发现。
-
-**Rule**: 改动 `servers` 表列时，必须同时改这三处并保持数量+顺序一致：`serverColumns` 常量、`scanServer` 的 `Scan(...)`、`models.Server` 结构体字段。改完立即 `go build ./...` 并对 `GET /servers` 冒烟。
+**Why**: `Updates(struct{})` 会**跳过零值字段**。而本项目里 `pid=0`、`last_error=""`、`installed=false` 都是合法目标值（停服、清错、标记未安装），用 struct 更新会被静默忽略。单列 `Update` 与 `map` 不跳零值。`updated_at` 由 GORM 自动刷新，不用手写。
 
 **Example**:
 ```go
-// 9 列，顺序与 scanServer 完全对应
-const serverColumns = "id, name, install_path, last_error, pid, launch_args, installed, created_at, updated_at"
-
-func scanServer(sc interface{ Scan(dest ...any) error }) (models.Server, error) {
-    var s models.Server
-    err := sc.Scan(&s.ID, &s.Name, &s.InstallPath, &s.LastError, &s.PID,
-        &s.LaunchArgs, &s.Installed, &s.CreatedAt, &s.UpdatedAt) // 顺序与上面逐一对齐
-    return s, err
-}
+// 停服：pid 归零必须写入
+db.Model(&models.Server{}).Where("id = ?", id).Update("pid", 0)
+// 目录 + installed 一起改
+db.Model(&models.Server{}).Where("id = ?", id).
+    Updates(map[string]any{"install_path": p, "installed": ok})
 ```
+
+### Convention: not-found 判断用 `errors.Is(err, gorm.ErrRecordNotFound)`
+
+**What**: `First`/`Take` 查不到返回 `gorm.ErrRecordNotFound`。判断用 `errors.Is`，不要再比较 `err.Error() == "sql: no rows in result set"`。
+
+### Convention: 创建用 `Create`，ID 与时间戳自动回填
+
+**What**: `db.Create(&server)` 后 `server.ID`、`CreatedAt`、`UpdatedAt` 由 GORM 自动填充；无需手写 `time.Now()` 或 `LastInsertId()`。
 
 ---
 
 ## Migrations
 
-### Convention: 加列用 `addColumnIfMissing`（致命），删列用 `dropColumnIfExists`（告警、非致命）
+### Convention: 只用 `AutoMigrate`，它只做加法、不删列
 
-**What**: 既有库的结构演进走幂等 helper，均先 `PRAGMA table_info(<table>)` 判断列是否存在再动作。`CREATE TABLE IF NOT EXISTS` 只影响全新库——**改表结构时 CREATE 语句与迁移 helper 两处都要改**。
+**What**: schema 演进靠 `db.AutoMigrate(...)`：创建缺失的表/列/索引，幂等，新旧库都安全，每次启动都跑。
 
-**Why**:
-- 加列失败意味着后续读写会缺列 → 返回 error 让启动失败（fail fast）。
-- 删列是清理惰性数据，列残留无害（运行时不读）→ DROP 失败只记 `warning` 并继续，避免因个别环境 SQLite 差异破坏启动韧性。
+**Why / Gotcha**: `AutoMigrate` **不会删列**。历史遗留的弃用列（曾经的 `port`/`query_port`/`rcon_port`/`rcon_enabled`）与未用的 `status` 列在旧库中会残留——但**运行时从不读，无害**，无需清理（曾用的手写 `addColumnIfMissing`/`dropColumnIfExists` 已随 GORM 迁移移除）。若将来确需删列，用 `db.Migrator().DropColumn(&Model{}, "col")` 显式处理，并评估韧性（个别环境 DROP 失败不应阻断启动）。
 
-**Signatures**:
-```go
-func addColumnIfMissing(db *sql.DB, table, column, definition string) error // 失败返回 error（致命）
-func dropColumnIfExists(db *sql.DB, table, column string) error              // DROP 失败记 warning 后返回 nil（非致命）
-```
+### Gotcha（已踩）: glebarez migrator 无法重建带 `FOREIGN KEY` 子句的旧表
 
-**Example**:
-```go
-// migrate() 末尾
-_ = dropColumnIfExists(db, "servers", "port")
-_ = dropColumnIfExists(db, "servers", "query_port")
-_ = dropColumnIfExists(db, "servers", "rcon_port")
-_ = dropColumnIfExists(db, "servers", "rcon_enabled")
-```
+**What**: 旧手写 schema 的 `mods` 表带 `FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE`。当 AutoMigrate 需要**重建**该表（SQLite 无法 ALTER COLUMN，故走 建临时表→拷贝→改名）时，glebarez SQLite migrator 会**误把 `FOREIGN` 关键字当成列名**，启动崩溃：`table mods__temp has no column named FOREIGN`。
 
-> **Note**: `ALTER TABLE ... DROP COLUMN` 需 SQLite ≥ 3.35；本项目 `modernc.org/sqlite v1.33.1` 满足。仅对无索引/约束依赖的列使用。
+**Fix**: `migrate()` 在 AutoMigrate 前调用 `dropLegacyModsIfEmpty(db)`——`mods` 是 stub、从未写入，仅当表**为空**时 drop 掉让 AutoMigrate 干净重建（无 FK 子句），非空表绝不删（防数据丢失）。见 `internal/database/database.go`，回归用例 `TestInitializeLegacyModsFK`。
 
----
-
-## Naming Conventions
-
-<!-- Table names, column names, index names -->
-
-(To be filled by the team)
+**Rule**: GORM 模型不要用原始 `FOREIGN KEY` DDL 表达关联；需要外键时用 GORM 关联（`foreignKey`/`references`）由 GORM 自己生成，避免 migrator 重建时的解析坑。
 
 ---
 
@@ -79,8 +85,6 @@ _ = dropColumnIfExists(db, "servers", "rcon_enabled")
 ### Gotcha: `servers` 表的端口/RCON 列不影响运行——生效源是 launch_args + INI
 
 > **Warning**: 服务器运行时真正生效的配置只有两处：`servers.launch_args`（JSON → 命令行参数，见 `internal/palconfig/launchargs.go`）与 `PalWorldSettings.ini` 的 OptionSettings（见 `internal/palconfig/schema.go`）。进程启动 `internal/process/manager.go` 只读 `install_path, pid, launch_args`。
->
-> 历史上 `servers` 表存在 `port/query_port/rcon_port/rcon_enabled` 列，但它们**只在 CRUD 与 UI 展示中读写，从不进入启动命令或 INI**，即惰性展示元数据。这些列已被移除。
 >
 > **教训**：要改服务器实际行为（端口、公网、日志格式等），改的是 `launch_args` 或 INI 参数，**不要**新增"看起来像配置"的 `servers` 表列——那样只会造出又一个不生效的惰性列。游戏绑定端口 `-port` 只有 launch arg，INI 无对应项；`PublicIP/PublicPort/LogFormatType` 在 launch arg 与 INI 各有一份，运行时 launch arg 覆盖 INI。
 

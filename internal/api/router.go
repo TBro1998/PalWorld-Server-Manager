@@ -1,24 +1,23 @@
 package api
 
 import (
-	"database/sql"
-
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // Router handles API routing
 type Router struct {
-	db      *sql.DB
+	db      *gorm.DB
 	config  *config.Config
 	process *process.Manager
 	streams *logger.StreamManager
 }
 
 // NewRouter creates a new API router
-func NewRouter(db *sql.DB, cfg *config.Config) *Router {
+func NewRouter(db *gorm.DB, cfg *config.Config) *Router {
 	streams := logger.NewStreamManager()
 	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath)
 	return &Router{

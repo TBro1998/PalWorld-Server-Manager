@@ -3,7 +3,7 @@
   "name": "migrate-db-to-gorm",
   "title": "后端数据库层迁移到 GORM",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

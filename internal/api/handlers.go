@@ -2,18 +2,19 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // Login handles user login
@@ -27,8 +28,6 @@ func (r *Router) Register(c *gin.Context) {
 	// TODO: Implement registration logic
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Register endpoint - to be implemented"})
 }
-
-const serverColumns = "id, name, install_path, last_error, pid, launch_args, installed, created_at, updated_at"
 
 // absInstallPath normalizes a server install path to an absolute path. SteamCMD's
 // +force_install_dir and the server launch working directory both require an
@@ -46,14 +45,6 @@ func absInstallPath(p string) string {
 	return abs
 }
 
-func scanServer(sc interface {
-	Scan(dest ...any) error
-}) (models.Server, error) {
-	var s models.Server
-	err := sc.Scan(&s.ID, &s.Name, &s.InstallPath, &s.LastError, &s.PID, &s.LaunchArgs, &s.Installed, &s.CreatedAt, &s.UpdatedAt)
-	return s, err
-}
-
 // hydrateStatus fills the derived Status field from in-memory manager state and
 // the persisted last_error. Status is never read from the database.
 func (r *Router) hydrateStatus(s *models.Server) {
@@ -62,22 +53,14 @@ func (r *Router) hydrateStatus(s *models.Server) {
 
 // ListServers returns all servers
 func (r *Router) ListServers(c *gin.Context) {
-	rows, err := r.db.Query("SELECT " + serverColumns + " FROM servers ORDER BY created_at DESC")
-	if err != nil {
+	var servers []models.Server
+	if err := r.db.Order("created_at DESC").Find(&servers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query servers"})
 		return
 	}
-	defer rows.Close()
 
-	var servers []models.Server
-	for rows.Next() {
-		s, err := scanServer(rows)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan server"})
-			return
-		}
-		r.hydrateStatus(&s)
-		servers = append(servers, s)
+	for i := range servers {
+		r.hydrateStatus(&servers[i])
 	}
 
 	if servers == nil {
@@ -106,45 +89,29 @@ func (r *Router) CreateServer(c *gin.Context) {
 	// (SteamCMD, launch cwd, config I/O) always see a stable, absolute location.
 	installPath := absInstallPath(req.InstallPath)
 
-	// Status is never persisted as a truth source (it is derived); the status
-	// column keeps its schema DEFAULT and is omitted here. Only facts are stored.
-	now := time.Now()
-	result, err := r.db.Exec(
-		"INSERT INTO servers (name, install_path, pid, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		req.Name, installPath, 0, now, now,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
-		return
+	// Status is never persisted as a truth source (it is derived); the model omits
+	// it (gorm:"-"). GORM auto-populates ID, created_at and updated_at on Create.
+	server := models.Server{
+		Name:        req.Name,
+		InstallPath: installPath,
+		PID:         0,
 	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get server ID"})
+	if err := r.db.Create(&server).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
 		return
 	}
 
 	// If no install path was provided, update with default Servers/{id}
 	if installPath == "" {
-		installPath = absInstallPath(fmt.Sprintf("Servers/%d", id))
-		_, err = r.db.Exec("UPDATE servers SET install_path = ? WHERE id = ?", installPath, id)
-		if err != nil {
+		installPath = absInstallPath(fmt.Sprintf("Servers/%d", server.ID))
+		if err := r.db.Model(&server).Update("install_path", installPath).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update install path"})
 			return
 		}
 	}
 
-	// Return the created server
-	server := models.Server{
-		ID:          id,
-		Name:        req.Name,
-		InstallPath: installPath,
-		Status:      "stopped",
-		PID:         0,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
+	// Return the created server with its derived status.
+	server.Status = "stopped"
 	c.JSON(http.StatusCreated, server)
 }
 
@@ -156,9 +123,9 @@ func (r *Router) GetServer(c *gin.Context) {
 		return
 	}
 
-	s, err := scanServer(r.db.QueryRow("SELECT "+serverColumns+" FROM servers WHERE id = ?", id))
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	var s models.Server
+	if err := r.db.First(&s, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
@@ -194,25 +161,20 @@ func (r *Router) UpdateServer(c *gin.Context) {
 	}
 
 	// Load current directory and last error, then derive status.
-	var curPath, lastError string
-	err = r.db.QueryRow("SELECT install_path, last_error FROM servers WHERE id = ?", id).Scan(&curPath, &lastError)
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	var cur models.Server
+	if err := r.db.Select("install_path", "last_error").First(&cur, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
 		return
 	}
-	status := r.process.DeriveStatus(id, lastError)
+	status := r.process.DeriveStatus(id, cur.LastError)
 
-	now := time.Now()
-
-	// Base metadata always updates.
-	if _, err = r.db.Exec(
-		"UPDATE servers SET name = ?, updated_at = ? WHERE id = ?",
-		req.Name, now, id,
-	); err != nil {
+	// Base metadata always updates. Single-column Update auto-refreshes updated_at.
+	if err := r.db.Model(&models.Server{}).Where("id = ?", id).
+		Update("name", req.Name).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update server"})
 		return
 	}
@@ -222,16 +184,14 @@ func (r *Router) UpdateServer(c *gin.Context) {
 	// input that resolves to the current directory is treated as "no change".
 	if req.InstallPath != nil {
 		newPath := absInstallPath(*req.InstallPath)
-		if newPath != curPath {
+		if newPath != cur.InstallPath {
 			if status != "stopped" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot change install directory while server is " + status})
 				return
 			}
 			installed := process.IsInstalled(newPath)
-			if _, err = r.db.Exec(
-				"UPDATE servers SET install_path = ?, installed = ?, updated_at = ? WHERE id = ?",
-				newPath, installed, now, id,
-			); err != nil {
+			if err := r.db.Model(&models.Server{}).Where("id = ?", id).
+				Updates(map[string]any{"install_path": newPath, "installed": installed}).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update install path"})
 				return
 			}
@@ -246,17 +206,15 @@ func (r *Router) UpdateServer(c *gin.Context) {
 			return
 		}
 		canonical, _ := parsed.Marshal()
-		if _, err = r.db.Exec(
-			"UPDATE servers SET launch_args = ?, updated_at = ? WHERE id = ?",
-			canonical, now, id,
-		); err != nil {
+		if err := r.db.Model(&models.Server{}).Where("id = ?", id).
+			Update("launch_args", canonical).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update launch args"})
 			return
 		}
 	}
 
-	s, err := scanServer(r.db.QueryRow("SELECT "+serverColumns+" FROM servers WHERE id = ?", id))
-	if err != nil {
+	var s models.Server
+	if err := r.db.First(&s, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query updated server"})
 		return
 	}
@@ -273,17 +231,16 @@ func (r *Router) DeleteServer(c *gin.Context) {
 	}
 
 	// Check if server exists and derive its status.
-	var lastError string
-	err = r.db.QueryRow("SELECT last_error FROM servers WHERE id = ?", id).Scan(&lastError)
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	var srv models.Server
+	if err := r.db.Select("last_error").First(&srv, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
 		return
 	}
-	status := r.process.DeriveStatus(id, lastError)
+	status := r.process.DeriveStatus(id, srv.LastError)
 
 	// Prevent deletion of running or installing servers
 	if status == "running" || status == "installing" {
@@ -291,9 +248,8 @@ func (r *Router) DeleteServer(c *gin.Context) {
 		return
 	}
 
-	// Delete server
-	_, err = r.db.Exec("DELETE FROM servers WHERE id = ?", id)
-	if err != nil {
+	// Delete server. The model has no DeletedAt field, so this is a hard delete.
+	if err := r.db.Delete(&models.Server{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete server"})
 		return
 	}
@@ -310,10 +266,9 @@ func (r *Router) InstallServer(c *gin.Context) {
 	}
 
 	// Verify the server exists.
-	var exists int
-	err = r.db.QueryRow("SELECT 1 FROM servers WHERE id = ?", id).Scan(&exists)
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	var srv models.Server
+	if err := r.db.Select("id").First(&srv, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
@@ -522,10 +477,12 @@ type UpdateServerConfigRequest struct {
 }
 
 func (r *Router) loadServerPathState(id int64) (installPath, lastError, launchArgs string, installed bool, err error) {
-	err = r.db.QueryRow(
-		"SELECT install_path, last_error, launch_args, installed FROM servers WHERE id = ?", id,
-	).Scan(&installPath, &lastError, &launchArgs, &installed)
-	return
+	var s models.Server
+	err = r.db.Select("install_path", "last_error", "launch_args", "installed").First(&s, id).Error
+	if err != nil {
+		return
+	}
+	return s.InstallPath, s.LastError, s.LaunchArgs, s.Installed, nil
 }
 
 // GetServerConfig returns the effective PalWorldSettings values, launch args,
@@ -539,7 +496,7 @@ func (r *Router) GetServerConfig(c *gin.Context) {
 
 	installPath, _, launchArgsJSON, installed, err := r.loadServerPathState(id)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
@@ -597,7 +554,7 @@ func (r *Router) UpdateServerConfig(c *gin.Context) {
 
 	installPath, lastError, _, _, err := r.loadServerPathState(id)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
 			return
 		}
@@ -631,10 +588,8 @@ func (r *Router) UpdateServerConfig(c *gin.Context) {
 	// Optional launch args.
 	if req.LaunchArgs != nil {
 		canonical, _ := req.LaunchArgs.Marshal()
-		if _, err := r.db.Exec(
-			"UPDATE servers SET launch_args = ?, updated_at = ? WHERE id = ?",
-			canonical, time.Now(), id,
-		); err != nil {
+		if err := r.db.Model(&models.Server{}).Where("id = ?", id).
+			Update("launch_args", canonical).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update launch args"})
 			return
 		}

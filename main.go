@@ -31,7 +31,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer db.Close()
+	if sqlDB, err := db.DB(); err == nil {
+		defer sqlDB.Close()
+	}
 
 	// Create and start server
 	srv := server.New(cfg, db, staticFiles)

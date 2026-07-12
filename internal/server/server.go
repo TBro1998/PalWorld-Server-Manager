@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -10,18 +9,19 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // Server represents the HTTP server
 type Server struct {
 	config      *config.Config
-	db          *sql.DB
+	db          *gorm.DB
 	router      *gin.Engine
 	staticFiles embed.FS
 }
 
 // New creates a new server instance
-func New(cfg *config.Config, db *sql.DB, staticFiles embed.FS) *Server {
+func New(cfg *config.Config, db *gorm.DB, staticFiles embed.FS) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())

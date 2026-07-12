@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 )
 
 // pollInterval is how often adopted (cmd==nil) processes are polled for exit.
@@ -59,41 +60,24 @@ func (m *Manager) monitor(serverID int64, h *procHandle, capture *logger.Capture
 // pid=0 and an empty last_error and therefore derives as "stopped", allowing a
 // clean retry. Should be called once during startup.
 func (m *Manager) ReconcileOnStartup() error {
-	rows, err := m.db.Query(`SELECT id, pid FROM servers WHERE pid > 0`)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	type entry struct {
-		id  int64
-		pid int
-	}
-	var entries []entry
-	for rows.Next() {
-		var e entry
-		if err := rows.Scan(&e.id, &e.pid); err != nil {
-			return err
-		}
-		entries = append(entries, e)
-	}
-	if err := rows.Err(); err != nil {
+	var servers []models.Server
+	if err := m.db.Select("id", "pid").Where("pid > 0").Find(&servers).Error; err != nil {
 		return err
 	}
 
-	for _, e := range entries {
-		if isProcessAlive(e.pid) {
-			handle := &procHandle{cmd: nil, pid: e.pid}
+	for _, s := range servers {
+		if isProcessAlive(s.PID) {
+			handle := &procHandle{cmd: nil, pid: s.PID}
 			m.mu.Lock()
-			m.running[e.id] = handle
+			m.running[s.ID] = handle
 			m.mu.Unlock()
-			go m.monitor(e.id, &procHandle{cmd: nil, pid: e.pid}, nil, nil, nil)
-			fmt.Printf("reconciled server %d: adopted running process (pid %d)\n", e.id, e.pid)
+			go m.monitor(s.ID, &procHandle{cmd: nil, pid: s.PID}, nil, nil, nil)
+			fmt.Printf("reconciled server %d: adopted running process (pid %d)\n", s.ID, s.PID)
 		} else {
-			if err := m.setPID(e.id, 0); err != nil {
+			if err := m.setPID(s.ID, 0); err != nil {
 				return err
 			}
-			fmt.Printf("reconciled server %d: cleared stale pid %d (not alive)\n", e.id, e.pid)
+			fmt.Printf("reconciled server %d: cleared stale pid %d (not alive)\n", s.ID, s.PID)
 		}
 	}
 	return nil
@@ -104,32 +88,15 @@ func (m *Manager) ReconcileOnStartup() error {
 // Called once at startup so the flag reflects on-disk reality without probing
 // on every API request.
 func (m *Manager) ReconcileInstalled() error {
-	rows, err := m.db.Query(`SELECT id, install_path FROM servers`)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	type entry struct {
-		id          int64
-		installPath string
-	}
-	var servers []entry
-	for rows.Next() {
-		var e entry
-		if err := rows.Scan(&e.id, &e.installPath); err != nil {
-			return err
-		}
-		servers = append(servers, e)
-	}
-	if err := rows.Err(); err != nil {
+	var servers []models.Server
+	if err := m.db.Select("id", "install_path").Find(&servers).Error; err != nil {
 		return err
 	}
 
 	for _, s := range servers {
-		installed := IsInstalled(s.installPath)
-		if _, err := m.db.Exec(
-			`UPDATE servers SET installed = ? WHERE id = ?`, installed, s.id); err != nil {
+		installed := IsInstalled(s.InstallPath)
+		if err := m.db.Model(&models.Server{}).Where("id = ?", s.ID).
+			Update("installed", installed).Error; err != nil {
 			return err
 		}
 	}

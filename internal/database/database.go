@@ -1,21 +1,19 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 
-	_ "modernc.org/sqlite"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 )
 
-// Initialize creates and initializes the database
-func Initialize(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", dbPath)
+// Initialize opens the SQLite database with the pure-Go glebarez driver (no CGO)
+// and applies schema migrations via GORM AutoMigrate.
+func Initialize(dbPath string) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	if err := migrate(db); err != nil {
@@ -25,141 +23,47 @@ func Initialize(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
-func migrate(db *sql.DB) error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS servers (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		install_path TEXT NOT NULL,
-		status TEXT DEFAULT 'stopped',
-		pid INTEGER DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS mods (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id INTEGER NOT NULL,
-		workshop_id TEXT NOT NULL,
-		name TEXT NOT NULL,
-		enabled BOOLEAN DEFAULT 1,
-		install_path TEXT,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-	);
-
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE NOT NULL,
-		password_hash TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
-	`
-
-	if _, err := db.Exec(schema); err != nil {
+// migrate applies the schema using GORM AutoMigrate. AutoMigrate is additive and
+// idempotent: it creates missing tables/columns/indexes and is safe to run on
+// every startup against both new and existing databases. It intentionally does
+// NOT drop columns — residual deprecated columns on older databases (e.g. the
+// former port/query_port/rcon_port/rcon_enabled and the unused status column)
+// are harmless because nothing reads them at runtime.
+func migrate(db *gorm.DB) error {
+	if err := dropLegacyModsIfEmpty(db); err != nil {
 		return err
 	}
-
-	// Additive column migrations for existing databases.
-	if err := addColumnIfMissing(db, "servers", "launch_args", "TEXT DEFAULT ''"); err != nil {
-		return err
-	}
-	if err := addColumnIfMissing(db, "servers", "installed", "BOOLEAN DEFAULT 0"); err != nil {
-		return err
-	}
-	if err := addColumnIfMissing(db, "servers", "last_error", "TEXT DEFAULT ''"); err != nil {
-		return err
-	}
-
-	// Remove deprecated lazy metadata columns from existing databases. These
-	// columns (game/query/RCON ports and the RCON toggle) were never wired into
-	// the runtime — launch_args + PalWorldSettings.ini are the sole source of
-	// truth — so dropping them is non-destructive. Failures are logged and
-	// tolerated: a residual column is harmless (nothing reads it) and must not
-	// block startup.
-	for _, col := range []string{"port", "query_port", "rcon_port", "rcon_enabled"} {
-		if err := dropColumnIfExists(db, "servers", col); err != nil {
-			fmt.Printf("warning: failed to drop column servers.%s: %v\n", col, err)
-		}
-	}
-	return nil
+	return db.AutoMigrate(
+		&models.Server{},
+		&models.Mod{},
+		&models.User{},
+	)
 }
 
-// dropColumnIfExists drops a column from a table only when it currently exists,
-// making the migration idempotent across restarts and versions. Unlike
-// addColumnIfMissing, a failed DROP is returned to the caller (which logs and
-// continues) rather than treated as fatal: the affected columns are unused
-// lazy metadata, so a residual column is harmless and must not abort startup.
-func dropColumnIfExists(db *sql.DB, table, column string) error {
-	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
-	if err != nil {
-		return fmt.Errorf("inspect %s columns: %w", table, err)
+// dropLegacyModsIfEmpty removes an existing `mods` table only when it is empty,
+// so AutoMigrate can recreate it cleanly.
+//
+// The legacy hand-written schema created `mods` with a raw
+// `FOREIGN KEY (server_id) REFERENCES servers(id)` clause. When AutoMigrate
+// needs to rebuild that table, the glebarez SQLite migrator mis-parses the DDL
+// and treats the `FOREIGN` keyword as a column, crashing startup with
+// "table mods__temp has no column named FOREIGN". Mod features are still stubs
+// and the table is never populated, so dropping an EMPTY legacy table is a
+// no-op data-wise and lets GORM recreate it without the problematic FK clause.
+// A non-empty table is never dropped (defensive: no silent data loss).
+func dropLegacyModsIfEmpty(db *gorm.DB) error {
+	if !db.Migrator().HasTable("mods") {
+		return nil
 	}
-	defer rows.Close()
-
-	found := false
-	for rows.Next() {
-		var (
-			cid        int
-			name       string
-			ctype      string
-			notNull    int
-			dfltValue  sql.NullString
-			primaryKey int
-		)
-		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dfltValue, &primaryKey); err != nil {
-			return err
-		}
-		if name == column {
-			found = true
-		}
+	var count int64
+	if err := db.Table("mods").Count(&count).Error; err != nil {
+		return fmt.Errorf("count mods before legacy drop: %w", err)
 	}
-	if err := rows.Err(); err != nil {
-		return err
+	if count > 0 {
+		return nil // never drop data
 	}
-	if !found {
-		return nil // already absent
-	}
-
-	if _, err := db.Exec(fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", table, column)); err != nil {
-		return fmt.Errorf("drop column %s.%s: %w", table, column, err)
-	}
-	return nil
-}
-
-// addColumnIfMissing adds a column to a table only when it does not already
-// exist, making migrations idempotent across restarts and versions.
-func addColumnIfMissing(db *sql.DB, table, column, definition string) error {
-	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
-	if err != nil {
-		return fmt.Errorf("inspect %s columns: %w", table, err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			cid        int
-			name       string
-			ctype      string
-			notNull    int
-			dfltValue  sql.NullString
-			primaryKey int
-		)
-		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dfltValue, &primaryKey); err != nil {
-			return err
-		}
-		if name == column {
-			return nil // already present
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	_, err = db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, definition))
-	if err != nil {
-		return fmt.Errorf("add column %s.%s: %w", table, column, err)
+	if err := db.Migrator().DropTable("mods"); err != nil {
+		return fmt.Errorf("drop legacy mods table: %w", err)
 	}
 	return nil
 }

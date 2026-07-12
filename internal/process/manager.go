@@ -1,7 +1,7 @@
 package process
 
 import (
-	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
+	"gorm.io/gorm"
 )
 
 // Derived status values. These are NOT persisted; DeriveStatus computes them
@@ -35,7 +37,7 @@ type procHandle struct {
 
 // Manager owns the lifecycle of running Palworld server processes.
 type Manager struct {
-	db              *sql.DB
+	db              *gorm.DB
 	streams         *logger.StreamManager
 	logDir          string
 	steamcmdPath    string
@@ -49,7 +51,7 @@ type Manager struct {
 // NewManager creates a process manager backed by the given database and stream
 // manager. logDir is the base directory for per-server log files; steamcmdPath
 // is the SteamCMD installation used to install server files.
-func NewManager(db *sql.DB, streams *logger.StreamManager, logDir, steamcmdPath string) *Manager {
+func NewManager(db *gorm.DB, streams *logger.StreamManager, logDir, steamcmdPath string) *Manager {
 	return &Manager{
 		db:              db,
 		streams:         streams,
@@ -69,32 +71,34 @@ type serverRow struct {
 }
 
 func (m *Manager) loadServer(serverID int64) (*serverRow, error) {
-	row := m.db.QueryRow(
-		`SELECT install_path, pid, launch_args FROM servers WHERE id = ?`, serverID)
-	var s serverRow
-	if err := row.Scan(&s.installPath, &s.pid, &s.launchArgs); err != nil {
-		if err == sql.ErrNoRows {
+	var srv models.Server
+	err := m.db.Select("install_path", "pid", "launch_args").First(&srv, serverID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("server %d not found", serverID)
 		}
 		return nil, err
 	}
-	return &s, nil
+	return &serverRow{
+		installPath: srv.InstallPath,
+		pid:         srv.PID,
+		launchArgs:  srv.LaunchArgs,
+	}, nil
 }
 
 // setPID persists the process id fact for a server (0 means no process).
+// A map update ensures pid=0 is written (a struct update would skip the zero
+// value); GORM auto-refreshes updated_at.
 func (m *Manager) setPID(serverID int64, pid int) error {
-	_, err := m.db.Exec(
-		`UPDATE servers SET pid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-		pid, serverID)
-	return err
+	return m.db.Model(&models.Server{}).Where("id = ?", serverID).
+		Update("pid", pid).Error
 }
 
-// setError persists the last-error fact for a server.
+// setError persists the last-error fact for a server. Update (single column)
+// writes the empty string too, so clearError works via this path.
 func (m *Manager) setError(serverID int64, msg string) error {
-	_, err := m.db.Exec(
-		`UPDATE servers SET last_error = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-		msg, serverID)
-	return err
+	return m.db.Model(&models.Server{}).Where("id = ?", serverID).
+		Update("last_error", msg).Error
 }
 
 // clearError clears the last-error fact for a server.
@@ -282,25 +286,24 @@ func (m *Manager) InstallServer(serverID int64, out io.Writer) error {
 		m.mu.Unlock()
 	}()
 
-	var installPath string
-	if err := m.db.QueryRow(
-		`SELECT install_path FROM servers WHERE id = ?`, serverID,
-	).Scan(&installPath); err != nil {
-		if err == sql.ErrNoRows {
+	var srv models.Server
+	if err := m.db.Select("install_path").First(&srv, serverID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("server %d not found", serverID)
 		}
 		return err
 	}
+	installPath := srv.InstallPath
 
 	// SteamCMD runs without holding m.mu so status queries stay responsive.
 	err := steamcmd.InstallPalworldServer(installPath, m.steamcmdPath, out)
 	if err != nil {
 		_ = m.setError(serverID, err.Error())
-		_, _ = m.db.Exec(`UPDATE servers SET installed = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, serverID)
+		_ = m.db.Model(&models.Server{}).Where("id = ?", serverID).Update("installed", false).Error
 		return err
 	}
 
 	_ = m.clearError(serverID)
-	_, _ = m.db.Exec(`UPDATE servers SET installed = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, serverID)
+	_ = m.db.Model(&models.Server{}).Where("id = ?", serverID).Update("installed", true).Error
 	return nil
 }
