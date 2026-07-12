@@ -32,8 +32,8 @@ ui/
 ## 開発
 
 ```bash
-pnpm install
-pnpm run dev
+bun install
+bun run dev
 ```
 
 [http://localhost:3000](http://localhost:3000) を開く
@@ -41,7 +41,7 @@ pnpm run dev
 ## 本番ビルド
 
 ```bash
-pnpm run build
+bun run build
 ```
 
 これにより`out/`ディレクトリに静的エクスポートが作成され、Goバイナリに埋め込まれます。

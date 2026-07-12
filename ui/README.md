@@ -32,8 +32,8 @@ ui/
 ## 开发
 
 ```bash
-pnpm install
-pnpm run dev
+bun install
+bun run dev
 ```
 
 打开 [http://localhost:3000](http://localhost:3000)
@@ -41,7 +41,7 @@ pnpm run dev
 ## 生产构建
 
 ```bash
-pnpm run build
+bun run build
 ```
 
 这将在 `out/` 目录中创建静态导出，该目录将被嵌入到 Go 二进制文件中。

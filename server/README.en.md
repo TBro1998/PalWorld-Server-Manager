@@ -58,7 +58,7 @@ The frontend is embedded using Go's `embed` package. Build the Next.js frontend 
 
 ```bash
 cd ../ui
-pnpm run build
+bun run build
 ```
 
 Then build the Go binary - it will include the frontend automatically.

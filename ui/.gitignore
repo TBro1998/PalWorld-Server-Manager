@@ -19,7 +19,7 @@ node_modules/
 *.pem
 
 # Debug
-pnpm-debug.log*
+bun-debug.log*
 yarn-debug.log*
 yarn-error.log*
 

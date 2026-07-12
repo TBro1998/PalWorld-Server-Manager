@@ -58,7 +58,7 @@ go build .
 
 ```bash
 cd ../ui
-pnpm run build
+bun run build
 ```
 
 次にGoバイナリをビルドします - フロントエンドが自動的に含まれます。
