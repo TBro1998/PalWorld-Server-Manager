@@ -20,7 +20,7 @@
 - ❌ No routing between pages
 
 ### Key Requirement
-Default server directory: `Server/{id}` under current working directory, with option to select custom directory.
+Default server directory: `Servers/{id}` under current working directory, with option to select custom directory.
 
 ## Implementation Strategy
 
@@ -44,7 +44,7 @@ This plan follows a phased approach, building from backend data layer up through
 **CreateServer** - Create new server instance:
 ```go
 - Parse request body: {name, installPath}
-- Validate: name required, installPath defaults to "Server/{id}"
+- Validate: name required, installPath defaults to "Servers/{id}"
 - Insert into database with default values:
   - status: "stopped"
   - port: 8211 (default)
@@ -220,7 +220,7 @@ Recommend Option A for initial implementation - simpler and sufficient.
 **Form Fields:**
 1. **Server Name** (text input, required)
 2. **Install Path** (text input with browse button)
-   - Default value: `Server/{nextId}` (calculate from server count + 1)
+   - Default value: `Servers/{nextId}` (calculate from server count + 1)
    - Browse button: triggers directory picker
 
 **Directory Picker:**
@@ -435,7 +435,7 @@ This plan implements a complete server management UI with the following features
 - Basic UI components (Button, Input, Dialog, Card, Badge)
 
 **Default Behavior:**
-- New servers default to `Server/{id}` directory under current working directory
+- New servers default to `Servers/{id}` directory under current working directory
 - Users can select custom directory via directory picker or manual input
 - Installation happens asynchronously in background via SteamCMD
 

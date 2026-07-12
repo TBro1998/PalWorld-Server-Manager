@@ -41,7 +41,7 @@ export function AddServerDialog({
   } = useForm<CreateServerFormData>({
     resolver: zodResolver(createServerSchema),
     defaultValues: {
-      installPath: `Server/${nextServerId}`,
+      installPath: `Servers/${nextServerId}`,
     },
   })
 
@@ -74,14 +74,14 @@ export function AddServerDialog({
             <Label htmlFor="installPath">{t('pathLabel')}</Label>
             <Input
               id="installPath"
-              placeholder={`Server/${nextServerId}`}
+              placeholder={`Servers/${nextServerId}`}
               {...register('installPath')}
             />
             {errors.installPath && (
               <p className="text-sm text-destructive">{errors.installPath.message}</p>
             )}
             <p className="text-sm text-muted-foreground">
-              {t('pathHint')}: Server/{nextServerId}
+              {t('pathHint')}: Servers/{nextServerId}
             </p>
           </div>
 

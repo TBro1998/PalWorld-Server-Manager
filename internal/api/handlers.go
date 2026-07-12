@@ -97,9 +97,9 @@ func (r *Router) CreateServer(c *gin.Context) {
 		return
 	}
 
-	// If no install path was provided, update with default Server/{id}
+	// If no install path was provided, update with default Servers/{id}
 	if installPath == "" {
-		installPath = fmt.Sprintf("Server/%d", id)
+		installPath = fmt.Sprintf("Servers/%d", id)
 		_, err = r.db.Exec("UPDATE servers SET install_path = ? WHERE id = ?", installPath, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update install path"})
