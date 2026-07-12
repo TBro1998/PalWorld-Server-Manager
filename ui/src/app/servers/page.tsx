@@ -5,19 +5,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { serversApi } from '@/lib/api'
 import { ServerCard } from '@/components/ServerCard'
 import { AddServerDialog } from '@/components/AddServerDialog'
-import { EditServerDialog } from '@/components/EditServerDialog'
-import { ServerConfigDialog } from '@/components/ServerConfigDialog'
+import { ServerSettingsDialog } from '@/components/ServerSettingsDialog'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { useTranslations } from '@/contexts/LanguageContext'
-import type { CreateServerData, Server, UpdateServerData } from '@/types/server'
+import type { CreateServerData, Server } from '@/types/server'
 
 export default function ServersPage() {
   const t = useTranslations('servers')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingServer, setEditingServer] = useState<Server | null>(null)
-  const [configServer, setConfigServer] = useState<Server | null>(null)
+  const [settingsServer, setSettingsServer] = useState<Server | null>(null)
   const [logsServer, setLogsServer] = useState<Server | null>(null)
   // SteamCMD install/update log viewer. Opens automatically on install/update
   // and streams live SteamCMD output; separate from the server runtime logs.
@@ -86,16 +84,6 @@ export default function ServersPage() {
     },
   })
 
-  // Update server mutation (edit dialog: name/directory/ports)
-  const updateServerMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateServerData }) =>
-      serversApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['servers'] })
-      setEditingServer(null)
-    },
-  })
-
   const handleDelete = (id: number) => {
     if (window.confirm(t('confirmDelete'))) {
       deleteServerMutation.mutate(id)
@@ -137,8 +125,7 @@ export default function ServersPage() {
               onStop={(id) => stopServerMutation.mutate(id)}
               onRestart={(id) => restartServerMutation.mutate(id)}
               onDelete={handleDelete}
-              onEdit={(s) => setEditingServer(s)}
-              onConfig={(s) => setConfigServer(s)}
+              onSettings={(s) => setSettingsServer(s)}
               onLogs={(s) => setLogsServer(s)}
               onInstallLogs={(s) => setInstallLogsServer(s)}
             />
@@ -164,20 +151,10 @@ export default function ServersPage() {
         nextServerId={nextServerId}
       />
 
-      <EditServerDialog
-        open={editingServer !== null}
-        onOpenChange={(open) => !open && setEditingServer(null)}
-        server={editingServer}
-        onSubmit={(data) =>
-          editingServer && updateServerMutation.mutate({ id: editingServer.id, data })
-        }
-        isLoading={updateServerMutation.isPending}
-      />
-
-      <ServerConfigDialog
-        open={configServer !== null}
-        onOpenChange={(open) => !open && setConfigServer(null)}
-        server={configServer}
+      <ServerSettingsDialog
+        open={settingsServer !== null}
+        onOpenChange={(open) => !open && setSettingsServer(null)}
+        server={settingsServer}
       />
 
       <ServerLogsDialog

@@ -5,7 +5,7 @@ import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, Pencil, Settings, ScrollText, Terminal } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal } from 'lucide-react'
 import { useTranslations } from '@/contexts/LanguageContext'
 
 interface ServerCardProps {
@@ -15,10 +15,20 @@ interface ServerCardProps {
   onStop: (id: number) => void
   onRestart: (id: number) => void
   onDelete: (id: number) => void
-  onEdit: (server: Server) => void
-  onConfig: (server: Server) => void
+  onSettings: (server: Server) => void
   onLogs: (server: Server) => void
   onInstallLogs: (server: Server) => void
+}
+
+// Parse the game port from the server's launch_args JSON; fall back to 8211.
+function parsePort(launchArgs: string): number {
+  try {
+    const parsed = JSON.parse(launchArgs) as { port?: number }
+    if (typeof parsed.port === 'number') return parsed.port
+  } catch {
+    // ignore malformed launch_args, fall through to default
+  }
+  return 8211
 }
 
 const statusConfig = {
@@ -35,8 +45,7 @@ export function ServerCard({
   onStop,
   onRestart,
   onDelete,
-  onEdit,
-  onConfig,
+  onSettings,
   onLogs,
   onInstallLogs,
 }: ServerCardProps) {
@@ -63,7 +72,7 @@ export function ServerCard({
             <span className="font-medium">{t('path')}:</span> {server.install_path}
           </div>
           <div>
-            <span className="font-medium">{t('port')}:</span> {server.port}
+            <span className="font-medium">{t('port')}:</span> {parsePort(server.launch_args)}
           </div>
           {needsInstall && (
             <div className="text-amber-600 dark:text-amber-500 font-medium">
@@ -102,13 +111,9 @@ export function ServerCard({
                 <Play size={16} className="mr-1" />
                 {t('start')}
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => onEdit(server)}>
-                <Pencil size={16} className="mr-1" />
-                {t('edit')}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => onConfig(server)}>
+              <Button size="sm" variant="secondary" onClick={() => onSettings(server)}>
                 <Settings size={16} className="mr-1" />
-                {t('config')}
+                {t('settings')}
               </Button>
             </>
           )}

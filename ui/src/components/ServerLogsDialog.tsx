@@ -36,6 +36,7 @@ export function ServerLogsDialog({
     if (!open || serverId === undefined) return
 
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset stream UI state on (re)open
     setStreamState('connecting')
     setLines([])
 

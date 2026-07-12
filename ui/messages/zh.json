@@ -69,7 +69,7 @@
     "stop": "停止",
     "restart": "重启",
     "delete": "删除",
-    "edit": "编辑",
+    "settings": "设置",
     "logs": "日志",
     "install": "安装",
     "installUpdate": "安装/更新",
@@ -82,7 +82,6 @@
     "statusRunning": "运行中",
     "statusInstalling": "安装中",
     "statusError": "错误",
-    "config": "配置",
     "needsInstall": "未安装服务端文件",
     "lastErrorLabel": "上次错误",
     "logsTitle": "运行日志",
@@ -113,19 +112,6 @@
     "enable": "启用",
     "uninstall": "卸载"
   },
-  "editServer": {
-    "title": "编辑服务器",
-    "nameLabel": "服务器名称",
-    "pathLabel": "安装目录",
-    "pathChangedHint": "目录已更改。保存时将重新检测该目录下是否已安装服务端文件。",
-    "portLabel": "游戏端口",
-    "queryPortLabel": "查询端口",
-    "rconPortLabel": "RCON端口",
-    "rconEnabledLabel": "启用RCON",
-    "cancel": "取消",
-    "save": "保存",
-    "saving": "保存中..."
-  },
   "serverConfig": {
     "title": "服务器配置",
     "loading": "正在加载配置...",
@@ -136,12 +122,19 @@
     "rawHint": "编辑原始 OptionSettings 行。保存原始文本将覆盖结构化表单。",
     "rawModeActive": "已进入原始文本模式：保存将使用原始 OptionSettings 行。",
     "tabs": {
+      "basics": "基础",
       "performances": "性能",
       "serverManagement": "服务器",
       "features": "玩法",
       "gameBalances": "平衡",
       "launch": "启动参数",
       "raw": "原始文本"
+    },
+    "basics": {
+      "name": "服务器名称",
+      "path": "安装目录",
+      "port": "游戏端口 (-port)",
+      "pathChangedHint": "目录已更改。保存时将重新检测该目录下是否已安装服务端文件。"
     },
     "launch": {
       "port": "端口 (-port)",
@@ -150,10 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "工作线程数",
-      "publicLobby": "社区服务器 (-publiclobby)",
-      "publicIP": "公网IP (-publicip)",
-      "publicPort": "公网端口 (-publicport)",
-      "logFormat": "日志格式 (-logformat)"
+      "publicLobby": "社区服务器 (-publiclobby)"
     },
     "params": {
       "BaseCampMaxNum": {
@@ -227,14 +217,6 @@
       "PublicPort": {
         "label": "公网端口",
         "desc": "社区服务器：显式指定外部公网端口。"
-      },
-      "RCONEnabled": {
-        "label": "启用RCON",
-        "desc": "启用 RCON 远程管理。"
-      },
-      "RCONPort": {
-        "label": "RCON端口",
-        "desc": "RCON 使用的端口号。"
       },
       "RESTAPIEnabled": {
         "label": "启用REST API",

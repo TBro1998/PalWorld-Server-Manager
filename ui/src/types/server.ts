@@ -7,10 +7,6 @@ export interface Server {
   id: number
   name: string
   install_path: string
-  port: number
-  query_port: number
-  rcon_port: number
-  rcon_enabled: boolean
   status: 'stopped' | 'running' | 'installing' | 'error'
   last_error?: string
   pid: number
@@ -41,10 +37,6 @@ export interface LaunchArgs {
 
 export interface UpdateServerData {
   name?: string
-  port?: number
-  queryPort?: number
-  rconPort?: number
-  rconEnabled?: boolean
   installPath?: string
   launchArgs?: LaunchArgs
 }

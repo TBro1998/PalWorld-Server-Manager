@@ -69,7 +69,7 @@
     "stop": "停止",
     "restart": "再起動",
     "delete": "削除",
-    "edit": "編集",
+    "settings": "設定",
     "logs": "ログ",
     "install": "インストール",
     "installUpdate": "インストール / 更新",
@@ -82,7 +82,6 @@
     "statusRunning": "稼働中",
     "statusInstalling": "インストール中",
     "statusError": "エラー",
-    "config": "設定",
     "needsInstall": "サーバーファイル未インストール",
     "lastErrorLabel": "前回のエラー",
     "logsTitle": "ログ",
@@ -113,19 +112,6 @@
     "enable": "有効化",
     "uninstall": "アンインストール"
   },
-  "editServer": {
-    "title": "サーバー編集",
-    "nameLabel": "サーバー名",
-    "pathLabel": "インストール先",
-    "pathChangedHint": "ディレクトリを変更しました。保存時にサーバーファイルの有無を再確認します。",
-    "portLabel": "ゲームポート",
-    "queryPortLabel": "クエリポート",
-    "rconPortLabel": "RCONポート",
-    "rconEnabledLabel": "RCONを有効化",
-    "cancel": "キャンセル",
-    "save": "保存",
-    "saving": "保存中..."
-  },
   "serverConfig": {
     "title": "サーバー設定",
     "loading": "設定を読み込み中...",
@@ -136,12 +122,19 @@
     "rawHint": "生の OptionSettings 行を編集します。生テキストの保存は構造化フォームより優先されます。",
     "rawModeActive": "生テキストモード：保存時は生の OptionSettings 行を使用します。",
     "tabs": {
+      "basics": "基本",
       "performances": "性能",
       "serverManagement": "サーバー",
       "features": "機能",
       "gameBalances": "バランス",
       "launch": "起動引数",
       "raw": "生テキスト"
+    },
+    "basics": {
+      "name": "サーバー名",
+      "path": "インストール先",
+      "port": "ゲームポート (-port)",
+      "pathChangedHint": "ディレクトリを変更しました。保存時にサーバーファイルの有無を再確認します。"
     },
     "launch": {
       "port": "ポート (-port)",
@@ -150,10 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "ワーカースレッド数",
-      "publicLobby": "コミュニティ鯖 (-publiclobby)",
-      "publicIP": "公開IP (-publicip)",
-      "publicPort": "公開ポート (-publicport)",
-      "logFormat": "ログ形式 (-logformat)"
+      "publicLobby": "コミュニティ鯖 (-publiclobby)"
     },
     "params": {
       "BaseCampMaxNum": {
@@ -227,14 +217,6 @@
       "PublicPort": {
         "label": "公開ポート",
         "desc": "コミュニティ鯖：外部公開ポートを明示指定。"
-      },
-      "RCONEnabled": {
-        "label": "RCON有効",
-        "desc": "RCONリモート管理を有効化。"
-      },
-      "RCONPort": {
-        "label": "RCONポート",
-        "desc": "RCONで使用するポート番号。"
       },
       "RESTAPIEnabled": {
         "label": "REST API有効",

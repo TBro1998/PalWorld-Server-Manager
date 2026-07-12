@@ -28,7 +28,7 @@ func (r *Router) Register(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Register endpoint - to be implemented"})
 }
 
-const serverColumns = "id, name, install_path, port, query_port, rcon_port, rcon_enabled, last_error, pid, launch_args, installed, created_at, updated_at"
+const serverColumns = "id, name, install_path, last_error, pid, launch_args, installed, created_at, updated_at"
 
 // absInstallPath normalizes a server install path to an absolute path. SteamCMD's
 // +force_install_dir and the server launch working directory both require an
@@ -50,7 +50,7 @@ func scanServer(sc interface {
 	Scan(dest ...any) error
 }) (models.Server, error) {
 	var s models.Server
-	err := sc.Scan(&s.ID, &s.Name, &s.InstallPath, &s.Port, &s.QueryPort, &s.RCONPort, &s.RCONEnabled, &s.LastError, &s.PID, &s.LaunchArgs, &s.Installed, &s.CreatedAt, &s.UpdatedAt)
+	err := sc.Scan(&s.ID, &s.Name, &s.InstallPath, &s.LastError, &s.PID, &s.LaunchArgs, &s.Installed, &s.CreatedAt, &s.UpdatedAt)
 	return s, err
 }
 
@@ -110,8 +110,8 @@ func (r *Router) CreateServer(c *gin.Context) {
 	// column keeps its schema DEFAULT and is omitted here. Only facts are stored.
 	now := time.Now()
 	result, err := r.db.Exec(
-		"INSERT INTO servers (name, install_path, port, query_port, rcon_port, rcon_enabled, pid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		req.Name, installPath, 8211, 27015, 25575, false, 0, now, now,
+		"INSERT INTO servers (name, install_path, pid, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+		req.Name, installPath, 0, now, now,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
@@ -139,10 +139,6 @@ func (r *Router) CreateServer(c *gin.Context) {
 		ID:          id,
 		Name:        req.Name,
 		InstallPath: installPath,
-		Port:        8211,
-		QueryPort:   27015,
-		RCONPort:    25575,
-		RCONEnabled: false,
 		Status:      "stopped",
 		PID:         0,
 		CreatedAt:   now,
@@ -178,10 +174,6 @@ func (r *Router) GetServer(c *gin.Context) {
 // InstallPath and LaunchArgs are optional (pointer) so clients can omit them.
 type UpdateServerRequest struct {
 	Name        string           `json:"name"`
-	Port        int              `json:"port"`
-	QueryPort   int              `json:"queryPort"`
-	RCONPort    int              `json:"rconPort"`
-	RCONEnabled bool             `json:"rconEnabled"`
 	InstallPath *string          `json:"installPath,omitempty"`
 	LaunchArgs  *json.RawMessage `json:"launchArgs,omitempty"`
 }
@@ -218,8 +210,8 @@ func (r *Router) UpdateServer(c *gin.Context) {
 
 	// Base metadata always updates.
 	if _, err = r.db.Exec(
-		"UPDATE servers SET name = ?, port = ?, query_port = ?, rcon_port = ?, rcon_enabled = ?, updated_at = ? WHERE id = ?",
-		req.Name, req.Port, req.QueryPort, req.RCONPort, req.RCONEnabled, now, id,
+		"UPDATE servers SET name = ?, updated_at = ? WHERE id = ?",
+		req.Name, now, id,
 	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update server"})
 		return

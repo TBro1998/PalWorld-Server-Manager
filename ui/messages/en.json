@@ -69,7 +69,7 @@
     "stop": "Stop",
     "restart": "Restart",
     "delete": "Delete",
-    "edit": "Edit",
+    "settings": "Settings",
     "logs": "Logs",
     "install": "Install",
     "installUpdate": "Install / Update",
@@ -82,7 +82,6 @@
     "statusRunning": "Running",
     "statusInstalling": "Installing",
     "statusError": "Error",
-    "config": "Config",
     "needsInstall": "Server files not installed",
     "lastErrorLabel": "Last error",
     "logsTitle": "Logs",
@@ -113,19 +112,6 @@
     "enable": "Enable",
     "uninstall": "Uninstall"
   },
-  "editServer": {
-    "title": "Edit Server",
-    "nameLabel": "Server name",
-    "pathLabel": "Install directory",
-    "pathChangedHint": "Directory changed. Save will re-check whether server files exist there.",
-    "portLabel": "Game port",
-    "queryPortLabel": "Query port",
-    "rconPortLabel": "RCON port",
-    "rconEnabledLabel": "Enable RCON",
-    "cancel": "Cancel",
-    "save": "Save",
-    "saving": "Saving..."
-  },
   "serverConfig": {
     "title": "Server Config",
     "loading": "Loading config...",
@@ -136,12 +122,19 @@
     "rawHint": "Edit the raw OptionSettings line. Saving raw overrides the structured form.",
     "rawModeActive": "Raw text mode active: saving will use the raw OptionSettings line.",
     "tabs": {
+      "basics": "Basics",
       "performances": "Performance",
       "serverManagement": "Server",
       "features": "Features",
       "gameBalances": "Balance",
       "launch": "Launch args",
       "raw": "Raw"
+    },
+    "basics": {
+      "name": "Server name",
+      "path": "Install directory",
+      "port": "Game port (-port)",
+      "pathChangedHint": "Directory changed. Save will re-check whether server files exist there."
     },
     "launch": {
       "port": "Port (-port)",
@@ -150,10 +143,7 @@
       "noAsyncLoadingThread": "-NoAsyncLoadingThread",
       "useMultithreadForDS": "-UseMultithreadForDS",
       "numberOfWorkerThreadsServer": "Worker threads",
-      "publicLobby": "Community server (-publiclobby)",
-      "publicIP": "Public IP (-publicip)",
-      "publicPort": "Public port (-publicport)",
-      "logFormat": "Log format (-logformat)"
+      "publicLobby": "Community server (-publiclobby)"
     },
     "params": {
       "BaseCampMaxNum": {
@@ -227,14 +217,6 @@
       "PublicPort": {
         "label": "Public port",
         "desc": "Community server: explicit external public port."
-      },
-      "RCONEnabled": {
-        "label": "Enable RCON",
-        "desc": "Enable RCON remote administration."
-      },
-      "RCONPort": {
-        "label": "RCON port",
-        "desc": "Port number used for RCON."
       },
       "RESTAPIEnabled": {
         "label": "Enable REST API",

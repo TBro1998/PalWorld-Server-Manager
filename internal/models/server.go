@@ -7,10 +7,6 @@ type Server struct {
 	ID          int64     `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
 	InstallPath string    `json:"install_path" db:"install_path"`
-	Port        int       `json:"port" db:"port"`
-	QueryPort   int       `json:"query_port" db:"query_port"`
-	RCONPort    int       `json:"rcon_port" db:"rcon_port"`
-	RCONEnabled bool      `json:"rcon_enabled" db:"rcon_enabled"`
 	Status      string    `json:"status" db:"status"` // derived value (running/stopped/installing/error); NOT persisted
 	PID         int       `json:"pid" db:"pid"`
 	LaunchArgs  string    `json:"launch_args" db:"launch_args"`         // JSON-encoded palconfig.LaunchArgs

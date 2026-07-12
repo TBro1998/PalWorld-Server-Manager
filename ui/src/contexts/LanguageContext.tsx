@@ -4,22 +4,29 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Locale = 'en' | 'zh' | 'ja';
 
+// Loaded translation JSON is an arbitrarily nested object; we traverse it by
+// dotted key at lookup time, so `unknown` values are narrowed there.
+type Messages = Record<string, unknown>;
+
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  messages: Record<string, any>;
+  messages: Messages;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('zh');
-  const [messages, setMessages] = useState<Record<string, any>>({});
+  const [messages, setMessages] = useState<Messages>({});
 
-  // Load locale from localStorage on mount
+  // Load locale from localStorage on mount. This must run in an effect (not a
+  // lazy initializer): static export prerenders in Node where localStorage /
+  // navigator are undefined, so the read is deferred to the client.
   useEffect(() => {
     const savedLocale = localStorage.getItem('locale') as Locale;
     if (savedLocale && ['en', 'zh', 'ja'].includes(savedLocale)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- deferred client-only init
       setLocaleState(savedLocale);
     } else {
       // Detect browser language
@@ -63,12 +70,12 @@ export function useTranslations(namespace?: string) {
   return (key: string) => {
     const fullKey = namespace ? `${namespace}.${key}` : key;
     const keys = fullKey.split('.');
-    let value: any = messages;
+    let value: unknown = messages;
 
     for (const k of keys) {
-      value = value?.[k];
+      value = (value as Record<string, unknown> | undefined)?.[k];
     }
 
-    return value || fullKey;
+    return typeof value === 'string' ? value : fullKey;
   };
 }

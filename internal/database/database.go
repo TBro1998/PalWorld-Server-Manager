@@ -31,10 +31,6 @@ func migrate(db *sql.DB) error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		install_path TEXT NOT NULL,
-		port INTEGER NOT NULL,
-		query_port INTEGER NOT NULL,
-		rcon_port INTEGER NOT NULL,
-		rcon_enabled BOOLEAN DEFAULT 0,
 		status TEXT DEFAULT 'stopped',
 		pid INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -74,6 +70,60 @@ func migrate(db *sql.DB) error {
 	}
 	if err := addColumnIfMissing(db, "servers", "last_error", "TEXT DEFAULT ''"); err != nil {
 		return err
+	}
+
+	// Remove deprecated lazy metadata columns from existing databases. These
+	// columns (game/query/RCON ports and the RCON toggle) were never wired into
+	// the runtime — launch_args + PalWorldSettings.ini are the sole source of
+	// truth — so dropping them is non-destructive. Failures are logged and
+	// tolerated: a residual column is harmless (nothing reads it) and must not
+	// block startup.
+	for _, col := range []string{"port", "query_port", "rcon_port", "rcon_enabled"} {
+		if err := dropColumnIfExists(db, "servers", col); err != nil {
+			fmt.Printf("warning: failed to drop column servers.%s: %v\n", col, err)
+		}
+	}
+	return nil
+}
+
+// dropColumnIfExists drops a column from a table only when it currently exists,
+// making the migration idempotent across restarts and versions. Unlike
+// addColumnIfMissing, a failed DROP is returned to the caller (which logs and
+// continues) rather than treated as fatal: the affected columns are unused
+// lazy metadata, so a residual column is harmless and must not abort startup.
+func dropColumnIfExists(db *sql.DB, table, column string) error {
+	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return fmt.Errorf("inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+
+	found := false
+	for rows.Next() {
+		var (
+			cid        int
+			name       string
+			ctype      string
+			notNull    int
+			dfltValue  sql.NullString
+			primaryKey int
+		)
+		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dfltValue, &primaryKey); err != nil {
+			return err
+		}
+		if name == column {
+			found = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if !found {
+		return nil // already absent
+	}
+
+	if _, err := db.Exec(fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", table, column)); err != nil {
+		return fmt.Errorf("drop column %s.%s: %w", table, column, err)
 	}
 	return nil
 }

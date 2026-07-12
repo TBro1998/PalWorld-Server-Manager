@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本任务跨 DB→model→handler→前端类型→组件多层删除同一批字段（port/rcon 惰性列），需按跨层数据流逐层对齐，避免 Scan 列错位等边界 bug。"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "合并两个弹窗、复用 ServerConfigDialog 的标签/控件渲染与 LaunchToggle/LaunchNumber，需识别可复用部分、避免重复实现基础标签。"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "涉及 servers 表 CREATE 语句修改与幂等 DROP COLUMN 迁移，遵循项目迁移约定（仿 addColumnIfMissing）。"}

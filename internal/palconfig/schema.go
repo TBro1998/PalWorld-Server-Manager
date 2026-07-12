@@ -63,8 +63,6 @@ var Params = []ParamDef{
 	{Key: "LogFormatType", Type: TypeEnum, Default: "Text", Category: CatServerManagement, Options: []string{"Text", "Json"}},
 	{Key: "PublicIP", Type: TypeString, Default: "", Category: CatServerManagement},
 	{Key: "PublicPort", Type: TypeInt, Default: "8211", Category: CatServerManagement},
-	{Key: "RCONEnabled", Type: TypeBool, Default: "False", Category: CatServerManagement},
-	{Key: "RCONPort", Type: TypeInt, Default: "25575", Category: CatServerManagement},
 	{Key: "RESTAPIEnabled", Type: TypeBool, Default: "False", Category: CatServerManagement},
 	{Key: "RESTAPIPort", Type: TypeInt, Default: "8212", Category: CatServerManagement},
 	{Key: "ServerDescription", Type: TypeString, Default: "", Category: CatServerManagement},
