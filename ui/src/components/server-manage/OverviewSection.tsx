@@ -17,7 +17,7 @@ import { RestUnavailableNotice } from './RestUnavailableNotice'
 export function OverviewSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
-  const { status, isAvailable } = useRestStatus(serverId)
+  const { status, isAvailable, refetch: refetchStatus } = useRestStatus(serverId)
 
   const infoQuery = useQuery({
     queryKey: ['rest-info', serverId],
@@ -40,6 +40,7 @@ export function OverviewSection() {
   // is unavailable or while either query is already fetching.
   const isFetching = infoQuery.isFetching || metricsQuery.isFetching
   const handleRefresh = () => {
+    refetchStatus()
     infoQuery.refetch()
     metricsQuery.refetch()
   }

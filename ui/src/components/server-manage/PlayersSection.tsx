@@ -40,7 +40,7 @@ export function PlayersSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
   const queryClient = useQueryClient()
-  const { status, isAvailable } = useRestStatus(serverId)
+  const { status, isAvailable, refetch: refetchStatus } = useRestStatus(serverId)
 
   const [tab, setTab] = useState<TabKey>('players')
   const [unbanId, setUnbanId] = useState('')
@@ -154,7 +154,10 @@ export function PlayersSection() {
               variant="outline"
               size="sm"
               className="gap-2 rounded-xl border-2 shadow-pal"
-              onClick={() => playersQuery.refetch()}
+              onClick={() => {
+                refetchStatus()
+                playersQuery.refetch()
+              }}
               disabled={!isAvailable || playersQuery.isFetching}
             >
               <RefreshCw className={`h-4 w-4 ${playersQuery.isFetching ? 'animate-spin' : ''}`} />
