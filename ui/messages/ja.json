@@ -119,7 +119,6 @@
       "players": "プレイヤーデータ",
       "operations": "運用操作",
       "map": "マップとホワイトリスト",
-      "restapi": "REST API",
       "backup": "セーブとバックアップ",
       "settings": "サーバー設定"
     },
@@ -128,10 +127,15 @@
       "desc": "サーバー情報、稼働メトリクス、オンラインプレイヤー一覧",
       "info": "サーバー情報",
       "onlinePlayers": "オンラインプレイヤー",
-      "cpu": "CPU 使用率",
-      "memory": "メモリ使用量",
       "online": "オンライン人数",
-      "uptime": "稼働時間"
+      "fps": "サーバー FPS",
+      "uptime": "稼働時間",
+      "frametime": "フレームタイム",
+      "serverName": "サーバー名",
+      "version": "バージョン",
+      "description": "説明",
+      "noPlayers": "オンラインのプレイヤーはいません",
+      "refresh": "更新"
     },
     "players": {
       "title": "プレイヤーとセーブデータ",
@@ -141,15 +145,75 @@
         "guilds": "ギルド",
         "pals": "パル",
         "inventory": "インベントリ"
+      },
+      "table": {
+        "name": "名前",
+        "level": "レベル",
+        "ping": "遅延",
+        "userId": "ユーザー ID",
+        "actions": "操作",
+        "kick": "キック",
+        "ban": "BAN"
+      },
+      "unban": {
+        "label": "プレイヤーのBAN解除",
+        "placeholder": "解除するユーザー ID を入力",
+        "action": "BAN解除"
+      },
+      "confirm": {
+        "kickTitle": "このプレイヤーをキックしますか？",
+        "banTitle": "このプレイヤーをBANしますか？",
+        "unbanTitle": "このユーザーのBANを解除しますか？",
+        "target": "対象",
+        "banMessage": "BANメッセージ",
+        "banMessagePlaceholder": "プレイヤーに表示する理由（任意）",
+        "cancel": "キャンセル",
+        "confirm": "確認"
+      },
+      "actions": {
+        "kickOk": "プレイヤーをキックしました",
+        "kickFail": "キックに失敗しました",
+        "banOk": "プレイヤーをBANしました",
+        "banFail": "BANに失敗しました",
+        "unbanOk": "ユーザーのBANを解除しました",
+        "unbanFail": "BAN解除に失敗しました"
       }
     },
     "operations": {
       "title": "運用操作",
-      "desc": "キック、BAN、ブロードキャスト、安全なシャットダウン",
-      "kick": "プレイヤーをキック",
-      "ban": "プレイヤーをBAN",
+      "desc": "ブロードキャスト、セーブ、安全なシャットダウン、即時停止",
       "broadcast": "ブロードキャスト",
-      "shutdown": "安全なシャットダウン"
+      "broadcastPlaceholder": "ブロードキャストするメッセージを入力",
+      "broadcastSend": "ブロードキャスト送信",
+      "save": "ワールドを保存",
+      "saveDesc": "ワールドセーブを即時に実行します。",
+      "saveAction": "今すぐ保存",
+      "shutdown": "安全なシャットダウン",
+      "shutdownWait": "カウントダウン（秒）",
+      "shutdownMessage": "シャットダウンメッセージ",
+      "shutdownMessagePlaceholder": "シャットダウン前にプレイヤーへ表示するメッセージ（任意）",
+      "shutdownAction": "安全なシャットダウン",
+      "stop": "即時停止",
+      "stopDesc": "カウントダウンなしでサーバーを即時停止します。",
+      "stopAction": "今すぐ停止",
+      "confirm": {
+        "shutdownTitle": "安全なシャットダウンを実行しますか？",
+        "shutdownDesc": "カウントダウン後にサーバーを停止し、プレイヤーへ通知をブロードキャストします。",
+        "stopTitle": "即時停止しますか？",
+        "stopDesc": "サーバーは即時停止し、プレイヤーはただちに切断されます。",
+        "cancel": "キャンセル",
+        "confirm": "確認"
+      },
+      "feedback": {
+        "announceOk": "ブロードキャストを送信しました",
+        "announceFail": "ブロードキャストの送信に失敗しました",
+        "saveOk": "ワールドを保存しました",
+        "saveFail": "ワールドの保存に失敗しました",
+        "shutdownOk": "安全なシャットダウンを予約しました",
+        "shutdownFail": "シャットダウンの予約に失敗しました",
+        "stopOk": "サーバーを停止しています",
+        "stopFail": "停止に失敗しました"
+      }
     },
     "map": {
       "title": "マップとホワイトリスト",
@@ -157,10 +221,20 @@
       "mapView": "ビジュアルマップ",
       "whitelist": "ホワイトリスト"
     },
-    "restapi": {
-      "title": "REST API 操作",
-      "desc": "公式 REST API でサーバーを操作",
-      "docs": "公式ドキュメントを見る"
+    "rest": {
+      "checking": "REST API の可用性を確認しています…",
+      "noData": "データがありません",
+      "unavailableTitle": "REST API を利用できません",
+      "badge": "利用不可",
+      "settingsHint": "「サーバー設定」で RESTAPIEnabled を有効にし AdminPassword を設定してから、サーバーを再起動してください。",
+      "reason": {
+        "not_found": "サーバーが見つかりません。",
+        "not_running": "サーバーが起動していません。先に起動してください。",
+        "restapi_disabled": "REST API が無効です（RESTAPIEnabled=False）。",
+        "admin_password_empty": "AdminPassword が空のため REST API を利用できません。",
+        "unreachable": "サーバーの REST API に接続できません。ポートと設定を確認してください。",
+        "unknown": "現在 REST API を利用できません。"
+      }
     },
     "backup": {
       "title": "セーブ同期とバックアップ",

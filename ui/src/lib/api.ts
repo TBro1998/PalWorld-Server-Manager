@@ -39,6 +39,10 @@ import type {
   UpdateServerConfigData,
   ConfigParamDef,
   LogKind,
+  RestStatus,
+  PalInfo,
+  PalMetrics,
+  PalPlayers,
 } from '@/types/server'
 
 export const serversApi = {
@@ -66,6 +70,29 @@ export const serversApi = {
   // token via a query param here instead (not implemented for now).
   logStreamUrl: (id: number, kind: LogKind = 'server') =>
     `/api/servers/${id}/logs/stream?kind=${kind}`,
+
+  // --- Palworld REST API proxy ---
+  // The backend forwards these to the game server's official REST API after
+  // reading its INI for port/AdminPassword. status is always structured; the
+  // rest require the server to be running with REST enabled (else 4xx).
+  restStatus: (id: number) => apiClient.get<RestStatus>(`/api/servers/${id}/rest/status`),
+  restInfo: (id: number) => apiClient.get<PalInfo>(`/api/servers/${id}/rest/info`),
+  restMetrics: (id: number) => apiClient.get<PalMetrics>(`/api/servers/${id}/rest/metrics`),
+  restPlayers: (id: number) => apiClient.get<PalPlayers>(`/api/servers/${id}/rest/players`),
+  restSettings: (id: number) =>
+    apiClient.get<Record<string, unknown>>(`/api/servers/${id}/rest/settings`),
+  restAnnounce: (id: number, data: { message: string }) =>
+    apiClient.post(`/api/servers/${id}/rest/announce`, data),
+  restKick: (id: number, data: { userid: string; message: string }) =>
+    apiClient.post(`/api/servers/${id}/rest/kick`, data),
+  restBan: (id: number, data: { userid: string; message: string }) =>
+    apiClient.post(`/api/servers/${id}/rest/ban`, data),
+  restUnban: (id: number, data: { userid: string }) =>
+    apiClient.post(`/api/servers/${id}/rest/unban`, data),
+  restSave: (id: number) => apiClient.post(`/api/servers/${id}/rest/save`),
+  restShutdown: (id: number, data: { waittime: number; message: string }) =>
+    apiClient.post(`/api/servers/${id}/rest/shutdown`, data),
+  restStop: (id: number) => apiClient.post(`/api/servers/${id}/rest/stop`),
 }
 
 export default apiClient;

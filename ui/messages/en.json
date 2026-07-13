@@ -119,7 +119,6 @@
       "players": "Player data",
       "operations": "Operations",
       "map": "Map & whitelist",
-      "restapi": "REST API",
       "backup": "Saves & backups",
       "settings": "Server settings"
     },
@@ -128,10 +127,15 @@
       "desc": "Server info, runtime metrics and online player list",
       "info": "Server info",
       "onlinePlayers": "Online players",
-      "cpu": "CPU usage",
-      "memory": "Memory usage",
       "online": "Players online",
-      "uptime": "Uptime"
+      "fps": "Server FPS",
+      "uptime": "Uptime",
+      "frametime": "Frame time",
+      "serverName": "Server name",
+      "version": "Version",
+      "description": "Description",
+      "noPlayers": "No players online",
+      "refresh": "Refresh"
     },
     "players": {
       "title": "Players & save data",
@@ -141,15 +145,75 @@
         "guilds": "Guilds",
         "pals": "Pals",
         "inventory": "Inventory"
+      },
+      "table": {
+        "name": "Name",
+        "level": "Level",
+        "ping": "Ping",
+        "userId": "User ID",
+        "actions": "Actions",
+        "kick": "Kick",
+        "ban": "Ban"
+      },
+      "unban": {
+        "label": "Unban player",
+        "placeholder": "Enter the user ID to unban",
+        "action": "Unban"
+      },
+      "confirm": {
+        "kickTitle": "Kick this player?",
+        "banTitle": "Ban this player?",
+        "unbanTitle": "Unban this user?",
+        "target": "Target",
+        "banMessage": "Ban message",
+        "banMessagePlaceholder": "Reason shown to the player (optional)",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "actions": {
+        "kickOk": "Player kicked",
+        "kickFail": "Failed to kick player",
+        "banOk": "Player banned",
+        "banFail": "Failed to ban player",
+        "unbanOk": "User unbanned",
+        "unbanFail": "Failed to unban user"
       }
     },
     "operations": {
       "title": "Operations",
-      "desc": "Kick, ban, broadcast and graceful shutdown",
-      "kick": "Kick player",
-      "ban": "Ban player",
+      "desc": "Broadcast, save, graceful shutdown and immediate stop",
       "broadcast": "Broadcast",
-      "shutdown": "Graceful shutdown"
+      "broadcastPlaceholder": "Enter the message to broadcast",
+      "broadcastSend": "Send broadcast",
+      "save": "Save world",
+      "saveDesc": "Trigger an immediate world save.",
+      "saveAction": "Save now",
+      "shutdown": "Graceful shutdown",
+      "shutdownWait": "Countdown (seconds)",
+      "shutdownMessage": "Shutdown message",
+      "shutdownMessagePlaceholder": "Message shown to players before shutdown (optional)",
+      "shutdownAction": "Graceful shutdown",
+      "stop": "Immediate stop",
+      "stopDesc": "Stop the server immediately without a countdown.",
+      "stopAction": "Stop now",
+      "confirm": {
+        "shutdownTitle": "Confirm graceful shutdown?",
+        "shutdownDesc": "The server will shut down after the countdown, broadcasting a notice to players.",
+        "stopTitle": "Confirm immediate stop?",
+        "stopDesc": "The server will stop immediately and players will be disconnected at once.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "feedback": {
+        "announceOk": "Broadcast sent",
+        "announceFail": "Failed to send broadcast",
+        "saveOk": "World saved",
+        "saveFail": "Failed to save world",
+        "shutdownOk": "Graceful shutdown scheduled",
+        "shutdownFail": "Failed to schedule shutdown",
+        "stopOk": "Server is stopping",
+        "stopFail": "Failed to stop server"
+      }
     },
     "map": {
       "title": "Map & whitelist",
@@ -157,10 +221,20 @@
       "mapView": "Visual map",
       "whitelist": "Whitelist"
     },
-    "restapi": {
-      "title": "REST API control",
-      "desc": "Control the server via the official REST API",
-      "docs": "View official docs"
+    "rest": {
+      "checking": "Checking REST API availability…",
+      "noData": "No data",
+      "unavailableTitle": "REST API unavailable",
+      "badge": "Unavailable",
+      "settingsHint": "Open Server settings to enable RESTAPIEnabled and set AdminPassword, then restart the server.",
+      "reason": {
+        "not_found": "Server not found.",
+        "not_running": "The server is not running. Start it first.",
+        "restapi_disabled": "REST API is disabled (RESTAPIEnabled=False).",
+        "admin_password_empty": "AdminPassword is empty; REST API cannot be used.",
+        "unreachable": "Could not reach the server REST API. Check the port and configuration.",
+        "unknown": "REST API is currently unavailable."
+      }
     },
     "backup": {
       "title": "Save sync & backups",

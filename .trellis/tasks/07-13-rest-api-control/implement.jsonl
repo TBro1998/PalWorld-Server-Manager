@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端总体约定入口，palapi 包与 rest handler 需遵循"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "新增 internal/palapi 包与 rest_handlers.go 的放置需符合目录结构约定"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "handler 错误返回 {\"error\":...} 与 palapi 错误归一化需遵循错误处理规范"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复用 palconfig.LoadSettings、现有 handler 骨架与前端 shared/ui 原语，避免重复造轮子"}

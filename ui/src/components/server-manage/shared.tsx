@@ -1,23 +1,39 @@
 'use client'
 
 import React from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Construction } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from '@/contexts/LanguageContext'
 
+// Reads the ?id= query param the manage panel routes on and returns it as a
+// number (NaN when absent/invalid). The manage page already wraps everything in
+// a Suspense boundary, so sections may call useSearchParams directly. Sections
+// receive no props, so each resolves the server id through this single helper.
+export function useServerId(): number {
+  const searchParams = useSearchParams()
+  const raw = searchParams.get('id')
+  return raw ? Number(raw) : NaN
+}
+
 // Shared layout primitives for the server-manage sections. Each section file
 // composes these so the reserved areas read consistently while features are
 // still stubbed.
 
-// Section wrapper: title + description + a "coming soon" chip.
+// Section wrapper: title + description + an optional "coming soon" chip.
+// comingSoon defaults to true for the still-stubbed sections; functional
+// sections (Overview/Players/Operations) pass false so the chip does not
+// mislabel live features.
 export function SectionShell({
   title,
   desc,
+  comingSoon = true,
   children,
 }: {
   title: string
   desc: string
+  comingSoon?: boolean
   children: React.ReactNode
 }) {
   const t = useTranslations('serverManage')
@@ -28,10 +44,12 @@ export function SectionShell({
           <h2 className="text-xl font-bold text-foreground">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
         </div>
-        <Badge variant="info" className="gap-1.5">
-          <Construction className="h-3.5 w-3.5" />
-          {t('comingSoon')}
-        </Badge>
+        {comingSoon && (
+          <Badge variant="info" className="gap-1.5">
+            <Construction className="h-3.5 w-3.5" />
+            {t('comingSoon')}
+          </Badge>
+        )}
       </div>
       {children}
     </div>

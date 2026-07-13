@@ -62,6 +62,24 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			servers.GET("/:id/logs/stream", r.StreamLogs)
 			servers.GET("/:id/config", r.GetServerConfig)
 			servers.PUT("/:id/config", r.UpdateServerConfig)
+
+			// Palworld REST API proxy: forwards to the co-located game server's
+			// official REST API after reading port/password from its INI.
+			rest := servers.Group("/:id/rest")
+			{
+				rest.GET("/status", r.RestStatus)
+				rest.GET("/info", r.RestInfo)
+				rest.GET("/metrics", r.RestMetrics)
+				rest.GET("/players", r.RestPlayers)
+				rest.GET("/settings", r.RestSettings)
+				rest.POST("/announce", r.RestAnnounce)
+				rest.POST("/kick", r.RestKick)
+				rest.POST("/ban", r.RestBan)
+				rest.POST("/unban", r.RestUnban)
+				rest.POST("/save", r.RestSave)
+				rest.POST("/shutdown", r.RestShutdown)
+				rest.POST("/stop", r.RestStop)
+			}
 		}
 
 		// Config schema (drives the structured config form)

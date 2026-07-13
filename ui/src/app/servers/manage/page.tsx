@@ -10,7 +10,6 @@ import {
   Users,
   Wrench,
   Map as MapIcon,
-  Webhook,
   Archive,
   Settings,
   Server as ServerIcon,
@@ -25,7 +24,6 @@ import { OverviewSection } from '@/components/server-manage/OverviewSection'
 import { PlayersSection } from '@/components/server-manage/PlayersSection'
 import { OperationsSection } from '@/components/server-manage/OperationsSection'
 import { MapSection } from '@/components/server-manage/MapSection'
-import { RestApiSection } from '@/components/server-manage/RestApiSection'
 import { BackupSection } from '@/components/server-manage/BackupSection'
 import { SettingsSection } from '@/components/server-manage/SettingsSection'
 
@@ -36,7 +34,6 @@ const SECTIONS = [
   { key: 'players', icon: Users },
   { key: 'operations', icon: Wrench },
   { key: 'map', icon: MapIcon },
-  { key: 'restapi', icon: Webhook },
   { key: 'backup', icon: Archive },
   { key: 'settings', icon: Settings },
 ] as const
@@ -158,7 +155,6 @@ function ManagePanel() {
           {active === 'players' && <PlayersSection />}
           {active === 'operations' && <OperationsSection />}
           {active === 'map' && <MapSection />}
-          {active === 'restapi' && <RestApiSection />}
           {active === 'backup' && <BackupSection />}
           {active === 'settings' && <SettingsSection onOpen={() => setSettingsOpen(true)} />}
         </section>
