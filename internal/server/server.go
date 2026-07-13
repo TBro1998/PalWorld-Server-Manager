@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
@@ -66,5 +67,28 @@ func (s *Server) setupRoutes() {
 func (s *Server) Start() error {
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	fmt.Printf("Server starting on http://%s\n", addr)
+
+	// Open the web UI in the default browser shortly after startup.
+	go s.openWebUI()
+
 	return s.router.Run(addr)
+}
+
+// openWebUI waits briefly for the HTTP server to accept connections, then
+// opens the management UI in the system default browser. Best-effort only.
+func (s *Server) openWebUI() {
+	time.Sleep(500 * time.Millisecond)
+
+	// A wildcard/unspecified bind address is not directly browsable; fall back
+	// to the loopback address so the link works locally.
+	host := s.config.Host
+	switch host {
+	case "", "0.0.0.0", "::", "[::]":
+		host = "127.0.0.1"
+	}
+
+	url := fmt.Sprintf("http://%s:%d", host, s.config.Port)
+	if err := openBrowser(url); err != nil {
+		fmt.Printf("warning: failed to open browser at %s: %v\n", url, err)
+	}
 }
