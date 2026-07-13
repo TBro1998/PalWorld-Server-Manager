@@ -38,3 +38,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 服务器 REST API 控制功能
+
+**Date**: 2026-07-13
+**Task**: 服务器 REST API 控制功能
+**Branch**: `feat/rest-api-control`
+
+### Summary
+
+实现通过 Palworld 官方 REST API 控制服务器：后端新增 internal/palapi 客户端包（11 端点、Basic Auth、5s 超时、错误归一化、单测）与 /servers/:id/rest/* 代理端点（端口/密码即时读 INI，不入库，status 不泄露密码）；前端移除独立 REST 分区，能力分散到概览（只读+手动刷新）、玩家（表+踢/封/解封）、运维（公告/保存/优雅关服/立即停止），新增共享 useRestStatus hook 与 RestUnavailableNotice，破坏性操作二次确认，三语文案补齐。go build/test 与 bun lint/build 均通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5d1fd0a` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
