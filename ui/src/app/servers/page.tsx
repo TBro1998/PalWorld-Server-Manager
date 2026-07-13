@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { serversApi } from '@/lib/api'
 import { ServerCard } from '@/components/ServerCard'
 import { AddServerDialog } from '@/components/AddServerDialog'
-import { ServerSettingsDialog } from '@/components/ServerSettingsDialog'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -39,7 +38,6 @@ function SkeletonCard() {
 export default function ServersPage() {
   const t = useTranslations('servers')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [settingsServer, setSettingsServer] = useState<Server | null>(null)
   const [logsServer, setLogsServer] = useState<Server | null>(null)
   // SteamCMD install/update log viewer. Opens automatically on install/update
   // and streams live SteamCMD output; separate from the server runtime logs.
@@ -176,7 +174,6 @@ export default function ServersPage() {
               onStop={(id) => stopServerMutation.mutate(id)}
               onRestart={(id) => restartServerMutation.mutate(id)}
               onDelete={handleDelete}
-              onSettings={(s) => setSettingsServer(s)}
               onLogs={(s) => setLogsServer(s)}
               onInstallLogs={(s) => setInstallLogsServer(s)}
             />
@@ -203,12 +200,6 @@ export default function ServersPage() {
         onSubmit={(data) => createServerMutation.mutate(data)}
         isLoading={createServerMutation.isPending}
         nextServerId={nextServerId}
-      />
-
-      <ServerSettingsDialog
-        open={settingsServer !== null}
-        onOpenChange={(open) => !open && setSettingsServer(null)}
-        server={settingsServer}
       />
 
       <ServerLogsDialog

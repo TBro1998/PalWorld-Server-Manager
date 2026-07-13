@@ -84,6 +84,7 @@
     "restart": "重启",
     "delete": "删除",
     "settings": "设置",
+    "manage": "管理",
     "logs": "日志",
     "install": "安装",
     "installUpdate": "安装/更新",
@@ -107,6 +108,73 @@
     "logsLive": "实时",
     "logsClear": "清空",
     "logsClose": "关闭"
+  },
+  "serverManage": {
+    "backToList": "返回服务器列表",
+    "notFound": "未找到该服务器",
+    "comingSoon": "功能开发中",
+    "comingSoonDesc": "该功能正在开发中，界面已预留，敬请期待。",
+    "sections": {
+      "overview": "概览",
+      "players": "玩家数据",
+      "operations": "运维操作",
+      "map": "地图与白名单",
+      "restapi": "REST API",
+      "backup": "存档与备份",
+      "settings": "服务器设置"
+    },
+    "overview": {
+      "title": "服务器概览",
+      "desc": "服务器信息、运行指标与在线玩家列表",
+      "info": "服务器信息",
+      "onlinePlayers": "在线玩家",
+      "cpu": "CPU 占用",
+      "memory": "内存占用",
+      "online": "在线人数",
+      "uptime": "运行时长"
+    },
+    "players": {
+      "title": "玩家与存档数据",
+      "desc": "查看玩家、公会、帕鲁与背包数据",
+      "tabs": {
+        "players": "玩家",
+        "guilds": "公会",
+        "pals": "帕鲁",
+        "inventory": "背包"
+      }
+    },
+    "operations": {
+      "title": "运维操作",
+      "desc": "踢出、封禁、广播与平滑关服",
+      "kick": "踢出玩家",
+      "ban": "封禁玩家",
+      "broadcast": "全服广播",
+      "shutdown": "平滑关服"
+    },
+    "map": {
+      "title": "地图与白名单",
+      "desc": "可视化地图与白名单管理",
+      "mapView": "可视化地图",
+      "whitelist": "白名单管理"
+    },
+    "restapi": {
+      "title": "REST API 操控",
+      "desc": "通过官方 REST API 操控服务器",
+      "docs": "查看官方文档"
+    },
+    "backup": {
+      "title": "存档同步与备份",
+      "desc": "存档定时同步、自动备份与备份管理",
+      "sync": "定时同步",
+      "auto": "自动备份",
+      "manage": "备份管理"
+    },
+    "settings": {
+      "title": "服务器设置",
+      "desc": "编辑服务器基础配置、游戏参数与启动参数",
+      "hint": "服务器的名称、密码、游戏玩法与启动参数等配置均在此编辑。",
+      "open": "打开服务器设置"
+    }
   },
   "addServer": {
     "title": "添加新服务器",

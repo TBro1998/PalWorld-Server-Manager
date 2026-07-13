@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal, Eye, EyeOff, Server as ServerIcon, Plug } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, SlidersHorizontal, ScrollText, Terminal, Eye, EyeOff, Server as ServerIcon, Plug } from 'lucide-react'
 import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 
@@ -17,7 +18,6 @@ interface ServerCardProps {
   onStop: (id: number) => void
   onRestart: (id: number) => void
   onDelete: (id: number) => void
-  onSettings: (server: Server) => void
   onLogs: (server: Server) => void
   onInstallLogs: (server: Server) => void
 }
@@ -103,7 +103,6 @@ export function ServerCard({
   onStop,
   onRestart,
   onDelete,
-  onSettings,
   onLogs,
   onInstallLogs,
 }: ServerCardProps) {
@@ -223,10 +222,6 @@ export function ServerCard({
               <Download size={16} className="mr-1" />
               {t('installUpdate')}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onSettings(server)}>
-              <Settings size={16} className="mr-1" />
-              {t('settings')}
-            </Button>
           </>
         )}
         {server.status === 'running' && (
@@ -253,6 +248,12 @@ export function ServerCard({
             </Button>
           </>
         )}
+        <Link href={`/servers/manage?id=${server.id}`} prefetch={false}>
+          <Button size="sm" variant="secondary">
+            <SlidersHorizontal size={16} className="mr-1" />
+            {t('manage')}
+          </Button>
+        </Link>
         <Button size="sm" variant="ghost" onClick={() => onLogs(server)}>
           <ScrollText size={16} className="mr-1" />
           {t('logs')}

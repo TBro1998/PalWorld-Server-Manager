@@ -84,6 +84,7 @@
     "restart": "Restart",
     "delete": "Delete",
     "settings": "Settings",
+    "manage": "Manage",
     "logs": "Logs",
     "install": "Install",
     "installUpdate": "Install / Update",
@@ -107,6 +108,73 @@
     "logsLive": "Live",
     "logsClear": "Clear",
     "logsClose": "Close"
+  },
+  "serverManage": {
+    "backToList": "Back to servers",
+    "notFound": "Server not found",
+    "comingSoon": "Coming soon",
+    "comingSoonDesc": "This feature is under development. The layout is reserved — stay tuned.",
+    "sections": {
+      "overview": "Overview",
+      "players": "Player data",
+      "operations": "Operations",
+      "map": "Map & whitelist",
+      "restapi": "REST API",
+      "backup": "Saves & backups",
+      "settings": "Server settings"
+    },
+    "overview": {
+      "title": "Server overview",
+      "desc": "Server info, runtime metrics and online player list",
+      "info": "Server info",
+      "onlinePlayers": "Online players",
+      "cpu": "CPU usage",
+      "memory": "Memory usage",
+      "online": "Players online",
+      "uptime": "Uptime"
+    },
+    "players": {
+      "title": "Players & save data",
+      "desc": "View player, guild, Pal and inventory data",
+      "tabs": {
+        "players": "Players",
+        "guilds": "Guilds",
+        "pals": "Pals",
+        "inventory": "Inventory"
+      }
+    },
+    "operations": {
+      "title": "Operations",
+      "desc": "Kick, ban, broadcast and graceful shutdown",
+      "kick": "Kick player",
+      "ban": "Ban player",
+      "broadcast": "Broadcast",
+      "shutdown": "Graceful shutdown"
+    },
+    "map": {
+      "title": "Map & whitelist",
+      "desc": "Visual map and whitelist management",
+      "mapView": "Visual map",
+      "whitelist": "Whitelist"
+    },
+    "restapi": {
+      "title": "REST API control",
+      "desc": "Control the server via the official REST API",
+      "docs": "View official docs"
+    },
+    "backup": {
+      "title": "Save sync & backups",
+      "desc": "Scheduled save sync, auto backup and backup management",
+      "sync": "Scheduled sync",
+      "auto": "Auto backup",
+      "manage": "Backup management"
+    },
+    "settings": {
+      "title": "Server settings",
+      "desc": "Edit basic config, gameplay parameters and launch args",
+      "hint": "Server name, passwords, gameplay and launch parameters are all edited here.",
+      "open": "Open server settings"
+    }
   },
   "addServer": {
     "title": "Add New Server",

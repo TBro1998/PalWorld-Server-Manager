@@ -84,6 +84,7 @@
     "restart": "再起動",
     "delete": "削除",
     "settings": "設定",
+    "manage": "管理",
     "logs": "ログ",
     "install": "インストール",
     "installUpdate": "インストール / 更新",
@@ -107,6 +108,73 @@
     "logsLive": "ライブ",
     "logsClear": "クリア",
     "logsClose": "閉じる"
+  },
+  "serverManage": {
+    "backToList": "サーバー一覧へ戻る",
+    "notFound": "サーバーが見つかりません",
+    "comingSoon": "開発中",
+    "comingSoonDesc": "この機能は開発中です。レイアウトは確保済みです。お楽しみに。",
+    "sections": {
+      "overview": "概要",
+      "players": "プレイヤーデータ",
+      "operations": "運用操作",
+      "map": "マップとホワイトリスト",
+      "restapi": "REST API",
+      "backup": "セーブとバックアップ",
+      "settings": "サーバー設定"
+    },
+    "overview": {
+      "title": "サーバー概要",
+      "desc": "サーバー情報、稼働メトリクス、オンラインプレイヤー一覧",
+      "info": "サーバー情報",
+      "onlinePlayers": "オンラインプレイヤー",
+      "cpu": "CPU 使用率",
+      "memory": "メモリ使用量",
+      "online": "オンライン人数",
+      "uptime": "稼働時間"
+    },
+    "players": {
+      "title": "プレイヤーとセーブデータ",
+      "desc": "プレイヤー、ギルド、パル、インベントリのデータを表示",
+      "tabs": {
+        "players": "プレイヤー",
+        "guilds": "ギルド",
+        "pals": "パル",
+        "inventory": "インベントリ"
+      }
+    },
+    "operations": {
+      "title": "運用操作",
+      "desc": "キック、BAN、ブロードキャスト、安全なシャットダウン",
+      "kick": "プレイヤーをキック",
+      "ban": "プレイヤーをBAN",
+      "broadcast": "ブロードキャスト",
+      "shutdown": "安全なシャットダウン"
+    },
+    "map": {
+      "title": "マップとホワイトリスト",
+      "desc": "ビジュアルマップとホワイトリスト管理",
+      "mapView": "ビジュアルマップ",
+      "whitelist": "ホワイトリスト"
+    },
+    "restapi": {
+      "title": "REST API 操作",
+      "desc": "公式 REST API でサーバーを操作",
+      "docs": "公式ドキュメントを見る"
+    },
+    "backup": {
+      "title": "セーブ同期とバックアップ",
+      "desc": "セーブの定期同期、自動バックアップ、バックアップ管理",
+      "sync": "定期同期",
+      "auto": "自動バックアップ",
+      "manage": "バックアップ管理"
+    },
+    "settings": {
+      "title": "サーバー設定",
+      "desc": "基本設定、ゲームパラメータ、起動引数を編集",
+      "hint": "サーバー名、パスワード、ゲームプレイや起動引数などの設定はここで編集します。",
+      "open": "サーバー設定を開く"
+    }
   },
   "addServer": {
     "title": "新しいサーバーを追加",
