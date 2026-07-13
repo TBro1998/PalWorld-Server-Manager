@@ -17,14 +17,7 @@ import { RestUnavailableNotice } from './RestUnavailableNotice'
 export function OverviewSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
-  const { status, isAvailable, refetch: refetchStatus } = useRestStatus(serverId)
-
-  const infoQuery = useQuery({
-    queryKey: ['rest-info', serverId],
-    queryFn: async () => (await serversApi.restInfo(serverId)).data,
-    enabled: isAvailable,
-    refetchOnWindowFocus: false,
-  })
+  const { status, isAvailable } = useRestStatus(serverId)
 
   const metricsQuery = useQuery({
     queryKey: ['rest-metrics', serverId],
@@ -33,15 +26,16 @@ export function OverviewSection() {
     refetchOnWindowFocus: false,
   })
 
-  const info = infoQuery.data
+  // Server info comes from the /rest/status probe (which already calls
+  // /v1/api/info) and is fetched once on page entry. It is mostly static, so the
+  // Refresh button below deliberately does NOT re-fetch it — only /metrics.
+  const info = status?.info
   const metrics = metricsQuery.data
 
-  // Manual refresh: pull both read queries at once. Disabled while the REST API
-  // is unavailable or while either query is already fetching.
-  const isFetching = infoQuery.isFetching || metricsQuery.isFetching
+  // Manual refresh: pull only the live /metrics data. Disabled while the REST
+  // API is unavailable or a fetch is already in flight.
+  const isFetching = metricsQuery.isFetching
   const handleRefresh = () => {
-    refetchStatus()
-    infoQuery.refetch()
     metricsQuery.refetch()
   }
 

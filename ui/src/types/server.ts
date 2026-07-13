@@ -123,4 +123,7 @@ export interface RestStatus {
   reachable: boolean
   port: number
   reason: RestReason
+  // Server info from the reachability probe; present only when reachable. The
+  // Overview reuses this instead of issuing a separate /rest/info request.
+  info?: PalInfo
 }

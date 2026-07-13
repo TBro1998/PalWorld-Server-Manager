@@ -179,6 +179,10 @@ type RestStatusResponse struct {
 	Reachable bool   `json:"reachable"`
 	Port      int    `json:"port"`
 	Reason    string `json:"reason"`
+	// Info carries the payload from the reachability probe (a /v1/api/info call).
+	// Exposing it lets the frontend render server info without a second, redundant
+	// fetch. Present only when reachable; omitted otherwise.
+	Info *palapi.Info `json:"info,omitempty"`
 }
 
 // RestStatus reports whether the REST API is usable. Unlike the forwarding
@@ -198,9 +202,11 @@ func (r *Router) RestStatus(c *gin.Context) {
 	}
 
 	// Only probe reachability when the server would otherwise be usable; a
-	// lightweight Info call doubles as the connectivity check.
+	// lightweight Info call doubles as the connectivity check. The result is
+	// returned in the response so the frontend can reuse it instead of issuing a
+	// second /v1/api/info request for the same data.
 	if res.ready() {
-		if _, err := res.client.Info(c.Request.Context()); err != nil {
+		if info, err := res.client.Info(c.Request.Context()); err != nil {
 			// Either connection-level failure or an auth/other error: from the
 			// frontend's perspective the API is not usable, so surface it as
 			// unreachable regardless of the underlying cause.
@@ -209,6 +215,7 @@ func (r *Router) RestStatus(c *gin.Context) {
 		} else {
 			resp.Reachable = true
 			resp.Reason = reasonOK
+			resp.Info = &info
 		}
 	}
 
