@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserX, Ban, RotateCcw } from 'lucide-react'
+import { UserX, Ban, RotateCcw, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,13 +48,15 @@ export function PlayersSection() {
   const [banMessage, setBanMessage] = useState('')
   const [feedback, setFeedback] = useState<Feedback>(null)
 
-  const { data: playersData } = useQuery({
+  // The player list does NOT auto-poll; it fetches once when the section becomes
+  // available and afterwards refreshes only when the user clicks "Refresh".
+  const playersQuery = useQuery({
     queryKey: ['rest-players', serverId],
     queryFn: async () => (await serversApi.restPlayers(serverId)).data,
     enabled: isAvailable,
-    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
   })
-  const players = playersData?.players ?? []
+  const players = playersQuery.data?.players ?? []
 
   const invalidatePlayers = () =>
     queryClient.invalidateQueries({ queryKey: ['rest-players', serverId] })
@@ -145,6 +147,21 @@ export function PlayersSection() {
         <RestUnavailableNotice status={status} />
       ) : (
         <div className="space-y-4">
+          {/* Manual refresh: the player list does not auto-poll. */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl border-2 shadow-pal"
+              onClick={() => playersQuery.refetch()}
+              disabled={!isAvailable || playersQuery.isFetching}
+            >
+              <RefreshCw className={`h-4 w-4 ${playersQuery.isFetching ? 'animate-spin' : ''}`} />
+              {t('players.refresh')}
+            </Button>
+          </div>
+
           {feedback && (
             <p
               className={

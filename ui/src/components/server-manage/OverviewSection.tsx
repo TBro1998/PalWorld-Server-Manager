@@ -1,6 +1,6 @@
 'use client'
 
-import { Gauge, Timer, Signal, Clock, Server as ServerIcon, Users, RefreshCw } from 'lucide-react'
+import { Gauge, Timer, Signal, Clock, Server as ServerIcon, RefreshCw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,10 +10,10 @@ import { useRestStatus } from '@/hooks/useRestStatus'
 import { SectionShell, PanelCard, Placeholder, useServerId } from './shared'
 import { RestUnavailableNotice } from './RestUnavailableNotice'
 
-// Server info + runtime metrics + read-only online player list, driven by the
-// game server's REST API (/info, /metrics, /players). Reads do NOT auto-poll;
-// they fetch once when the section becomes available and afterwards refresh only
-// when the user clicks the "Refresh" button.
+// Server info + runtime metrics, driven by the game server's REST API (/info,
+// /metrics). The online player list lives in the Players section instead. Reads
+// do NOT auto-poll; they fetch once when the section becomes available and
+// afterwards refresh only when the user clicks the "Refresh" button.
 export function OverviewSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
@@ -33,25 +33,15 @@ export function OverviewSection() {
     refetchOnWindowFocus: false,
   })
 
-  const playersQuery = useQuery({
-    queryKey: ['rest-players', serverId],
-    queryFn: async () => (await serversApi.restPlayers(serverId)).data,
-    enabled: isAvailable,
-    refetchOnWindowFocus: false,
-  })
-
   const info = infoQuery.data
   const metrics = metricsQuery.data
-  const players = playersQuery.data?.players ?? []
 
-  // Manual refresh: pull all three read queries at once. Disabled while the REST
-  // API is unavailable or while any of the queries is already fetching.
-  const isFetching =
-    infoQuery.isFetching || metricsQuery.isFetching || playersQuery.isFetching
+  // Manual refresh: pull both read queries at once. Disabled while the REST API
+  // is unavailable or while either query is already fetching.
+  const isFetching = infoQuery.isFetching || metricsQuery.isFetching
   const handleRefresh = () => {
     infoQuery.refetch()
     metricsQuery.refetch()
-    playersQuery.refetch()
   }
 
   // Metric tiles: filled from /metrics when available, "—" placeholder otherwise.
@@ -119,42 +109,17 @@ export function OverviewSection() {
         })}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PanelCard icon={<ServerIcon className="h-4 w-4" />} title={t('overview.info')}>
-          {info ? (
-            <dl className="space-y-2 text-sm">
-              <InfoRow label={t('overview.serverName')} value={info.servername} />
-              <InfoRow label={t('overview.version')} value={info.version} />
-              <InfoRow label={t('overview.description')} value={info.description} />
-            </dl>
-          ) : (
-            <Placeholder className="min-h-[140px]">{t('rest.noData')}</Placeholder>
-          )}
-        </PanelCard>
-
-        <PanelCard icon={<Users className="h-4 w-4" />} title={t('overview.onlinePlayers')}>
-          {!isAvailable ? (
-            <Placeholder className="min-h-[140px]">{t('rest.noData')}</Placeholder>
-          ) : players.length === 0 ? (
-            <Placeholder className="min-h-[140px]">{t('overview.noPlayers')}</Placeholder>
-          ) : (
-            <ul className="divide-y divide-border/60">
-              {players.map((p) => (
-                <li
-                  key={p.userId || p.playerId || p.name}
-                  className="flex items-center justify-between gap-3 py-2 text-sm"
-                >
-                  <span className="truncate font-semibold text-foreground">{p.name}</span>
-                  <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                    <span>Lv.{p.level}</span>
-                    <span>{Math.round(p.ping)} ms</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </PanelCard>
-      </div>
+      <PanelCard icon={<ServerIcon className="h-4 w-4" />} title={t('overview.info')}>
+        {info ? (
+          <dl className="space-y-2 text-sm">
+            <InfoRow label={t('overview.serverName')} value={info.servername} />
+            <InfoRow label={t('overview.version')} value={info.version} />
+            <InfoRow label={t('overview.description')} value={info.description} />
+          </dl>
+        ) : (
+          <Placeholder className="min-h-[140px]">{t('rest.noData')}</Placeholder>
+        )}
+      </PanelCard>
     </SectionShell>
   )
 }

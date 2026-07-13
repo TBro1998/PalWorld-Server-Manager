@@ -140,6 +140,7 @@
     "players": {
       "title": "Players & save data",
       "desc": "View player, guild, Pal and inventory data",
+      "refresh": "Refresh",
       "tabs": {
         "players": "Players",
         "guilds": "Guilds",

@@ -140,6 +140,7 @@
     "players": {
       "title": "玩家与存档数据",
       "desc": "查看玩家、公会、帕鲁与背包数据",
+      "refresh": "刷新",
       "tabs": {
         "players": "玩家",
         "guilds": "公会",
