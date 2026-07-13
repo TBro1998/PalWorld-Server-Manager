@@ -191,4 +191,17 @@
       0 12px 32px -12px hsl(0 0% 0% / 0.55),
       0 2px 6px -2px hsl(0 0% 0% / 0.4);
   }
+
+  /* Lifted variant for hover/active card states. */
+  .shadow-pal-lg {
+    box-shadow:
+      0 20px 44px -14px hsl(200 50% 30% / 0.34),
+      0 4px 10px -3px hsl(200 50% 30% / 0.16);
+  }
+
+  .dark .shadow-pal-lg {
+    box-shadow:
+      0 22px 48px -14px hsl(0 0% 0% / 0.62),
+      0 4px 10px -3px hsl(0 0% 0% / 0.45);
+  }
 }

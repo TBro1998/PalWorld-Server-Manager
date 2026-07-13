@@ -6,7 +6,7 @@ import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal, Eye, EyeOff, Server as ServerIcon } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, Settings, ScrollText, Terminal, Eye, EyeOff, Server as ServerIcon, Plug } from 'lucide-react'
 import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 
@@ -36,7 +36,7 @@ function parsePort(launchArgs: string): number {
 // Status → semantic badge variant + status-dot color for the Palworld palette.
 const statusConfig = {
   stopped: { variant: 'secondary' as const, key: 'statusStopped', dot: 'bg-muted-foreground' },
-  running: { variant: 'success' as const, key: 'statusRunning', dot: 'bg-success' },
+  running: { variant: 'success' as const, key: 'statusRunning', dot: 'bg-success animate-pulse' },
   installing: { variant: 'info' as const, key: 'statusInstalling', dot: 'bg-info animate-pulse' },
   error: { variant: 'destructive' as const, key: 'statusError', dot: 'bg-destructive' },
 }
@@ -60,7 +60,33 @@ function SecretValue({ value, empty }: { value: string; empty: string }) {
   )
 }
 
-// One label/value line in the info block.
+// StatTile surfaces a single high-value fact (port, REST API) as a compact,
+// scannable card so the essentials pop above the detail rows.
+function StatTile({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className="truncate text-sm font-bold leading-tight text-foreground">{children}</p>
+      </div>
+    </div>
+  )
+}
+
+// One label/value line in the detail block.
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
@@ -100,18 +126,28 @@ export function ServerCard({
     server.status !== 'installing' &&
     server.status !== 'running'
   const hasError = server.status === 'error' && !!server.last_error
+  const restEnabled = settings.RESTAPIEnabled === 'True'
 
   return (
-    <Card className="flex flex-col overflow-hidden rounded-2xl border-2 shadow-pal transition-transform hover:-translate-y-1">
-      <CardHeader className="gap-0 pb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <Card className="flex flex-col overflow-hidden rounded-2xl border-2 shadow-pal transition-all duration-200 hover:-translate-y-1 hover:shadow-pal-lg">
+      {/* Accent header strip keeps the status colour reading at a glance. */}
+      <CardHeader className="gap-0 border-b border-border/60 bg-gradient-to-br from-secondary/40 to-transparent pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <ServerIcon className="h-5 w-5" />
             </div>
-            <h3 className="truncate text-lg font-bold leading-tight text-foreground">
-              {server.name}
-            </h3>
+            <div className="min-w-0">
+              <h3 className="truncate text-lg font-bold leading-tight text-foreground">
+                {server.name}
+              </h3>
+              <p
+                className="truncate font-mono text-xs text-muted-foreground"
+                title={server.install_path}
+              >
+                {server.install_path}
+              </p>
+            </div>
           </div>
           <Badge variant={status.variant} className="shrink-0 gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
@@ -120,31 +156,36 @@ export function ServerCard({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1">
-        <div className="space-y-2 rounded-xl bg-muted/40 p-3 text-sm">
-          <InfoRow label={t('path')}>{server.install_path}</InfoRow>
-          <InfoRow label={t('port')}>{parsePort(server.launch_args)}</InfoRow>
-          {config && (
-            <>
-              <InfoRow label={tc('params.ServerDescription.label')}>
-                {settings.ServerDescription || (
-                  <span className="text-muted-foreground">{t('notSet')}</span>
-                )}
-              </InfoRow>
-              <InfoRow label={tc('params.ServerPassword.label')}>
-                <SecretValue value={settings.ServerPassword ?? ''} empty={t('notSet')} />
-              </InfoRow>
-              <InfoRow label={tc('params.AdminPassword.label')}>
-                <SecretValue value={settings.AdminPassword ?? ''} empty={t('notSet')} />
-              </InfoRow>
-              <InfoRow label="REST API">
-                {settings.RESTAPIEnabled === 'True'
-                  ? `${t('enabled')} · ${t('port')} ${settings.RESTAPIPort || '8212'}`
-                  : t('disabled')}
-              </InfoRow>
-            </>
-          )}
+      <CardContent className="flex-1 pt-4">
+        {/* Key facts as scannable tiles; collapse to one column when cramped. */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <StatTile icon={<Plug className="h-4 w-4" />} label={t('port')}>
+            {parsePort(server.launch_args)}
+          </StatTile>
+          <StatTile icon={<Terminal className="h-4 w-4" />} label="REST API">
+            {config
+              ? restEnabled
+                ? `${t('enabled')} · ${settings.RESTAPIPort || '8212'}`
+                : t('disabled')
+              : '—'}
+          </StatTile>
         </div>
+
+        {config && (
+          <div className="mt-3 space-y-2 rounded-xl bg-muted/40 p-3 text-sm">
+            <InfoRow label={tc('params.ServerDescription.label')}>
+              {settings.ServerDescription || (
+                <span className="text-muted-foreground">{t('notSet')}</span>
+              )}
+            </InfoRow>
+            <InfoRow label={tc('params.ServerPassword.label')}>
+              <SecretValue value={settings.ServerPassword ?? ''} empty={t('notSet')} />
+            </InfoRow>
+            <InfoRow label={tc('params.AdminPassword.label')}>
+              <SecretValue value={settings.AdminPassword ?? ''} empty={t('notSet')} />
+            </InfoRow>
+          </div>
+        )}
 
         {needsInstall && (
           <div className="mt-3 rounded-lg bg-warning/15 px-3 py-2 text-sm font-medium text-warning">
@@ -167,14 +208,6 @@ export function ServerCard({
           <>
             <Button
               size="sm"
-              variant={needsInstall ? 'default' : 'secondary'}
-              onClick={() => onInstall(server.id)}
-            >
-              <Download size={16} className="mr-1" />
-              {t('installUpdate')}
-            </Button>
-            <Button
-              size="sm"
               variant="default"
               onClick={() => onStart(server.id)}
               disabled={!server.installed}
@@ -182,7 +215,15 @@ export function ServerCard({
               <Play size={16} className="mr-1" />
               {t('start')}
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => onSettings(server)}>
+            <Button
+              size="sm"
+              variant={needsInstall ? 'default' : 'outline'}
+              onClick={() => onInstall(server.id)}
+            >
+              <Download size={16} className="mr-1" />
+              {t('installUpdate')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onSettings(server)}>
               <Settings size={16} className="mr-1" />
               {t('settings')}
             </Button>
@@ -206,27 +247,26 @@ export function ServerCard({
               <div className="mr-2 animate-spin">⏳</div>
               {t('installing')}
             </div>
-            <Button size="sm" variant="secondary" onClick={() => onInstallLogs(server)}>
+            <Button size="sm" variant="outline" onClick={() => onInstallLogs(server)}>
               <Terminal size={16} className="mr-1" />
               {t('installLogs')}
             </Button>
           </>
         )}
-        <Button size="sm" variant="secondary" onClick={() => onLogs(server)}>
+        <Button size="sm" variant="ghost" onClick={() => onLogs(server)}>
           <ScrollText size={16} className="mr-1" />
           {t('logs')}
         </Button>
-        <div className="ml-auto">
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete(server.id)}
-            disabled={server.status === 'running' || server.status === 'installing'}
-          >
-            <Trash2 size={16} className="mr-1" />
-            {t('delete')}
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => onDelete(server.id)}
+          disabled={server.status === 'running' || server.status === 'installing'}
+        >
+          <Trash2 size={16} className="mr-1" />
+          {t('delete')}
+        </Button>
       </CardFooter>
     </Card>
   )
