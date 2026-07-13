@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <p className="mt-2 text-muted-foreground">{t('subtitle')}</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/servers">
+          <Link href="/servers" prefetch={false}>
             <Button size="lg" className="shadow-pal">
               <Server className="mr-1 h-5 w-5" />
               {t('manageServers')}
@@ -139,6 +139,7 @@ export default function DashboardPage() {
           {total > 0 && (
             <Link
               href="/servers"
+              prefetch={false}
               className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
             >
               {t('viewAll')}
@@ -154,7 +155,7 @@ export default function DashboardPage() {
                 🐾
               </div>
               <p className="max-w-sm text-muted-foreground">{t('empty')}</p>
-              <Link href="/servers">
+              <Link href="/servers" prefetch={false}>
                 <Button size="lg" className="shadow-pal">
                   <Plus className="mr-1 h-5 w-5" />
                   {t('addServer')}
@@ -167,7 +168,7 @@ export default function DashboardPage() {
             {list.slice(0, 5).map((s) => {
               const badge = statusBadge[s.status];
               return (
-                <Link key={s.id} href="/servers">
+                <Link key={s.id} href="/servers" prefetch={false}>
                   <Card className="rounded-2xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-pal">
                     <CardContent className="flex items-center justify-between gap-3 p-4">
                       <div className="flex min-w-0 items-center gap-3">
