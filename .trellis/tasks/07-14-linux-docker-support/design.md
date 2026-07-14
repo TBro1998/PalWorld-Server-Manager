@@ -105,7 +105,6 @@ Stage 3 runtime   (debian:bookworm-slim)
 - `HOST=0.0.0.0`，`PORT=8080`
 - `DATABASE_PATH=/data/palworld.db`
 - `STEAMCMD_PATH=/data/steamcmd`
-- `PALWORLD_BASE_PATH=/data/palworld`
 - `LOG_DIR=/data/logs`
 - `JWT_SECRET`（用户必须改）
 
@@ -127,7 +126,6 @@ services:
       JWT_SECRET: "change-me-in-production"   # ⚠ 请修改
       DATABASE_PATH: "/data/palworld.db"
       STEAMCMD_PATH: "/data/steamcmd"
-      PALWORLD_BASE_PATH: "/data/palworld"
       LOG_DIR: "/data/logs"
     volumes:
       - psm-data:/data

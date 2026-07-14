@@ -23,7 +23,6 @@ services:
       JWT_SECRET: "change-me-in-production" # ⚠ 请务必修改
       DATABASE_PATH: "/data/palworld.db"
       STEAMCMD_PATH: "/data/steamcmd"
-      PALWORLD_BASE_PATH: "/data/palworld"
       LOG_DIR: "/data/logs"
     volumes:
       - ./psm-data:/data      # 数据库/SteamCMD/存档/日志 统一持久化

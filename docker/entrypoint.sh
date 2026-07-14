@@ -6,7 +6,6 @@ set -e
 # avoids first-run races. Paths mirror the *_PATH env vars set in the image.
 mkdir -p \
     "${STEAMCMD_PATH:-/data/steamcmd}" \
-    "${PALWORLD_BASE_PATH:-/data/palworld}" \
     "${LOG_DIR:-/data/logs}"
 
 # The Steam client library symlinks Palworld needs (~/.steam/sdk64/...) are set

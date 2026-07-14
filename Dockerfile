@@ -63,7 +63,6 @@ ENV HOST=0.0.0.0 \
     PORT=8080 \
     DATABASE_PATH=/data/palworld.db \
     STEAMCMD_PATH=/data/steamcmd \
-    PALWORLD_BASE_PATH=/data/palworld \
     LOG_DIR=/data/logs
 
 USER steam
