@@ -113,3 +113,11 @@
 - G2 trailer=00000000;G3 Character=1/Group=8/ItemContainer=27/CharContainer=2;性能 Level.sav 516µs。`CGO_ENABLED=0 go build ./...`、vet、gofmt 全干净;go.mod 无 cgo/oodle/purego 依赖。
 - **已知验证缺口**:样本存档仅 1 角色(玩家)、0 帕鲁、个人背包空 → 帕鲁字段抽取与物品填充仅结构性验证;帕鲁字段名依 Palworld 通用 schema,待含帕鲁存档复核。
 - 阶段 2–4 经 trellis-implement 子代理完成;已派 trellis-check 复核质量。
+
+### 2026-07-14 — 阶段 5 / trellis-check 完成
+- trellis-check(子代理)复核 ~24 文件:确认对参考实现高保真、真实存档字节精确;GUID/fstring(UTF-16 实测解出 `最大HP`)/Map 默认类型/custom nested_caller_path/guild v2→v1 EOF 回退/dynamic_item 试探/Mermaid 重叠 matchCopy 全部对齐。
+- 修复:删 bitreader.go 3 个死函数;收紧 sav_test.go 过时的软 return。
+- 保留(低优先,有理由):player.Level 缺失→0(生态惯例默认 1,属语义消费方决定,prd R5 允许留空);try_read_egg EOF-re-raise 差异(样本无蛋无法触发);fstring ASCII 路径(格式不产生 >127 正长度)。
+- 复核后 `CGO_ENABLED=0 go build ./...`、vet、gofmt、`go test ./internal/palsave/...` 全绿。
+- git:`Servers/`(真实存档)已被忽略;`internal/palsave/testdata/` 小样本(含真实玩家/公会名)未忽略未提交,待用户决定是否作为 fixture 入库。
+- 子任务 A(核心库)实现 + 检查完成。待:commit(需用户批准)→ 规划/开始子任务 B(REST+前端)。
