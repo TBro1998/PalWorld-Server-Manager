@@ -134,3 +134,36 @@
 - **spec 记录**:新增 `.trellis/spec/backend/save-file-handling.md`(存档定位/玩家文件名/缓存/DTO/端点契约)并登记索引。
 - **git 状态**:B 的改动**未提交**(用户对 B 只说"开始",commit 待批准)。`internal/palsave/testdata/` 仍未跟踪(测试用 Skipf 容错,缺 fixture 会跳过)——是否作为 fixture 入库仍待用户决定。
 - 待:用户批准后 commit B(可选 archive B → 父任务 [2/2 done])。
+
+
+## Session 3: 服务器运行日志捕获修复
+
+**Date**: 2026-07-14
+**Task**: 服务器运行日志捕获修复
+**Branch**: `main`
+
+### Summary
+
+服务器启动后管理器未接管进程输出、绕道 tail Pal.log 抓不到日志。改为在 StartServer 直接将 cmd.Stdout/Stderr 接入现有 out=MultiWriter(capture,broadcaster)，两平台统一、落盘+SSE 不变；精简 monitor 签名、删除 gameLogPath 与 tail.go 整套 tail 子系统。cmd.Wait 保证输出拷贝完成后再 Close capture，无竞态。trellis-check PASS，Windows/Docker 真机验证通过，双平台交叉编译通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e5deca0` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
