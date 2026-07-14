@@ -178,6 +178,40 @@
         "banFail": "Failed to ban player",
         "unbanOk": "User unbanned",
         "unbanFail": "Failed to unban user"
+      },
+      "save": {
+        "selectPlayer": "Select player",
+        "selectPlayerPlaceholder": "Choose a player",
+        "loading": "Loading…",
+        "empty": "No data",
+        "noSave": "No save found (server not installed or no save generated yet)",
+        "loadError": "Failed to load save data",
+        "guild": {
+          "baseCamp": "Base level",
+          "admin": "Admin",
+          "memberName": "Member",
+          "role": "Role",
+          "lastOnline": "Last online",
+          "empty": "No guilds"
+        },
+        "pal": {
+          "name": "Name",
+          "species": "Species",
+          "level": "Level",
+          "gender": "Gender",
+          "rank": "Rank",
+          "talent": "Talent (HP/Melee/Shot/Def)",
+          "passives": "Passives",
+          "empty": "This player has no pals"
+        },
+        "item": {
+          "slot": "Slot",
+          "staticId": "Item ID",
+          "count": "Count",
+          "durability": "Durability",
+          "passives": "Passives",
+          "empty": "This player's inventory is empty"
+        }
       }
     },
     "operations": {

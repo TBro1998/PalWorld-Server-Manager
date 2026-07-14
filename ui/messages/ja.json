@@ -178,6 +178,40 @@
         "banFail": "BANに失敗しました",
         "unbanOk": "ユーザーのBANを解除しました",
         "unbanFail": "BAN解除に失敗しました"
+      },
+      "save": {
+        "selectPlayer": "プレイヤー選択",
+        "selectPlayerPlaceholder": "プレイヤーを選択",
+        "loading": "読み込み中…",
+        "empty": "データがありません",
+        "noSave": "セーブが見つかりません（サーバー未インストールまたはセーブ未生成）",
+        "loadError": "セーブデータの読み込みに失敗しました",
+        "guild": {
+          "baseCamp": "拠点レベル",
+          "admin": "ギルドマスター",
+          "memberName": "メンバー",
+          "role": "役割",
+          "lastOnline": "最終ログイン",
+          "empty": "ギルドがありません"
+        },
+        "pal": {
+          "name": "ニックネーム",
+          "species": "種類",
+          "level": "レベル",
+          "gender": "性別",
+          "rank": "ランク",
+          "talent": "才能 (HP/近接/射撃/防御)",
+          "passives": "パッシブスキル",
+          "empty": "このプレイヤーはパルを所有していません"
+        },
+        "item": {
+          "slot": "スロット",
+          "staticId": "アイテムID",
+          "count": "個数",
+          "durability": "耐久",
+          "passives": "パッシブ",
+          "empty": "このプレイヤーの所持品は空です"
+        }
       }
     },
     "operations": {

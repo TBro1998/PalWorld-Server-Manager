@@ -127,3 +127,80 @@ export interface RestStatus {
   // Overview reuses this instead of issuing a separate /rest/info request.
   info?: PalInfo
 }
+
+// --- Save-file inspection (GET /api/servers/:id/save/*) ---
+// These mirror the DTOs in internal/api/save_handlers.go and describe parsed
+// Level.sav / Players/*.sav data (offline players included), independent of the
+// live REST API.
+
+export interface SavePlayer {
+  uid: string
+  instanceId: string
+  name: string
+  level: number
+  exp: number
+  guildId: string
+  guildName?: string
+}
+
+export interface SavePlayers {
+  players: SavePlayer[]
+}
+
+export interface SavePalTalent {
+  hp: number
+  melee: number
+  shot: number
+  defense: number
+}
+
+export interface SavePal {
+  instanceId: string
+  ownerUid: string
+  species: string
+  name: string
+  level: number
+  exp: number
+  gender: string
+  rank: number
+  talent: SavePalTalent
+  passives: string[]
+}
+
+export interface SavePals {
+  pals: SavePal[]
+}
+
+export interface SaveGuildMember {
+  uid: string
+  name: string
+  role: number
+  lastOnline: number
+}
+
+export interface SaveGuild {
+  guildId: string
+  name: string
+  baseCampLevel: number
+  adminUid: string
+  members: SaveGuildMember[]
+}
+
+export interface SaveGuilds {
+  guilds: SaveGuild[]
+}
+
+export interface SaveItem {
+  container: string
+  slot: number
+  count: number
+  staticId: string
+  itemType?: string
+  durability?: number
+  passives?: string[]
+}
+
+// Inventory is keyed by container role (e.g. "CommonContainerId").
+export interface SaveInventory {
+  inventory: Record<string, SaveItem[]>
+}

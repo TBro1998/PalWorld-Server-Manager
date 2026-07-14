@@ -178,6 +178,40 @@
         "banFail": "封禁失败",
         "unbanOk": "已解封用户",
         "unbanFail": "解封失败"
+      },
+      "save": {
+        "selectPlayer": "选择玩家",
+        "selectPlayerPlaceholder": "请选择玩家",
+        "loading": "加载中…",
+        "empty": "暂无数据",
+        "noSave": "未找到存档（服务器未安装或尚未生成存档）",
+        "loadError": "加载存档数据失败",
+        "guild": {
+          "baseCamp": "据点等级",
+          "admin": "会长",
+          "memberName": "成员",
+          "role": "角色",
+          "lastOnline": "最后在线",
+          "empty": "暂无公会"
+        },
+        "pal": {
+          "name": "昵称",
+          "species": "种类",
+          "level": "等级",
+          "gender": "性别",
+          "rank": "星级",
+          "talent": "天赋 (HP/近战/远程/防御)",
+          "passives": "被动技能",
+          "empty": "该玩家暂无帕鲁"
+        },
+        "item": {
+          "slot": "槽位",
+          "staticId": "物品 ID",
+          "count": "数量",
+          "durability": "耐久",
+          "passives": "词条",
+          "empty": "该玩家背包为空"
+        }
       }
     },
     "operations": {

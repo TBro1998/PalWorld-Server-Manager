@@ -121,3 +121,16 @@
 - 复核后 `CGO_ENABLED=0 go build ./...`、vet、gofmt、`go test ./internal/palsave/...` 全绿。
 - git:`Servers/`(真实存档)已被忽略;`internal/palsave/testdata/` 小样本(含真实玩家/公会名)未忽略未提交,待用户决定是否作为 fixture 入库。
 - 子任务 A(核心库)实现 + 检查完成。待:commit(需用户批准)→ 规划/开始子任务 B(REST+前端)。
+
+### 2026-07-14 — 子任务 A 收尾 + 子任务 B(REST+前端)实现完成
+- **A 收尾**:`task.py archive 07-13-palsav-core-lib` → completed,移入 `archive/2026-07/`,auto-commit `97d7ca9`(仅任务文件移动 + journal,未扫脏文件)。父任务进度 [1/2 done]。
+- **B 规划**:A 稳定后细化 prd(对齐 `:id`、前端接入点=现有 PlayersSection 三个占位 tab),补 design.md + implement.md(8 阶段),`task.py start` → in_progress。
+- **B 实现(8 阶段全绿)**:
+  - 后端:`palsave/locate.go`(LocateWorld/PlayerSaveFile/ResolvePlayerSave/ErrNoSave + 单测);`api/save_cache.go`(按 serverID+mtime+size 缓存 *Level);`api/save_handlers.go`(4 端点 + lowerCamel DTO + saveResolve,错误 400/404/500);`router.go` 新增 `/:id/save` 子组。
+  - 前端:`types/server.ts` Save* 类型;`lib/api.ts` 4 个存档接口;`PlayersSection.tsx` 填充 guilds/pals/inventory(玩家下拉 + 表格,404→无存档提示,三 tab 不挂 useRestStatus);`messages/{zh,en,ja}.json` 补 `players.save.*` 三语。
+  - 玩家文件名映射:UID 小写带连字符 → 去连字符大写十六进制 `.sav`(已固化 + 扫描回退)。lastOnline 是 Unreal ticks,前端 formatTicks 转换。
+- **验证**:`go build ./...`/`go vet ./...` 通过;`go test ./internal/api/ ./internal/palsave/` 通过(四端点 + 缓存复用/失效);前端 `bun run lint`(0 warn)、`bun run build`(含 TS 检查)通过、`go build .` 嵌入通过。
+- **质检**:trellis-check 独立复核 8 代码文件 + 3 语言文件,零问题;跨层 DTO 逐字段一致、并发读 Level 无竞态。非阻塞观察:缓存 mutex 跨 LoadLevel 持有(design §3 明确选 sync.Mutex,按设计保留)。
+- **spec 记录**:新增 `.trellis/spec/backend/save-file-handling.md`(存档定位/玩家文件名/缓存/DTO/端点契约)并登记索引。
+- **git 状态**:B 的改动**未提交**(用户对 B 只说"开始",commit 待批准)。`internal/palsave/testdata/` 仍未跟踪(测试用 Skipf 容错,缺 fixture 会跳过)——是否作为 fixture 入库仍待用户决定。
+- 待:用户批准后 commit B(可选 archive B → 父任务 [2/2 done])。

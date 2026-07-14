@@ -43,6 +43,10 @@ import type {
   PalInfo,
   PalMetrics,
   PalPlayers,
+  SavePlayers,
+  SaveGuilds,
+  SavePals,
+  SaveInventory,
 } from '@/types/server'
 
 export const serversApi = {
@@ -93,6 +97,18 @@ export const serversApi = {
   restShutdown: (id: number, data: { waittime: number; message: string }) =>
     apiClient.post(`/api/servers/${id}/rest/shutdown`, data),
   restStop: (id: number) => apiClient.post(`/api/servers/${id}/rest/stop`),
+
+  // --- Save-file inspection ---
+  // Parses the co-located Level.sav / Players saves (read-only). Independent of
+  // the live REST API: works even when the server is stopped, as long as a save
+  // exists on disk. 404 when no save is found.
+  savePlayers: (id: number) =>
+    apiClient.get<SavePlayers>(`/api/servers/${id}/save/players`),
+  saveGuilds: (id: number) => apiClient.get<SaveGuilds>(`/api/servers/${id}/save/guilds`),
+  savePals: (id: number, uid: string) =>
+    apiClient.get<SavePals>(`/api/servers/${id}/save/players/${uid}/pals`),
+  saveInventory: (id: number, uid: string) =>
+    apiClient.get<SaveInventory>(`/api/servers/${id}/save/players/${uid}/inventory`),
 }
 
 export default apiClient;

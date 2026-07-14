@@ -14,6 +14,7 @@ type Router struct {
 	config  *config.Config
 	process *process.Manager
 	streams *logger.StreamManager
+	saves   *saveCache
 }
 
 // NewRouter creates a new API router
@@ -25,6 +26,7 @@ func NewRouter(db *gorm.DB, cfg *config.Config) *Router {
 		config:  cfg,
 		process: pm,
 		streams: streams,
+		saves:   newSaveCache(),
 	}
 }
 
@@ -79,6 +81,17 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 				rest.POST("/save", r.RestSave)
 				rest.POST("/shutdown", r.RestShutdown)
 				rest.POST("/stop", r.RestStop)
+			}
+
+			// Save-file inspection: parses the co-located Level.sav / Players
+			// saves (read-only) and exposes players, guilds, pals and
+			// inventories. Independent of the live REST API.
+			save := servers.Group("/:id/save")
+			{
+				save.GET("/players", r.SavePlayers)
+				save.GET("/guilds", r.SaveGuilds)
+				save.GET("/players/:uid/pals", r.SavePlayerPals)
+				save.GET("/players/:uid/inventory", r.SavePlayerInventory)
 			}
 		}
 
