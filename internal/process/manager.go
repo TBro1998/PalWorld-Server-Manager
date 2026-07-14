@@ -162,7 +162,8 @@ func (m *Manager) StartServer(serverID int64) error {
 	if err != nil {
 		return fmt.Errorf("server %d: %w", serverID, err)
 	}
-	args := append(launchArgs.ToArgs(), logArgs()...)
+	args := launchArgs.ToArgs()
+	// args := append(launchArgs.ToArgs(), logArgs()...)
 
 	// Compose log sinks: persist to disk and broadcast live lines to SSE clients.
 	// KindServer keeps the running server's output separate from SteamCMD logs.
