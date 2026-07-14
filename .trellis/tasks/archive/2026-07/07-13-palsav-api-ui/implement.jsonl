@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "handler 内 GORM 查 models.Server 的列名/查询约定"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "端点→缓存→palsave→前端跨层数据流,避免边界 bug"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复用现有 :id 解析/错误 JSON 风格与前端 SectionShell/apiClient 模式"}
