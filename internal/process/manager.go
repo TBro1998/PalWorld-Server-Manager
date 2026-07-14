@@ -147,17 +147,22 @@ func (m *Manager) StartServer(serverID int64) error {
 		return err
 	}
 
-	exe, err := serverExecutable(srv.installPath)
+	// Resolve the executable to spawn and its working directory. On Windows this
+	// is the console server binary run directly (not the PalServer.exe launcher)
+	// so its stdout/stderr can be captured; on Unix it is PalServer.sh.
+	exe, workDir, err := launchTarget(srv.installPath)
 	if err != nil {
 		return err
 	}
 
-	// Build launch arguments from the persisted configuration.
+	// Build launch arguments from the persisted configuration, then append the
+	// platform's log-forcing flags so the server actually emits its runtime log
+	// to the stdout/stderr we capture (see logArgs).
 	launchArgs, err := palconfig.ParseLaunchArgs(srv.launchArgs)
 	if err != nil {
 		return fmt.Errorf("server %d: %w", serverID, err)
 	}
-	args := launchArgs.ToArgs()
+	args := append(launchArgs.ToArgs(), logArgs()...)
 
 	// Compose log sinks: persist to disk and broadcast live lines to SSE clients.
 	// KindServer keeps the running server's output separate from SteamCMD logs.
@@ -172,7 +177,7 @@ func (m *Manager) StartServer(serverID int64) error {
 	// streams lets os/exec share a single pipe, so concurrent stdout/stderr
 	// writes do not interleave mid-line.
 	cmd := exec.Command(exe, args...)
-	cmd.Dir = srv.installPath
+	cmd.Dir = workDir
 	cmd.SysProcAttr = sysProcAttr()
 	cmd.Stdout = out
 	cmd.Stderr = out

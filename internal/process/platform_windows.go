@@ -3,7 +3,10 @@
 package process
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,6 +19,38 @@ func sysProcAttr() *syscall.SysProcAttr {
 	return &syscall.SysProcAttr{
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
+}
+
+// launchTarget resolves the executable to spawn and the working directory to
+// spawn it in, chosen so the server's stdout/stderr can be captured directly.
+//
+// The root PalServer.exe is only a launcher: it starts the real server
+// (PalServer-Win64-Shipping-Cmd.exe) in a separate console whose output we
+// cannot capture. So we run that console binary directly from its own
+// Pal\Binaries\Win64 directory (where steam_appid.txt and the required DLLs
+// live) and pipe its stdout/stderr. Falls back to the launcher only if the
+// direct binary is missing (log capture will then be limited).
+func launchTarget(installPath string) (exe, workDir string, err error) {
+	cmdExe := filepath.Join(installPath, "Pal", "Binaries", "Win64", "PalServer-Win64-Shipping-Cmd.exe")
+	if _, statErr := os.Stat(cmdExe); statErr == nil {
+		return cmdExe, filepath.Dir(cmdExe), nil
+	}
+	launcher := filepath.Join(installPath, "PalServer.exe")
+	if _, statErr := os.Stat(launcher); statErr != nil {
+		return "", "", fmt.Errorf("server executable not found under %s (is the server installed?)", installPath)
+	}
+	return launcher, installPath, nil
+}
+
+// logArgs returns the Unreal Engine flags appended at launch that force the
+// dedicated server to write its runtime log to the (redirected) stdout we
+// capture. Without -stdout, UE on Windows writes only to its console window and
+// log devices, never the redirected stdout handle, so nothing is captured.
+// -FullStdOutLogOutput routes the complete log (Palworld writes no log file by
+// default) and -UTF8Output prevents UTF-16 mojibake in the captured stream.
+// Added at start time only; never persisted to the user launch configuration.
+func logArgs() []string {
+	return []string{"-log", "-stdout", "-FullStdOutLogOutput", "-UTF8Output"}
 }
 
 // isProcessAlive reports whether a process with the given PID is currently running.

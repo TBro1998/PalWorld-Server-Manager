@@ -3,6 +3,9 @@
 package process
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 )
@@ -15,6 +18,23 @@ func sysProcAttr() *syscall.SysProcAttr {
 		Setpgid: true,
 	}
 }
+
+// launchTarget resolves the executable to spawn and its working directory. On
+// Unix PalServer.sh runs the dedicated server binary within the same process
+// tree, so its stdout/stderr are inherited by the process we spawn and captured
+// directly. Launch it from the install root, as the script expects.
+func launchTarget(installPath string) (exe, workDir string, err error) {
+	sh := filepath.Join(installPath, "PalServer.sh")
+	if _, statErr := os.Stat(sh); statErr != nil {
+		return "", "", fmt.Errorf("server executable not found at %s (is the server installed?)", sh)
+	}
+	return sh, installPath, nil
+}
+
+// logArgs returns extra launch flags forcing log output. On Unix the dedicated
+// server already writes its log to stdout by default (verified working), so no
+// extra flags are required.
+func logArgs() []string { return nil }
 
 // isProcessAlive reports whether a process with the given PID is currently running.
 // Signal 0 performs error checking without actually sending a signal.

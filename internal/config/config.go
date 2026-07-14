@@ -20,8 +20,8 @@ type Config struct {
 	JWTSecret string `yaml:"jwt_secret" env:"JWT_SECRET" envDefault:"change-me-in-production"`
 
 	// Palworld server paths
-	SteamCMDPath     string `yaml:"steamcmd_path" env:"STEAMCMD_PATH" envDefault:"./steamcmd"`
-	PalworldBasePath string `yaml:"palworld_base_path" env:"PALWORLD_BASE_PATH" envDefault:"./palworld"`
+	SteamCMDPath string `yaml:"steamcmd_path" env:"STEAMCMD_PATH" envDefault:"./steamcmd"`
+	//PalworldBasePath string `yaml:"palworld_base_path" env:"PALWORLD_BASE_PATH" envDefault:"./palworld"`
 
 	// Logging
 	LogDir string `yaml:"log_dir" env:"LOG_DIR" envDefault:"./logs"`

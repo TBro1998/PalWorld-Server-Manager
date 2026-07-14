@@ -43,6 +43,39 @@ The Palworld **Linux** dedicated server looks up `steamclient.so` under
 
 ---
 
+## Server runtime log capture (stdout takeover)
+
+The manager captures a running server's log by taking over the spawned process's
+stdout/stderr (`cmd.Stdout = out; cmd.Stderr = out`, one `io.MultiWriter` →
+disk capture + live SSE). Palworld writes **no log file by default** (no
+`Pal/Saved/Logs/Pal.log`); everything goes to stdout and is discarded on exit —
+so tailing a log file does not work and was removed.
+
+Two platform-specific pieces make the takeover actually work (`launchTarget` /
+`logArgs` in `platform_{windows,unix}.go`):
+
+- **Windows**: `PalServer.exe` is only a launcher that starts the real server in
+  a **separate console** we cannot capture. Spawn the console binary directly:
+  `<install>/Pal/Binaries/Win64/PalServer-Win64-Shipping-Cmd.exe`, from its own
+  `Win64` dir (that dir holds `steam_appid.txt` + required DLLs; Saved/Config
+  still resolve from the exe-relative project root). And append UE flags
+  `-log -stdout -FullStdOutLogOutput -UTF8Output` — **without `-stdout` UE writes
+  only to its console window, never the redirected stdout handle**, so nothing is
+  captured. `-UTF8Output` avoids UTF-16 mojibake. Verified: these produce live,
+  per-line-flushed UE log lines on the captured pipe.
+- **Linux**: `PalServer.sh` runs the binary in the same process tree; its stdout
+  is inherited and captured directly, and the Linux build already emits to stdout
+  by default, so `logArgs()` is empty.
+
+`serverExecutable` (PalServer.exe / PalServer.sh) is still the install-presence
+marker for `IsInstalled`; it is **not** the launch target — use `launchTarget`.
+
+Adopted processes (reconciled by PID after a manager restart) cannot have their
+stdout captured (the handle is fixed at spawn), so they get no live log — an
+accepted limitation, not a regression.
+
+---
+
 ## No browser auto-open in the product
 
 The tool must **never** open a browser on startup — it is a headless server
