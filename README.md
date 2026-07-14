@@ -35,9 +35,48 @@
 
 ### 首次使用
 
-1. 程序启动后会自动打开浏览器访问 `http://127.0.0.1:8080`
+1. 程序启动后，在浏览器访问 `http://127.0.0.1:8080`（Docker/远程部署请访问 `http://<主机IP>:8080`）
 2. 首次访问需要创建管理员账号
 3. 登录后即可开始管理您的 Palworld 服务器
+
+### Docker 部署（Linux 推荐）
+
+管理器与 Palworld 游戏服运行在**同一个容器**内，数据持久化到卷，重建容器不丢档。
+
+```bash
+# 1. 获取代码
+git clone https://github.com/TBro1998/PalWorld-Server-Manager.git
+cd PalWorld-Server-Manager
+
+# 2. 构建并启动（首次构建会编译前端+后端，需数分钟）
+docker compose up -d --build
+
+# 3. 浏览器访问 http://<主机IP>:8080，创建管理员账号后即可安装/管理服务器
+```
+
+要点：
+
+- **务必修改 `docker-compose.yml` 中的 `JWT_SECRET`** 再用于生产。
+- SteamCMD 与 Palworld 服务端由程序在容器内**首次运行时自动下载**到 `/data` 卷；无需手动预装。
+- 端口映射默认：`8080/tcp`（管理界面）、`8211/udp`（游戏）、`27015/udp`（查询）。
+  若在界面里修改了服务器的 `-port` / `-QueryPort`，需同步调整 compose 的端口映射。
+- 数据卷 `psm-data` 挂载到容器 `/data`，包含数据库、SteamCMD、存档与日志。备份该卷即可备份全部数据。
+- 镜像基于 Debian（glibc），已内置 SteamCMD 与 Palworld Linux 服务端所需运行库；容器以非 root 用户 `steam` 运行。
+
+### Linux 原生部署
+
+无需 Docker 时，也可直接在 Linux 主机运行（需 x86_64、glibc）：
+
+```bash
+# 依赖（Debian/Ubuntu 示例）：SteamCMD 为 32 位程序
+sudo dpkg --add-architecture i386 && sudo apt-get update
+sudo apt-get install -y ca-certificates lib32gcc-s1 libstdc++6 libstdc++6:i386
+
+# 运行（对外访问设置 HOST=0.0.0.0）
+HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
+```
+
+程序会在 `~/.steam/sdk64` 自动建立 Palworld 所需的 `steamclient.so` 软链接，安装完成后即可启动服务器。
 
 ## 主要功能
 

@@ -21,6 +21,7 @@ func CheckAndInstall(steamcmdPath string) error {
 	if _, err := os.Stat(execPath); err == nil {
 		// SteamCMD already exists
 		fmt.Printf("SteamCMD found at: %s\n", execPath)
+		ensureSteamClientLinks(steamcmdPath)
 		return nil
 	}
 
@@ -51,8 +52,19 @@ func CheckAndInstall(steamcmdPath string) error {
 		fmt.Printf("Warning: initial SteamCMD update exited abnormally (%v); continuing\n", err)
 	}
 
+	ensureSteamClientLinks(steamcmdPath)
+
 	fmt.Println("SteamCMD installed successfully")
 	return nil
+}
+
+// ensureSteamClientLinks applies the platform-specific Steam client library
+// links (needed by the Palworld Linux server; no-op on Windows). It is
+// best-effort: a failure is logged and never blocks SteamCMD usage.
+func ensureSteamClientLinks(steamcmdPath string) {
+	if err := EnsureSteamClientLinks(steamcmdPath); err != nil {
+		fmt.Printf("Warning: failed to set up Steam client links (%v); continuing\n", err)
+	}
 }
 
 // runInitialUpdate runs SteamCMD once with +quit so it bootstraps and applies

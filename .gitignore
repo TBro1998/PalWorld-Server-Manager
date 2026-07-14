@@ -34,6 +34,9 @@ logs/
 # Palworld server files
 palworld/
 
+# Docker bind-mount runtime data (compose maps ./psm-data -> /data)
+/psm-data
+
 # Config
 config.yaml
 config.local.yml

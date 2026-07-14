@@ -59,4 +59,8 @@ echo Press Ctrl+C to stop the server
 echo ========================================
 echo.
 
+:: Open the management UI in the default browser once the server is up.
+:: This is a debug convenience only; the tool itself never opens a browser.
+start "" /b cmd /c "timeout /t 3 /nobreak >nul & start "" http://127.0.0.1:8080/"
+
 go run .

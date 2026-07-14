@@ -17,6 +17,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
 | [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | Partial — serverColumns/scanServer alignment, migration helpers, config source-of-truth |
 | [Save-File Handling](./save-file-handling.md) | Palworld save parsing, location, caching, DTO mapping, /save endpoints | Filled — palsave lib + internal/api/save_* |
+| [Platform & Deployment](./platform-and-deployment.md) | Cross-platform (Win/Linux) build-tag layout, Steam client symlinks, Docker run mode, .dockerignore hygiene | Filled — internal/process, internal/steamcmd, Dockerfile |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |

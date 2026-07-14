@@ -1,0 +1,41 @@
+# VCS / tooling
+.git
+.gitignore
+.trellis
+.vscode
+.idea
+
+# Frontend deps & build output (rebuilt inside the image)
+ui/node_modules
+ui/out
+ui/.next
+
+# Local runtime data & artifacts (must never leak into the image/context)
+config.yaml
+*.db
+*.db-shm
+*.db-wal
+logs/
+*.log
+steamcmd/
+palworld/
+
+# Compiled binaries
+*.exe
+*.exe~
+psm
+bin/
+dist/
+*.test
+*.out
+
+# Docs/CI not needed for the build
+*.md
+docker-compose*.yml
+Dockerfile
+debug.bat
+/Servers
+/steamcmd
+/temp
+/palworld
+/psm-data
