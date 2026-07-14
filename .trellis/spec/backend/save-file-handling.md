@@ -22,7 +22,7 @@
 
 `<worldid>` 通常单一子目录；`LocateWorld` 遍历 `SaveGames/0/*` 挑第一个含 `Level.sav` 的子目录。缺失时返回 `palsave.ErrNoSave`。
 
-**Why**: 现有代码只有 Config/Logs 目录 helper（`palconfig` 的 `<install>/Pal/Saved/Config/<OS>Server`、`process` 的 `.../Saved/Logs/Pal.log`），World 存档目录此前无定位逻辑。集中一处避免各 handler 各拼一遍、口径漂移。
+**Why**: 现有代码只有 Config 目录 helper（`palconfig` 的 `<install>/Pal/Saved/Config/<OS>Server`），World 存档目录此前无定位逻辑（服务器运行日志现改为直接接管进程 stdout/stderr，不再有 `Pal.log` 路径 helper）。集中一处避免各 handler 各拼一遍、口径漂移。
 
 **Rule**: 新增任何读存档的功能（备份、地图、统计…）都走 `LocateWorld`，不要再手写 `SaveGames/0` 路径。
 

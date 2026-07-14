@@ -165,14 +165,17 @@ func (m *Manager) StartServer(serverID int64) error {
 	broadcaster := logger.NewBroadcastWriter(m.streams, serverID, logger.KindServer)
 	out := io.MultiWriter(capture, broadcaster)
 
-	// The Windows PalServer.exe launcher spawns the real server as a child
-	// process whose stdout we cannot capture, and the dedicated server writes its
-	// useful output to the Unreal Engine log file. So we discard the launcher's
-	// own stdio (leaving Stdout/Stderr nil) and instead tail the game log file
-	// into the server-kind pipeline once the process is up.
+	// Take over the server process's own stdout/stderr and funnel both into the
+	// server-kind pipeline (persist to disk + live SSE). os/exec copies the
+	// child's output through goroutines that cmd.Wait blocks on, so every line is
+	// flushed before monitor closes the capture. Using the same writer for both
+	// streams lets os/exec share a single pipe, so concurrent stdout/stderr
+	// writes do not interleave mid-line.
 	cmd := exec.Command(exe, args...)
 	cmd.Dir = srv.installPath
 	cmd.SysProcAttr = sysProcAttr()
+	cmd.Stdout = out
+	cmd.Stderr = out
 
 	if err := cmd.Start(); err != nil {
 		capture.Close()
@@ -192,13 +195,9 @@ func (m *Manager) StartServer(serverID int64) error {
 	}
 	_ = m.clearError(serverID)
 
-	// Tail the game log file into the server-kind sinks. monitor stops the tailer
-	// and closes the capture when the process exits.
-	stopTail := make(chan struct{})
-	tailDone := make(chan struct{})
-	go tailFile(stopTail, tailDone, gameLogPath(srv.installPath), out)
-
-	go m.monitor(serverID, &procHandle{cmd: cmd, pid: pid}, capture, stopTail, tailDone)
+	// monitor waits for the process to exit, then closes the capture and clears
+	// the recorded pid.
+	go m.monitor(serverID, handle, capture)
 	return nil
 }
 
