@@ -42,6 +42,16 @@ type Mod struct {
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
 }
 
+// Setting is a runtime-adjustable key/value store for app-wide settings. It
+// currently holds the Steam username used for workshop downloads and a
+// session-ready flag set after a successful app-in login. Passwords are NEVER
+// stored here (or anywhere): only the username and the "session cached" marker
+// are persisted.
+type Setting struct {
+	Key   string `json:"key" gorm:"column:key;primaryKey"`
+	Value string `json:"value" gorm:"column:value"`
+}
+
 // User represents an authenticated user
 type User struct {
 	ID           int64     `json:"id" gorm:"column:id;primaryKey;autoIncrement"`

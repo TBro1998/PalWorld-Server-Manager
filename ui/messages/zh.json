@@ -343,8 +343,26 @@
       "remove": "删除",
       "restartNeeded": "模组变更需重启服务器后生效。",
       "notDownloaded": "尚未下载，请点击「更新模组」。",
-      "incompatible": "该模组可能并非为服务器设计。",
-      "loginHint": "下载前需在 config 配置 steam_username（拥有 Palworld 的 Steam 账号），并先在终端手动执行一次 steamcmd +login <账号> 完成登录（含两步验证）。本工具只复用该会话、不处理密码。留空将回退匿名登录，对 Palworld Mod 会失败。"
+      "incompatible": "该模组可能并非为服务器设计。"
+    },
+    "steam": {
+      "title": "Steam 账号",
+      "status": {
+        "notConfigured": "尚未配置 Steam 账号，请先登录后再下载模组。",
+        "loggedIn": "已登录",
+        "needLogin": "需要登录 Steam 才能下载模组。"
+      },
+      "login": "登录",
+      "relogin": "重新登录",
+      "loggingIn": "登录中...",
+      "username": "Steam 用户名",
+      "password": "Steam 密码",
+      "guardCode": "Steam 令牌验证码",
+      "guardHint": "请查收邮箱验证码，或打开 Steam 手机令牌获取验证码。",
+      "passwordNotStored": "密码仅用于本次登录，不会被保存到本工具（不写入数据库或日志）。",
+      "success": "登录成功。",
+      "badCredentials": "用户名或密码错误。",
+      "error": "登录失败，请稍后重试。"
     },
     "launch": {
       "port": "端口 (-port)",

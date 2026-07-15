@@ -60,7 +60,7 @@ func DownloadWorkshopItem(steamcmdPath, steamUsername, workshopID string, out io
 - 复用 `getExecutablePath`(同包私有)定位可执行文件,校验存在性,`cmd.Stdout=cmd.Stderr=out`。
 - 下载后校验落地目录存在;不存在则返回错误——错误文案区分「匿名(未配置 steam_username)」与「已配置但仍失败(会话未预登录 / ID 无效)」,指引用户完成一次性手动登录。
 
-**config 贯通**:`config.Config` 加 `SteamUsername`(`yaml:"steam_username" env:"STEAM_USERNAME"`,默认空)→ `process.NewManager` 增 `steamUsername` 参数(router.go 传 `cfg.SteamUsername`)→ `Manager.UpdateMods` 调用 `DownloadWorkshopItem(m.steamcmdPath, m.steamUsername, ...)`。**已证实匿名对 Palworld 不可用**(prd Background),`steam_username` 是功能前提而非可选增强。
+**用户名来源(D7 后)**:`steam_username` 以 **DB settings 为准**(运行时可改),`config.Config.SteamUsername`(`yaml:"steam_username" env:"STEAM_USERNAME"`)仅作**回退默认**。`Manager.UpdateMods` 下载前调用 `resolveSteamUsername()`:先读 DB settings,空则用 config 值,再传给 `DownloadWorkshopItem`。**已证实匿名对 Palworld 不可用**,用户名 + 已缓存会话是下载前提。详见 §10。
 
 ## 4. process.Manager:UpdateMods
 
@@ -119,8 +119,8 @@ func (m *Manager) IsUpdatingMods(serverID int64) bool
   - 「更新 mod」按钮 → `update`,禁用态 during 更新;内嵌复用 SteamCMD 日志查看(现有 SSE 组件/逻辑)。
   - FR8:`server.status === 'running'` 且本 tab 有变更时显示「需重启生效」提示条。
   - FR9:某 mod `IsServer` 非 true 时行内警告图标(后端在更新结果里带该标记,或前端据缺 PackageName 提示——MVP 用后端 last_error 文本 + 行级 version 空判断,精细化留后续)。
-- Mods tab 顶部常驻一条**下载前置说明**:需在 config 配 `steam_username`(拥有 Palworld 的账号)并先在终端手动 `steamcmd +login <账号>` 一次(D6);更新失败时错误区展示后端返回的可读指引。
-- i18n:`messages/{zh,en,ja}.json` 补 `serverConfig.tabs.mods` 与 `serverConfig.mods.*`(add/update/enabled/remove/restartNeeded/incompatible/empty/error/loginHint)。
+- Mods tab 顶部 **Steam 账号区块**(详见 §10 前端部分),取代原静态 loginHint。
+- i18n:`messages/{zh,en,ja}.json` 补 `serverConfig.tabs.mods`、`serverConfig.mods.*`(add/update/enabled/remove/restartNeeded/incompatible/empty/error)与 `serverConfig.steam.*`(见 §10)。
 
 ## 8. 兼容性 / 回滚
 
@@ -134,3 +134,67 @@ func (m *Manager) IsUpdatingMods(serverID int64) bool
 2. ~~匿名下载可能失败~~ **已在真机证实为必然失败**(2026-07-15)→ 解决:D6 复用预登录会话 + `steam_username` 配置(见 §3)。失败文案指引用户配置并完成一次性手动登录。
 3. **PalModSettings.ini 重复键** → 自定义面向行读写,不用会折叠重复键的 INI 库。
 4. **ini 首次由服务器生成** → 本工具在缺失时主动创建(含 `MkdirAll <installPath>/Mods`)。
+5. **SteamCMD 登录输出解析(D7 新增,最高风险)** → 判定 success/needGuard/badCredentials 依赖解析 steamcmd stdout 文案,不同版本/语言可能变化;实现用**多关键字容错匹配** + 落地校验(登录后能否真正下载才是终判),真机核对文案。见 §10。
+
+---
+
+## 10. Steam 应用内登录(D7)
+
+> 取代 D6 的"手动终端建立会话"。下载路径(§3,`+login <username>` 复用缓存会话)不变;本节只新增"如何在前端建立那个会话 + 运行时配置用户名"。
+
+### 10.1 存储(运行时可改,不存密码)
+
+- 新增 KV 表:`models.Setting{ Key string gorm:"column:key;primaryKey"; Value string gorm:"column:value" }`,加入 AutoMigrate。
+- 新增 `internal/settings`(或 api 内小 helper):`Get(db, key) (string, error)` / `Set(db, key, val) error`。键:`steam_username`、`steam_session_ready`(`"true"`/空)。
+- **密码永不入库**:登录 handler 拿到 password 仅传给 steamcmd 子进程,函数返回即丢弃;不写 DB、不写日志、不进 last_error、不回显响应。
+- 下载用户名解析:`Manager` 需 db 句柄(已有 `m.db`)→ `resolveSteamUsername()`:DB `steam_username` 优先,空则 `m.steamUsername`(config 回退)。
+
+### 10.2 后端登录(无需伪终端)
+
+`internal/steamcmd/login.go`:
+
+```go
+type LoginResult int
+const ( LoginSuccess LoginResult = iota; LoginNeedGuard; LoginBadCredentials; LoginError )
+
+// Login 跑 `steamcmd +login <user> <pass> [<guardCode>] +quit` 并解析结果。
+// guardCode 为空则不传第三参。stdin 接 /dev/null(空)避免交互阻塞;带
+// context 超时防挂。out 收集 steamcmd 输出(不含密码——密码在 args,不写入 out;
+// 调用方也不得记录 args)。
+func Login(ctx, steamcmdPath, username, password, guardCode string, out io.Writer) (LoginResult, error)
+```
+
+- **Guard 码作 `+login` 第三参**,免 pty/prompt 侦测。
+- 输出判定(多关键字容错,真机核对):
+  - success:`Waiting for user info...OK` / `Logged in OK`;
+  - needGuard:`Steam Guard`、`Two-factor code`、`Account Logon Denied`(邮件码此时已发出);
+  - badCredentials:`Invalid Password`、`Login Failure`(且非 Guard)。
+- 匿名下载已知失败,故 Login 只用于真实账号。
+
+### 10.3 API(全局,非 per-server)
+
+新增 `protected` 组下 `/steam`:
+
+| 方法/路径 | 语义 | 响应 |
+|---|---|---|
+| GET `/api/steam/status` | 读 DB | 200 `{username, sessionReady}` |
+| POST `/api/steam/login` | body `{username, password, guardCode?}` → `steamcmd.Login`(**同步**,登录短;context 超时 ~60s) | 200 `{result:"success"|"needGuard"|"badCredentials"|"error", message}` |
+
+- 成功:`Set(steam_username)` + `Set(steam_session_ready,"true")`,返回 success。
+- needGuard:返回 needGuard(前端展示验证码输入)。
+- **响应与日志绝不含 password**;登录 steamcmd 输出可选返回(须确认不含敏感信息)或仅返回归一 message。
+- 登录同步执行(几秒),不复用 SSE;失败/超时归一为 error + 可读 message。
+
+### 10.4 前端(Mods tab 内 Steam 账号区块)
+
+- `lib/api.ts`:`steamApi = { status(), login({username,password,guardCode?}) }`。
+- `ModsSection` 顶部 `SteamAccountSection`:
+  - `useQuery` 拉 `status` → 显示:未配置 / 已登录(username + 绿标)/ 需登录。
+  - 「登录 / 重新登录」按钮开弹窗:username、password;提交后若 `needGuard` → 显示 Guard 码输入(提示查邮箱或手机验证器)+ 「密码不会被保存」说明 → 带码重提交;`badCredentials`/`error` → 行内报错。成功关闭弹窗、刷新 status。
+  - 「更新 mod」在 `sessionReady=false` 时禁用并提示先登录。
+- i18n `serverConfig.steam.*`:title/status(notConfigured/loggedIn/needLogin)/login/relogin/username/password/guardCode/guardHint/passwordNotStored/success/badCredentials/error。
+
+### 10.5 安全说明
+
+- 现有 `authMiddleware` 处于注释关闭状态,`/api` 实际未鉴权;向未鉴权本地端点提交 Steam 密码有风险,但与现有姿态一致且默认绑 `127.0.0.1`。**不在本任务打开鉴权**(超范围),仅确保密码不落盘/不日志。
+- 若将来开启鉴权,登录端点自动受益。

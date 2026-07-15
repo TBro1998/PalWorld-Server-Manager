@@ -17,11 +17,16 @@
 
 **What**: Palworld 是付费游戏，`workshop_download_item 1623730 <id> +login anonymous` **下不到内容**——SteamCMD 只自更新后静默返回、工坊目录为空（2026-07-15 Windows 真机确认）。必须 `+login <拥有 Palworld 的账号>`。
 
-**方案（复用预登录会话）**: 全局配置 `steam_username`（`config.Config.SteamUsername`，`yaml:"steam_username"` / `env:"STEAM_USERNAME"`）。`steamcmd.DownloadWorkshopItem(steamcmdPath, steamUsername, workshopID, out)` 只用**用户名**做 `+login <user>`，**不传密码、不处理 Steam Guard**。前置一次性设置：用户在终端手动跑一次 `steamcmd +login <user>`（输入 Guard 码），SteamCMD 缓存 sentry/会话，之后本工具复用该缓存会话。`steam_username` 为空 → 回退 `anonymous`（对 Palworld 必失败），此时错误文案（`loginHint`）指引用户配置。
+**方案(应用内登录 + 复用会话,D7)**:
+- **下载**始终 `steamcmd.DownloadWorkshopItem(steamcmdPath, steamUsername, workshopID, out)` 只用**用户名** `+login <user>`,复用 SteamCMD 缓存会话,**下载路径不涉密码**。落地必须校验目录存在(静默下空 → 显式错误)。
+- **用户名来源**:DB 键值 `settings`(`internal/settings`,键 `steam_username`)**优先**,空则回退 `config.Config.SteamUsername`。`Manager.resolveSteamUsername()` 做此解析,`UpdateMods` 用它。config 字段仅作初始默认/回退。
+- **会话如何建立**:经**应用内登录**(不再要求终端)。`steamcmd.Login(ctx, path, user, pass, guardCode, out)` 跑 `+login <user> <pass> [<code>] +quit`——**Guard 码作第三位置参**,无需伪终端;`classifyLogin` 解析 stdout 得 success/needGuard/badCredentials/error。API `POST /api/steam/login` 同步调用,成功后 `Set(steam_username)`+`Set(steam_session_ready,"true")`。前端两步:账号密码 → 需要则补 Guard 码。
 
-**Why**: 避免在本工具内存储密码或实现交互式 Guard 码喂入（安全 + 复杂度）。用户名单向传入、会话由 SteamCMD 自己管。
+**Why**: 用户不必开终端;会话由 SteamCMD 自管(登录成功即缓存 sentry),后续下载只需用户名。
 
-**Rule**: 任何工坊下载都走 `DownloadWorkshopItem` 并透传 `steam_username`；下载后**必须校验落地目录存在**（把静默下空转成显式错误 + 可读指引），不可假定 `cmd.Run()` 成功即下到内容。
+**SECURITY(强约束)**: Steam **密码只临时用于本次登录**——只进 `Login` 的子进程 argv,**绝不**写入 `out`/返回错误/DB/日志/last_error/HTTP 响应;handler 用 `out=nil` 丢弃 steamcmd 输出、调用后立即清空 `req.Password`;`models.Setting` 只有 Key/Value,永不存密码;调用方**禁止**记录 argv。改任何登录相关代码必须守住这条。
+
+**Rule**: 工坊下载走 `DownloadWorkshopItem` 并透传解析后的用户名;登录走 `steamcmd.Login`;`classifyLogin` 关键字**待真机核对**(不同 steamcmd 版本/语言文案可能不同),Guard 判定须先于 badCredentials。
 
 ---
 

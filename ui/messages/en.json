@@ -343,8 +343,26 @@
       "remove": "Remove",
       "restartNeeded": "Mod changes take effect after restarting the server.",
       "notDownloaded": "Not downloaded yet. Click \"Update mods\".",
-      "incompatible": "This mod may not be designed for dedicated servers.",
-      "loginHint": "Before updating, set steam_username in config to a Steam account that owns Palworld, then run `steamcmd +login <user>` once in a terminal to sign in (including Steam Guard). This tool only reuses that session and never handles your password. Empty falls back to anonymous, which fails for Palworld mods."
+      "incompatible": "This mod may not be designed for dedicated servers."
+    },
+    "steam": {
+      "title": "Steam Account",
+      "status": {
+        "notConfigured": "No Steam account configured. Sign in before downloading mods.",
+        "loggedIn": "Signed in",
+        "needLogin": "Sign in to Steam to download mods."
+      },
+      "login": "Sign in",
+      "relogin": "Sign in again",
+      "loggingIn": "Signing in...",
+      "username": "Steam username",
+      "password": "Steam password",
+      "guardCode": "Steam Guard code",
+      "guardHint": "Check your email for the code, or open the Steam Mobile Authenticator.",
+      "passwordNotStored": "The password is used only for this sign-in and is never stored by this tool (not in the database or logs).",
+      "success": "Signed in successfully.",
+      "badCredentials": "Invalid username or password.",
+      "error": "Sign-in failed. Please try again."
     },
     "launch": {
       "port": "Port (-port)",

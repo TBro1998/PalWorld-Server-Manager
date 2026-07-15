@@ -13,6 +13,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palmod"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/settings"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
 	"gorm.io/gorm"
 )
@@ -329,6 +330,21 @@ func (m *Manager) InstallServer(serverID int64, out io.Writer) error {
 	return nil
 }
 
+// resolveSteamUsername returns the Steam account to download mods with. The DB
+// setting (steam_username, adjustable at runtime via the app-in login flow)
+// takes precedence; the config value (m.steamUsername) is only a fallback
+// default. Empty → anonymous, which cannot download Palworld's paid workshop
+// content. A DB read error falls back to the config value rather than failing
+// the update.
+func (m *Manager) resolveSteamUsername() string {
+	if v, err := settings.Get(m.db, settings.KeySteamUsername); err == nil {
+		if v = strings.TrimSpace(v); v != "" {
+			return v
+		}
+	}
+	return m.steamUsername
+}
+
 // IsUpdatingMods reports whether a mod update is currently in progress.
 func (m *Manager) IsUpdatingMods(serverID int64) bool {
 	m.mu.Lock()
@@ -396,12 +412,15 @@ func (m *Manager) UpdateMods(serverID int64, out io.Writer) error {
 		return err
 	}
 
+	// Resolve the download account once (DB setting > config fallback).
+	steamUsername := m.resolveSteamUsername()
+
 	var failures []string
 	for i := range mods {
 		mod := &mods[i]
 		fmt.Fprintf(out, "==> Processing mod %s (%s)...\n", mod.WorkshopID, mod.Name)
 
-		downloaded, err := steamcmd.DownloadWorkshopItem(m.steamcmdPath, m.steamUsername, mod.WorkshopID, out)
+		downloaded, err := steamcmd.DownloadWorkshopItem(m.steamcmdPath, steamUsername, mod.WorkshopID, out)
 		if err != nil {
 			failures = append(failures, fmt.Sprintf("mod %s: %v", mod.WorkshopID, err))
 			continue

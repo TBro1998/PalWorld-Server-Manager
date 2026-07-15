@@ -127,4 +127,19 @@ export const modsApi = {
   update: (id: number) => apiClient.post(`/api/servers/${id}/mods/update`),
 }
 
+// --- Steam account (global) ---
+// status reports the configured username and whether a cached SteamCMD session
+// is ready; login runs `steamcmd +login` server-side and classifies the result.
+// The password is only used for the login request and is never stored by the
+// backend (not in the DB, logs, or responses).
+export const steamApi = {
+  status: () =>
+    apiClient.get<{ username: string; sessionReady: boolean }>('/api/steam/status'),
+  login: (data: { username: string; password: string; guardCode?: string }) =>
+    apiClient.post<{
+      result: 'success' | 'needGuard' | 'badCredentials' | 'error'
+      message?: string
+    }>('/api/steam/login', data),
+}
+
 export default apiClient;

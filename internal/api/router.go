@@ -108,6 +108,14 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			mods.PUT("/:modId/toggle", r.ToggleMod)
 		}
 
+		// Steam account (global, not per-server): app-in login that caches a
+		// SteamCMD session for authenticated workshop downloads.
+		steam := protected.Group("/steam")
+		{
+			steam.GET("/status", r.SteamStatus)
+			steam.POST("/login", r.SteamLogin)
+		}
+
 		// System monitoring
 		protected.GET("/system/stats", r.GetSystemStats)
 	}

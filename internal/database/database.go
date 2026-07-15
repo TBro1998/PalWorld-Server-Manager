@@ -37,6 +37,7 @@ func migrate(db *gorm.DB) error {
 		&models.Server{},
 		&models.Mod{},
 		&models.User{},
+		&models.Setting{},
 	)
 }
 

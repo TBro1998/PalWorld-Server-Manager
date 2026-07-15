@@ -9,8 +9,8 @@ import { Button } from './ui/button'
 import { Switch } from './ui/switch'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
-import { Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
-import { serversApi, modsApi } from '@/lib/api'
+import { Eye, EyeOff, Trash2, AlertTriangle, CheckCircle2, LogIn } from 'lucide-react'
+import { serversApi, modsApi, steamApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 import type { Server, ConfigParamDef, LaunchArgs, Mod } from '@/types/server'
 import { ServerLogsDialog } from './ServerLogsDialog'
@@ -395,6 +395,14 @@ function ModsSection({ server }: { server: Server }) {
   })
   const mods: Mod[] = data?.mods ?? []
 
+  // A cached Steam session is required before downloads can succeed; gate the
+  // "update mods" action on it.
+  const { data: steamStatus } = useQuery({
+    queryKey: ['steamStatus'],
+    queryFn: async () => (await steamApi.status()).data,
+  })
+  const sessionReady = steamStatus?.sessionReady ?? false
+
   const addMutation = useMutation({
     mutationFn: async () => {
       await modsApi.add(server.id, { workshopId: workshopId.trim(), name: name.trim() || undefined })
@@ -458,15 +466,17 @@ function ModsSection({ server }: { server: Server }) {
           type="button"
           size="sm"
           onClick={() => updateMutation.mutate()}
-          disabled={busy || mods.length === 0}
+          disabled={busy || mods.length === 0 || !sessionReady}
         >
           {updateMutation.isPending ? t('mods.updating') : t('mods.update')}
         </Button>
       </div>
 
-      <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground whitespace-pre-line">
-        {t('mods.loginHint')}
-      </p>
+      <SteamAccountSection />
+
+      {!sessionReady && (
+        <p className="text-xs text-warning">{t('steam.status.needLogin')}</p>
+      )}
 
       {server.status === 'running' && dirty && (
         <p className="text-sm text-warning">{t('mods.restartNeeded')}</p>
@@ -553,6 +563,160 @@ function ModsSection({ server }: { server: Server }) {
       )}
 
       <ServerLogsDialog open={logsOpen} onOpenChange={setLogsOpen} server={server} kind="steamcmd" />
+    </div>
+  )
+}
+
+// SteamAccountSection shows the configured Steam account status and drives the
+// app-in login flow. Login runs `steamcmd +login` server-side; a Steam Guard
+// code is requested in a second step only if needed. The password is only sent
+// for the login request and is never stored by the tool.
+function SteamAccountSection() {
+  const t = useTranslations('serverConfig')
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [guardCode, setGuardCode] = useState('')
+  const [needGuard, setNeedGuard] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: status } = useQuery({
+    queryKey: ['steamStatus'],
+    queryFn: async () => (await steamApi.status()).data,
+  })
+
+  const configured = !!status?.username
+  const sessionReady = status?.sessionReady ?? false
+
+  const openDialog = () => {
+    setUsername(status?.username ?? '')
+    setPassword('')
+    setGuardCode('')
+    setNeedGuard(false)
+    setError(null)
+    setOpen(true)
+  }
+
+  const loginMutation = useMutation({
+    mutationFn: async () =>
+      (
+        await steamApi.login({
+          username: username.trim(),
+          password,
+          guardCode: needGuard ? guardCode.trim() || undefined : undefined,
+        })
+      ).data,
+    onSuccess: (data) => {
+      switch (data.result) {
+        case 'success':
+          setPassword('')
+          setGuardCode('')
+          setOpen(false)
+          queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
+          break
+        case 'needGuard':
+          setNeedGuard(true)
+          setError(null)
+          break
+        case 'badCredentials':
+          setError(t('steam.badCredentials'))
+          break
+        default:
+          setError(t('steam.error'))
+      }
+    },
+    onError: () => setError(t('steam.error')),
+  })
+
+  return (
+    <div className="rounded-md bg-muted px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-muted-foreground">{t('steam.title')}</div>
+          {sessionReady ? (
+            <div className="flex items-center gap-1.5 text-sm">
+              <CheckCircle2 size={14} className="text-success shrink-0" />
+              <span className="truncate">{t('steam.status.loggedIn')}: {status?.username}</span>
+            </div>
+          ) : configured ? (
+            <div className="flex items-center gap-1.5 text-sm text-warning">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span className="truncate">{t('steam.status.needLogin')}</span>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">{t('steam.status.notConfigured')}</div>
+          )}
+        </div>
+        <Button type="button" size="sm" variant="outline" onClick={openDialog} className="shrink-0">
+          <LogIn size={14} className="mr-1" />
+          {sessionReady ? t('steam.relogin') : t('steam.login')}
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('steam.title')}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="steam-username">{t('steam.username')}</Label>
+              <Input
+                id="steam-username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="off"
+                disabled={needGuard}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="steam-password">{t('steam.password')}</Label>
+              <PasswordInput id="steam-password" value={password} onChange={setPassword} />
+            </div>
+
+            {needGuard && (
+              <div className="space-y-1">
+                <Label htmlFor="steam-guard">{t('steam.guardCode')}</Label>
+                <Input
+                  id="steam-guard"
+                  value={guardCode}
+                  onChange={(e) => setGuardCode(e.target.value)}
+                  autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground">{t('steam.guardHint')}</p>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">{t('steam.passwordNotStored')}</p>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loginMutation.isPending}
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => loginMutation.mutate()}
+              disabled={
+                loginMutation.isPending ||
+                username.trim() === '' ||
+                password === '' ||
+                (needGuard && guardCode.trim() === '')
+              }
+            >
+              {loginMutation.isPending ? t('steam.loggingIn') : t('steam.login')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

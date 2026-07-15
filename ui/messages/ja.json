@@ -343,8 +343,26 @@
       "remove": "削除",
       "restartNeeded": "MOD の変更はサーバー再起動後に反映されます。",
       "notDownloaded": "未ダウンロードです。「MOD を更新」をクリックしてください。",
-      "incompatible": "この MOD はサーバー用に設計されていない可能性があります。",
-      "loginHint": "更新の前に、config の steam_username に Palworld を所有する Steam アカウントを設定し、端末で一度 `steamcmd +login <ユーザー>` を実行してログイン（二段階認証を含む）してください。本ツールはそのセッションを再利用するだけで、パスワードは扱いません。空欄の場合は匿名ログインになり、Palworld の Mod はダウンロードできません。"
+      "incompatible": "この MOD はサーバー用に設計されていない可能性があります。"
+    },
+    "steam": {
+      "title": "Steam アカウント",
+      "status": {
+        "notConfigured": "Steam アカウントが未設定です。MOD をダウンロードする前にログインしてください。",
+        "loggedIn": "ログイン済み",
+        "needLogin": "MOD をダウンロードするには Steam にログインしてください。"
+      },
+      "login": "ログイン",
+      "relogin": "再ログイン",
+      "loggingIn": "ログイン中...",
+      "username": "Steam ユーザー名",
+      "password": "Steam パスワード",
+      "guardCode": "Steam Guard コード",
+      "guardHint": "メールに届いたコードを確認するか、Steam モバイル認証アプリを開いてください。",
+      "passwordNotStored": "パスワードは今回のログインにのみ使用され、本ツールには保存されません（データベースやログにも記録されません）。",
+      "success": "ログインに成功しました。",
+      "badCredentials": "ユーザー名またはパスワードが正しくありません。",
+      "error": "ログインに失敗しました。もう一度お試しください。"
     },
     "launch": {
       "port": "ポート (-port)",

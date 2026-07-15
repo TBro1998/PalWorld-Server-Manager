@@ -60,6 +60,19 @@
 - [ ] 失败路径:填一个无效 ID → UI 见可读错误,无半成品 ini 行,不 panic。
 - **门禁 G6(全量)**:prd Acceptance Criteria 全部勾选;`go build .`/`go vet ./...`/`go test ./...`/`bun run lint`/`bun run build` 全绿。
 
+## 阶段 7 — Steam 应用内登录(D7,追加需求;design §10)
+
+> 回滚记录(2026-07-16):用户要求前端配置账号 + 应用内登录,取代 D6 的手动终端。下载路径(§3)不变。
+
+- [ ] **存储**:`models.Setting{Key,Value}` KV 表 + 加入 AutoMigrate;`internal/settings`(或 api helper)`Get/Set`。键 `steam_username`/`steam_session_ready`。密码永不入库。
+- [ ] **用户名解析**:`Manager` 下载前 `resolveSteamUsername()`(DB 优先,config 回退);`UpdateMods` 用它替代 `m.steamUsername` 直读。
+- [ ] **登录**:`internal/steamcmd/login.go` `Login(ctx, steamcmdPath, user, pass, guardCode, out) (LoginResult, error)`——`+login user pass [code] +quit`,stdin 接空,context 超时;多关键字容错解析 success/needGuard/badCredentials/error。**out/日志/返回均不含密码**。
+- [ ] **API**:`GET /api/steam/status`、`POST /api/steam/login`(同步,~60s 超时);成功持久化 username + session_ready。router 注册 `/steam` 组。
+- [ ] **前端**:`steamApi{status,login}`;`SteamAccountSection`(状态展示 + 登录弹窗:username/password/条件 Guard 码 + 「密码不保存」说明 + needGuard 两步);Mods tab 顶部替换原 loginHint;`sessionReady=false` 时禁用「更新 mod」并提示登录。
+- [ ] **i18n**:`serverConfig.steam.*` 三语。
+- **验证**:后端 `go build/vet ./...` + `go test ./internal/api/`;前端 `bun run lint && bun run build`;`go build .`(嵌入)。
+- **门禁 G7**:编译/测试全绿;密码不出现在 DB/日志/响应(代码审查确认);真机登录成功→下载成功待用户在 Windows 完成。
+
 ## 验证命令汇总
 
 ```bash
