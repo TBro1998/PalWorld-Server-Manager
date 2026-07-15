@@ -28,7 +28,9 @@
 **SECURITY(强约束)**: Steam **密码只临时用于本次登录**——只进 `Login` 的子进程 argv,**绝不**写入 `out`/返回错误/DB/日志/last_error/HTTP 响应;调用后立即清空 `req.Password`;`models.Setting` 只有 Key/Value,永不存密码;调用方**禁止**记录 argv。改任何登录相关代码必须守住这条。
   - steamcmd 的**登录输出经 SSE 实时广播**到前端(供用户看登录进度,通道见"实时日志"),但**密码不在 steamcmd 输出里**(只在 argv,steamcmd 不回显),故广播不泄露密码;登录 `out` 是 broadcastWriter,只接 steamcmd stdout/stderr,不落盘、HTTP 响应也不带 log。Guard 码同理(argv,不回显,单次有效)。
 
-**Rule**: 工坊下载走 `DownloadWorkshopItem` 并透传解析后的用户名;登录走 `steamcmd.Login`;`classifyLogin` 关键字**待真机核对**(不同 steamcmd 版本/语言文案可能不同),Guard 判定须先于 badCredentials。
+**Gotcha(真机核对后固化,2026-07-16)**: `classifyLogin` 必须 **success 优先**。Steam Guard **手机验证器(mobile authenticator)** 账号登录**成功**时,输出仍含 "Steam Guard" / "authenticator"(说明文案 "This account is protected by a Steam Guard mobile authenticator. Please confirm the login in the Steam Mobile app...")。旧的 guard-keyword-first 顺序把成功误判成 needGuard。修正后顺序:success(`waiting for user info...ok`/`to steam public...ok`/`logged in ok`)→ `invalid password`(bad)→ **仅"要码"措辞** `steam guard code`/`two-factor code`/`account logon denied`(needGuard,**不含**裸 `steam guard`/`authenticator`)→ `login failure`(bad)→ error。手机确认流无需喂码:steamcmd 阻塞轮询 "Waiting for confirmation..." 直到用户手机批准→success,故 `steamLoginTimeout=180s` 给批准时间。
+
+**Rule**: 工坊下载走 `DownloadWorkshopItem` 并透传解析后的用户名;登录走 `steamcmd.Login`;改 `classifyLogin` 必须保 success 优先、needGuard 只匹配要码措辞;新 steamcmd 版本/语言若文案不同,加关键字而非改回 guard-first。
 
 ---
 

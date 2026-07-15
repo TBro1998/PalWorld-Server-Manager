@@ -665,6 +665,14 @@ function SteamAccountSection() {
     onError: () => setError(t('steam.error')),
   })
 
+  // Steam Guard mobile-authenticator accounts block on the user approving the
+  // login in the phone app ("Waiting for confirmation..."); surface a clear hint
+  // while that is pending so the user knows to check their phone.
+  const awaitingConfirm =
+    loginMutation.isPending &&
+    !loggedIn &&
+    logLines.some((l) => /confirm the login|waiting for confirmation/i.test(l))
+
   return (
     <div className="rounded-md bg-muted px-3 py-2">
       <div className="flex items-center justify-between gap-3">
@@ -726,6 +734,12 @@ function SteamAccountSection() {
             )}
 
             <p className="text-xs text-muted-foreground">{t('steam.passwordNotStored')}</p>
+            {awaitingConfirm && (
+              <p className="flex items-center gap-1.5 rounded-md bg-warning/10 px-2 py-1.5 text-sm text-warning">
+                <AlertTriangle size={14} className="shrink-0" />
+                {t('steam.confirmOnPhone')}
+              </p>
+            )}
             {loggedIn && (
               <p className="flex items-center gap-1.5 text-sm text-success">
                 <CheckCircle2 size={14} className="shrink-0" />

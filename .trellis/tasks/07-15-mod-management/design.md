@@ -165,10 +165,12 @@ func Login(ctx, steamcmdPath, username, password, guardCode string, out io.Write
 ```
 
 - **Guard 码作 `+login` 第三参**,免 pty/prompt 侦测。
-- 输出判定(多关键字容错,真机核对):
-  - success:`Waiting for user info...OK` / `Logged in OK`;
-  - needGuard:`Steam Guard`、`Two-factor code`、`Account Logon Denied`(邮件码此时已发出);
-  - badCredentials:`Invalid Password`、`Login Failure`(且非 Guard)。
+- 输出判定(**真机核对后修正,2026-07-16**,`classifyLogin` **success 优先**):
+  1. **success**(最高优先):`Waiting for user info...OK` / `to Steam Public...OK` / `Logged in OK`。**必须先判**——Steam Guard 手机验证器账号即使**登录成功**,输出也含 "Steam Guard"/"authenticator"(说明文案),旧的 guard-first 顺序会把成功误判成 needGuard。
+  2. badCredentials:`Invalid Password`。
+  3. needGuard(**只匹配"要码"措辞**):`Steam Guard code` / `Two-factor code` / `Account Logon Denied`——**不含**裸 `Steam Guard`/`authenticator`。
+  4. `Login Failure`(且非上述)→ badCredentials;其余 → error。
+- **手机确认(mobile authenticator confirmation)**:steamcmd 打印 "Please confirm the login in the Steam Mobile app" + "Waiting for confirmation..." 并**阻塞轮询**直到用户在手机批准 → 之后落到 success。无需喂码;故 `steamLoginTimeout` 放宽到 **180s** 给用户拿手机批准的时间(前端 axios 无超时,等待即可)。
 - 匿名下载已知失败,故 Login 只用于真实账号。
 
 ### 10.3 API(全局,非 per-server)+ 实时日志(SSE)

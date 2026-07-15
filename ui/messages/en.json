@@ -360,6 +360,7 @@
       "guardCode": "Steam Guard code",
       "guardHint": "Check your email for the code, or open the Steam Mobile Authenticator.",
       "output": "SteamCMD output",
+      "confirmOnPhone": "This account needs approval in the Steam Mobile app — open your phone and confirm the login (waiting for confirmation…).",
       "passwordNotStored": "The password is used only for this sign-in and is never stored by this tool (not in the database or logs).",
       "success": "Signed in successfully.",
       "badCredentials": "Invalid username or password.",

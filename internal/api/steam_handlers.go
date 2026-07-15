@@ -14,8 +14,12 @@ import (
 )
 
 // steamLoginTimeout bounds a synchronous steamcmd login so a stuck child process
-// cannot hang the HTTP request indefinitely.
-const steamLoginTimeout = 60 * time.Second
+// cannot hang the HTTP request indefinitely. It is generous because a Steam
+// Guard mobile-authenticator login blocks on the user approving the request in
+// the Steam mobile app ("Waiting for confirmation..."); the user needs time to
+// pick up their phone. The frontend axios client sets no timeout, so it waits
+// for this to resolve.
+const steamLoginTimeout = 180 * time.Second
 
 // steamLogStreamID is the sentinel stream ID used to broadcast steamcmd login
 // output over the shared StreamManager. Real server IDs are >= 1, so 0 never

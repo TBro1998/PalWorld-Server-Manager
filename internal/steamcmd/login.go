@@ -100,33 +100,35 @@ func Login(ctx context.Context, steamcmdPath, username, password, guardCode stri
 }
 
 // classifyLogin maps steamcmd output to a LoginResult using tolerant, multi-
-// keyword matching. steamcmd's exact phrasing varies by version/locale, so we
-// match on lowercased substrings and check Steam Guard BEFORE bad-credentials
-// (a "Login Failure" line can accompany a Guard prompt).
+// keyword matching on lowercased substrings (steamcmd phrasing varies by
+// version/locale).
 //
-// NOTE (待真机核对): the keyword sets below are derived from documented/observed
-// steamcmd phrasing and must be verified against a real login on Windows; adjust
-// if a live run shows different wording.
+// Precedence is SUCCESS-first, learned from a real Windows run (2026-07-16):
+// a Steam-Guard-mobile-authenticator account prints
+//
+//	"This account is protected by a Steam Guard mobile authenticator."
+//	"Please confirm the login in the Steam Mobile app on your phone."
+//	"Waiting for confirmation..." (repeated)
+//	... then on approval ...
+//	"Logging in user '...' to Steam Public...OK"
+//	"Waiting for user info...OK"
+//
+// i.e. the words "steam guard" / "authenticator" appear even on a SUCCESSFUL
+// login. Checking guard keywords first (the old order) misreported that success
+// as needGuard. So we check the success markers (which only appear once actually
+// authenticated) before anything else, and we match needGuard only on explicit
+// code-request phrasings — never bare "steam guard"/"authenticator".
+//
+// Mobile-confirmation logins need no code from us: the user approves on their
+// phone while steamcmd waits, and a long-enough timeout (steamLoginTimeout) lets
+// that resolve to a success marker here.
 func classifyLogin(output string) LoginResult {
 	lower := strings.ToLower(output)
 
-	// Steam Guard / two-factor required.
-	guardKeys := []string{
-		"steam guard",
-		"two-factor",
-		"two factor",
-		"account logon denied",
-		"authenticator",
-	}
-	for _, k := range guardKeys {
-		if strings.Contains(lower, k) {
-			return LoginNeedGuard
-		}
-	}
-
-	// Successful login.
+	// 1) Success wins: these markers only print once the account is authenticated.
 	successKeys := []string{
 		"waiting for user info...ok",
+		"to steam public...ok",
 		"logged in ok",
 		"login ok",
 	}
@@ -136,15 +138,30 @@ func classifyLogin(output string) LoginResult {
 		}
 	}
 
-	// Rejected credentials (reached only when not a Guard case).
-	badKeys := []string{
-		"invalid password",
-		"login failure",
+	// 2) Rejected credentials.
+	if strings.Contains(lower, "invalid password") {
+		return LoginBadCredentials
 	}
-	for _, k := range badKeys {
+
+	// 3) A code-entry Steam Guard (email / TOTP) is required. Match only explicit
+	// code-request phrasings — NOT bare "steam guard"/"authenticator", which also
+	// appear in the info line of a mobile-confirmation login that later succeeds.
+	guardKeys := []string{
+		"steam guard code",
+		"two-factor code",
+		"two factor code",
+		"account logon denied",
+	}
+	for _, k := range guardKeys {
 		if strings.Contains(lower, k) {
-			return LoginBadCredentials
+			return LoginNeedGuard
 		}
+	}
+
+	// 4) Generic login failure (after the guard check, so "Account Logon Denied"
+	// is not swallowed here): most often a wrong username/credentials.
+	if strings.Contains(lower, "login failure") {
+		return LoginBadCredentials
 	}
 
 	return LoginError
