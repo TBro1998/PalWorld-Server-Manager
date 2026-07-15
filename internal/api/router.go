@@ -114,6 +114,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 		{
 			steam.GET("/status", r.SteamStatus)
 			steam.POST("/login", r.SteamLogin)
+			steam.GET("/logs/stream", r.SteamLogStream)
 		}
 
 		// System monitoring

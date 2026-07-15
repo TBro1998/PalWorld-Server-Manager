@@ -363,7 +363,9 @@
       "passwordNotStored": "The password is used only for this sign-in and is never stored by this tool (not in the database or logs).",
       "success": "Signed in successfully.",
       "badCredentials": "Invalid username or password.",
-      "error": "Sign-in failed. Please try again."
+      "error": "Sign-in failed. Please try again.",
+      "live": "Live",
+      "outputEmpty": "Waiting for SteamCMD output…"
     },
     "launch": {
       "port": "Port (-port)",

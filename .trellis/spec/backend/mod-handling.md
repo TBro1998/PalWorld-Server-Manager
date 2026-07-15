@@ -20,12 +20,13 @@
 **方案(应用内登录 + 复用会话,D7)**:
 - **下载**始终 `steamcmd.DownloadWorkshopItem(steamcmdPath, steamUsername, workshopID, out)` 只用**用户名** `+login <user>`,复用 SteamCMD 缓存会话,**下载路径不涉密码**。落地必须校验目录存在(静默下空 → 显式错误)。
 - **用户名来源**:DB 键值 `settings`(`internal/settings`,键 `steam_username`)**优先**,空则回退 `config.Config.SteamUsername`。`Manager.resolveSteamUsername()` 做此解析,`UpdateMods` 用它。config 字段仅作初始默认/回退。
-- **会话如何建立**:经**应用内登录**(不再要求终端)。`steamcmd.Login(ctx, path, user, pass, guardCode, out)` 跑 `+login <user> <pass> [<code>] +quit`——**Guard 码作第三位置参**,无需伪终端;`classifyLogin` 解析 stdout 得 success/needGuard/badCredentials/error。API `POST /api/steam/login` 同步调用,成功后 `Set(steam_username)`+`Set(steam_session_ready,"true")`。前端两步:账号密码 → 需要则补 Guard 码。
+- **会话如何建立**:经**应用内登录**(不再要求终端)。`steamcmd.Login(ctx, path, user, pass, guardCode, out)` 跑 `+login <user> <pass> [<code>] +quit`——**Guard 码作第三位置参**,无需伪终端;`classifyLogin` 解析 stdout 得 success/needGuard/badCredentials/error。API `POST /api/steam/login` **同步返回结果**,成功后 `Set(steam_username)`+`Set(steam_session_ready,"true")`。前端两步:账号密码 → 需要则补 Guard 码。
+- **实时日志(SSE)**:登录期间 steamcmd 输出 tee 到 `logger.NewBroadcastWriter(streams, steamLogStreamID=0, KindSteamCMD)`,前端经 `GET /api/steam/logs/stream`(复用 `StreamManager`,与安装/更新同机制)实时逐行看。sentinel serverID=0(真实 server ≥1 不冲突);登录只广播不落盘。前端弹窗打开即订阅(早于 POST)以免漏行。**结果走同步 POST 响应,日志走 SSE**——两条通道各司其职,避免 async 结果信令的复杂度。
 
 **Why**: 用户不必开终端;会话由 SteamCMD 自管(登录成功即缓存 sentry),后续下载只需用户名。
 
 **SECURITY(强约束)**: Steam **密码只临时用于本次登录**——只进 `Login` 的子进程 argv,**绝不**写入 `out`/返回错误/DB/日志/last_error/HTTP 响应;调用后立即清空 `req.Password`;`models.Setting` 只有 Key/Value,永不存密码;调用方**禁止**记录 argv。改任何登录相关代码必须守住这条。
-  - steamcmd 的**登录输出会随响应 `log` 字段返回前端**(供用户看登录进度),但**密码不在 steamcmd 输出里**(只在 argv,steamcmd 不回显),故返回输出不泄露密码;handler 把输出捕获进本地 buffer、`tailString` 截断后返回,不落盘。Guard 码同理(argv,不回显,单次有效)。
+  - steamcmd 的**登录输出经 SSE 实时广播**到前端(供用户看登录进度,通道见"实时日志"),但**密码不在 steamcmd 输出里**(只在 argv,steamcmd 不回显),故广播不泄露密码;登录 `out` 是 broadcastWriter,只接 steamcmd stdout/stderr,不落盘、HTTP 响应也不带 log。Guard 码同理(argv,不回显,单次有效)。
 
 **Rule**: 工坊下载走 `DownloadWorkshopItem` 并透传解析后的用户名;登录走 `steamcmd.Login`;`classifyLogin` 关键字**待真机核对**(不同 steamcmd 版本/语言文案可能不同),Guard 判定须先于 badCredentials。
 

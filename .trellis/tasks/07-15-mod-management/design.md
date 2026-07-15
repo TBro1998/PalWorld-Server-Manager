@@ -171,7 +171,7 @@ func Login(ctx, steamcmdPath, username, password, guardCode string, out io.Write
   - badCredentials:`Invalid Password`、`Login Failure`(且非 Guard)。
 - 匿名下载已知失败,故 Login 只用于真实账号。
 
-### 10.3 API(全局,非 per-server)
+### 10.3 API(全局,非 per-server)+ 实时日志(SSE)
 
 新增 `protected` 组下 `/steam`:
 
@@ -179,20 +179,22 @@ func Login(ctx, steamcmdPath, username, password, guardCode string, out io.Write
 |---|---|---|
 | GET `/api/steam/status` | 读 DB | 200 `{username, sessionReady}` |
 | POST `/api/steam/login` | body `{username, password, guardCode?}` → `steamcmd.Login`(**同步**,登录短;context 超时 ~60s) | 200 `{result:"success"|"needGuard"|"badCredentials"|"error", message}` |
+| GET `/api/steam/logs/stream` | SSE:实时逐行推送登录期间的 steamcmd 输出 | `text/event-stream`,`log` 事件 |
 
-- 成功:`Set(steam_username)` + `Set(steam_session_ready,"true")`,返回 success。
-- needGuard:返回 needGuard(前端展示验证码输入)。
-- **响应与日志绝不含 password**;登录 steamcmd 输出可选返回(须确认不含敏感信息)或仅返回归一 message。
-- 登录同步执行(几秒),不复用 SSE;失败/超时归一为 error + 可读 message。
+- **实时日志(用户需求)**:`SteamLogin` 把 steamcmd 输出 tee 到 `logger.NewBroadcastWriter(r.streams, steamLogStreamID, KindSteamCMD)`(sentinel `steamLogStreamID = 0`,真实 server id ≥ 1 不冲突),经复用的 SSE 逐行广播;不再随 HTTP 响应返回 `log` 字段。`SteamLogStream` handler 镜像 `StreamLogs`:`Subscribe(0, KindSteamCMD)` → `c.Stream` 推 `log` 事件;不解析 serverID。登录只广播、**不落盘**(无 Capture,登录日志临时)。
+- 结果仍走**同步 POST 响应**(信令简单,不受 SSE 影响):成功 `Set(steam_username)`+`Set(steam_session_ready,"true")` 返回 success;needGuard/badCredentials/error 同前。
+- **响应、DB、日志绝不含 password**;SSE 推的是 steamcmd 输出(密码在 argv、steamcmd 不回显 → 不含密码)。
+- **订阅时序**:前端在**弹窗打开时即开 EventSource**(早于 POST),避免漏掉开头几行;两步 Guard 复用同一流,行累积。
 
 ### 10.4 前端(Mods tab 内 Steam 账号区块)
 
-- `lib/api.ts`:`steamApi = { status(), login({username,password,guardCode?}) }`。
+- `lib/api.ts`:`steamApi = { status(), login({username,password,guardCode?}), loginStreamUrl() }`。
 - `ModsSection` 顶部 `SteamAccountSection`:
   - `useQuery` 拉 `status` → 显示:未配置 / 已登录(username + 绿标)/ 需登录。
-  - 「登录 / 重新登录」按钮开弹窗:username、password;提交后若 `needGuard` → 显示 Guard 码输入(提示查邮箱或手机验证器)+ 「密码不会被保存」说明 → 带码重提交;`badCredentials`/`error` → 行内报错。成功关闭弹窗、刷新 status。
+  - 「登录 / 重新登录」按钮开弹窗:username、password;**弹窗打开即开 `EventSource(loginStreamUrl())`**,`log` 事件逐行追加到滚动日志区(自动滚底,`onopen`→live);弹窗关闭 `es.close()`。
+  - 提交后若 `needGuard` → 显示 Guard 码输入(提示查邮箱或手机验证器)+ 「密码不会被保存」说明 → 带码重提交;`badCredentials`/`error` → 行内报错;`success` → 绿色成功提示 + 刷新 status(**弹窗保留**以便看完整实时日志,手动关闭)。
   - 「更新 mod」在 `sessionReady=false` 时禁用并提示先登录。
-- i18n `serverConfig.steam.*`:title/status(notConfigured/loggedIn/needLogin)/login/relogin/username/password/guardCode/guardHint/passwordNotStored/success/badCredentials/error。
+- i18n `serverConfig.steam.*`:title/status(notConfigured/loggedIn/needLogin)/login/relogin/username/password/guardCode/guardHint/passwordNotStored/success/badCredentials/error/output。
 
 ### 10.5 安全说明
 

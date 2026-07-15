@@ -129,9 +129,12 @@ export const modsApi = {
 
 // --- Steam account (global) ---
 // status reports the configured username and whether a cached SteamCMD session
-// is ready; login runs `steamcmd +login` server-side and classifies the result.
-// The password is only used for the login request and is never stored by the
-// backend (not in the DB, logs, or responses).
+// is ready; login runs `steamcmd +login` server-side and classifies the result
+// (returned synchronously). The password is only used for the login request and
+// is never stored by the backend (not in the DB, logs, or responses).
+// The live steamcmd output is delivered separately over SSE via
+// loginStreamUrl() — open that EventSource before calling login() to catch the
+// first lines.
 export const steamApi = {
   status: () =>
     apiClient.get<{ username: string; sessionReady: boolean }>('/api/steam/status'),
@@ -139,8 +142,10 @@ export const steamApi = {
     apiClient.post<{
       result: 'success' | 'needGuard' | 'badCredentials' | 'error'
       message?: string
-      log?: string
     }>('/api/steam/login', data),
+  // Relative URL for EventSource. Emits named `log` events, one per steamcmd
+  // output line, on the global login stream (no server ID).
+  loginStreamUrl: () => '/api/steam/logs/stream',
 }
 
 export default apiClient;
