@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/save-file-handling.md", "reason": "最近的同构先例:新增独立 internal 包 + async + logger capture/SSE + REST 契约 + lowerCamel DTO 映射,UpdateMods/palmod 直接照此模式落地"}
+{"file": ".trellis/spec/backend/platform-and-deployment.md", "reason": "steamcmd/process 现有约定、Win/Linux build-tag 与 filepath 路径组装、Windows-only 优先;workshop 下载与 Mods 目录部署须遵循"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "GORM 列名 tag/AutoMigrate 增列约定;给 Mod 加 PackageName/Version 两列与按 server_id 隔离查询需对齐"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "确定 palmod 新包的落位与 internal/ 模块组织规范"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本任务跨 API/process/palmod/DB/前端五层,并新增字段+路由+SSE 事件消费,须走跨层数据流检查"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "UpdateMods 复用 InstallServer 的 async+capture+broadcast 管线;避免重复实现日志/并发闸/错误持久化"}

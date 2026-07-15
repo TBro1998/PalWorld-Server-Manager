@@ -20,7 +20,7 @@ type Router struct {
 // NewRouter creates a new API router
 func NewRouter(db *gorm.DB, cfg *config.Config) *Router {
 	streams := logger.NewStreamManager()
-	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath)
+	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath, cfg.SteamUsername)
 	return &Router{
 		db:      db,
 		config:  cfg,
@@ -103,6 +103,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 		{
 			mods.GET("", r.ListMods)
 			mods.POST("", r.InstallMod)
+			mods.POST("/update", r.UpdateMods)
 			mods.DELETE("/:modId", r.UninstallMod)
 			mods.PUT("/:modId/toggle", r.ToggleMod)
 		}

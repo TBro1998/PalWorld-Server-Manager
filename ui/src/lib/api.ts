@@ -47,6 +47,7 @@ import type {
   SaveGuilds,
   SavePals,
   SaveInventory,
+  Mod,
 } from '@/types/server'
 
 export const serversApi = {
@@ -109,6 +110,21 @@ export const serversApi = {
     apiClient.get<SavePals>(`/api/servers/${id}/save/players/${uid}/pals`),
   saveInventory: (id: number, uid: string) =>
     apiClient.get<SaveInventory>(`/api/servers/${id}/save/players/${uid}/inventory`),
+}
+
+// --- Mod management ---
+// list/add/remove/toggle are synchronous CRUD; update triggers the async
+// SteamCMD download + deploy + config write (progress observed via the existing
+// steamcmd log stream, serversApi.logStreamUrl(id, 'steamcmd')).
+export const modsApi = {
+  list: (id: number) => apiClient.get<{ mods: Mod[] }>(`/api/servers/${id}/mods`),
+  add: (id: number, data: { workshopId: string; name?: string }) =>
+    apiClient.post<Mod>(`/api/servers/${id}/mods`, data),
+  remove: (id: number, modId: number) =>
+    apiClient.delete(`/api/servers/${id}/mods/${modId}`),
+  toggle: (id: number, modId: number) =>
+    apiClient.put<Mod>(`/api/servers/${id}/mods/${modId}/toggle`),
+  update: (id: number) => apiClient.post(`/api/servers/${id}/mods/update`),
 }
 
 export default apiClient;

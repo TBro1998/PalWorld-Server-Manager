@@ -317,6 +317,7 @@
     "rawModeActive": "Raw text mode active: saving will use the raw OptionSettings line.",
     "tabs": {
       "basics": "Basics",
+      "mods": "Mods",
       "performances": "Performance",
       "serverManagement": "Server",
       "features": "Features",
@@ -329,6 +330,21 @@
       "path": "Install directory",
       "port": "Game port (-port)",
       "pathChangedHint": "Directory changed. Save will re-check whether server files exist there."
+    },
+    "mods": {
+      "hint": "Add Workshop mod IDs manually, then click \"Update mods\" to download and deploy.",
+      "workshopId": "Workshop ID",
+      "name": "Label (optional)",
+      "namePlaceholder": "Custom name",
+      "add": "Add",
+      "update": "Update mods",
+      "updating": "Updating...",
+      "empty": "No mods yet. Add a Workshop ID above.",
+      "remove": "Remove",
+      "restartNeeded": "Mod changes take effect after restarting the server.",
+      "notDownloaded": "Not downloaded yet. Click \"Update mods\".",
+      "incompatible": "This mod may not be designed for dedicated servers.",
+      "loginHint": "Before updating, set steam_username in config to a Steam account that owns Palworld, then run `steamcmd +login <user>` once in a terminal to sign in (including Steam Guard). This tool only reuses that session and never handles your password. Empty falls back to anonymous, which fails for Palworld mods."
     },
     "launch": {
       "port": "Port (-port)",

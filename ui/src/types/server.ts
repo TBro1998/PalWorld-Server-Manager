@@ -21,6 +21,22 @@ export interface CreateServerData {
   installPath?: string
 }
 
+// Mod mirrors the backend models.Mod JSON (snake_case tags). package_name and
+// version are backfilled from the mod's Info.json after a successful update
+// (empty until then); package_name is what PalModSettings.ini references.
+export interface Mod {
+  id: number
+  server_id: number
+  workshop_id: string
+  name: string
+  enabled: boolean
+  install_path: string
+  package_name: string
+  version: string
+  created_at: string
+  updated_at: string
+}
+
 // LaunchArgs mirrors the backend palconfig.LaunchArgs JSON shape.
 export interface LaunchArgs {
   port?: number

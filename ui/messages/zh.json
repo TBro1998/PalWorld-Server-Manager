@@ -317,6 +317,7 @@
     "rawModeActive": "已进入原始文本模式：保存将使用原始 OptionSettings 行。",
     "tabs": {
       "basics": "基础",
+      "mods": "模组",
       "performances": "性能",
       "serverManagement": "服务器",
       "features": "玩法",
@@ -329,6 +330,21 @@
       "path": "安装目录",
       "port": "游戏端口 (-port)",
       "pathChangedHint": "目录已更改。保存时将重新检测该目录下是否已安装服务端文件。"
+    },
+    "mods": {
+      "hint": "手动添加创意工坊模组 ID，然后点击「更新模组」下载并部署。",
+      "workshopId": "创意工坊 ID",
+      "name": "备注名（可选）",
+      "namePlaceholder": "自定义名称",
+      "add": "添加",
+      "update": "更新模组",
+      "updating": "更新中...",
+      "empty": "暂无模组，请在上方添加创意工坊 ID。",
+      "remove": "删除",
+      "restartNeeded": "模组变更需重启服务器后生效。",
+      "notDownloaded": "尚未下载，请点击「更新模组」。",
+      "incompatible": "该模组可能并非为服务器设计。",
+      "loginHint": "下载前需在 config 配置 steam_username（拥有 Palworld 的 Steam 账号），并先在终端手动执行一次 steamcmd +login <账号> 完成登录（含两步验证）。本工具只复用该会话、不处理密码。留空将回退匿名登录，对 Palworld Mod 会失败。"
     },
     "launch": {
       "port": "端口 (-port)",

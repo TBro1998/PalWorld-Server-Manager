@@ -317,6 +317,7 @@
     "rawModeActive": "生テキストモード：保存時は生の OptionSettings 行を使用します。",
     "tabs": {
       "basics": "基本",
+      "mods": "MOD",
       "performances": "性能",
       "serverManagement": "サーバー",
       "features": "機能",
@@ -329,6 +330,21 @@
       "path": "インストール先",
       "port": "ゲームポート (-port)",
       "pathChangedHint": "ディレクトリを変更しました。保存時にサーバーファイルの有無を再確認します。"
+    },
+    "mods": {
+      "hint": "ワークショップの MOD ID を手動で追加し、「MOD を更新」でダウンロードして配置します。",
+      "workshopId": "ワークショップ ID",
+      "name": "ラベル（任意）",
+      "namePlaceholder": "カスタム名",
+      "add": "追加",
+      "update": "MOD を更新",
+      "updating": "更新中...",
+      "empty": "MOD がありません。上でワークショップ ID を追加してください。",
+      "remove": "削除",
+      "restartNeeded": "MOD の変更はサーバー再起動後に反映されます。",
+      "notDownloaded": "未ダウンロードです。「MOD を更新」をクリックしてください。",
+      "incompatible": "この MOD はサーバー用に設計されていない可能性があります。",
+      "loginHint": "更新の前に、config の steam_username に Palworld を所有する Steam アカウントを設定し、端末で一度 `steamcmd +login <ユーザー>` を実行してログイン（二段階認証を含む）してください。本ツールはそのセッションを再利用するだけで、パスワードは扱いません。空欄の場合は匿名ログインになり、Palworld の Mod はダウンロードできません。"
     },
     "launch": {
       "port": "ポート (-port)",

@@ -23,6 +23,15 @@ type Config struct {
 	SteamCMDPath string `yaml:"steamcmd_path" env:"STEAMCMD_PATH" envDefault:"./steamcmd"`
 	//PalworldBasePath string `yaml:"palworld_base_path" env:"PALWORLD_BASE_PATH" envDefault:"./palworld"`
 
+	// SteamUsername is the Steam account used to download Workshop mods. Palworld
+	// is a paid title, so anonymous login cannot download its workshop content —
+	// this must be an account that OWNS Palworld. Only the username is used; the
+	// user must run `steamcmd +login <user>` once interactively (handling any
+	// Steam Guard prompt) so SteamCMD caches the session this reuses. Empty
+	// disables authenticated download (falls back to anonymous, which fails for
+	// Palworld mods).
+	SteamUsername string `yaml:"steam_username" env:"STEAM_USERNAME" envDefault:""`
+
 	// Logging
 	LogDir string `yaml:"log_dir" env:"LOG_DIR" envDefault:"./logs"`
 

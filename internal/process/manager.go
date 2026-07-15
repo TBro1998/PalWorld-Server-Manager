@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palconfig"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/palmod"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
 	"gorm.io/gorm"
 )
@@ -41,25 +43,39 @@ type Manager struct {
 	streams         *logger.StreamManager
 	logDir          string
 	steamcmdPath    string
+	steamUsername   string
 	shutdownTimeout time.Duration
 
-	mu         sync.Mutex
-	running    map[int64]*procHandle // serverID -> running process
-	installing map[int64]struct{}    // serverID -> currently installing
+	mu           sync.Mutex
+	running      map[int64]*procHandle // serverID -> running process
+	installing   map[int64]struct{}    // serverID -> currently installing
+	updatingMods map[int64]struct{}    // serverID -> currently updating mods
+
+	// iniMu serializes PalModSettings.ini writes. UpdateMods (background
+	// goroutine, final write) and RewriteModSettings (toggle/delete, HTTP
+	// goroutine) both rebuild the file with a non-atomic os.WriteFile; without
+	// this lock a toggle landing mid-update could observe/produce a torn file.
+	// Writes are sub-millisecond and rare, so a single lock across servers is
+	// sufficient and avoids per-server bookkeeping.
+	iniMu sync.Mutex
 }
 
 // NewManager creates a process manager backed by the given database and stream
 // manager. logDir is the base directory for per-server log files; steamcmdPath
-// is the SteamCMD installation used to install server files.
-func NewManager(db *gorm.DB, streams *logger.StreamManager, logDir, steamcmdPath string) *Manager {
+// is the SteamCMD installation used to install server files; steamUsername is
+// the Steam account used to download Workshop mods (empty → anonymous, which
+// cannot download Palworld's paid workshop content).
+func NewManager(db *gorm.DB, streams *logger.StreamManager, logDir, steamcmdPath, steamUsername string) *Manager {
 	return &Manager{
 		db:              db,
 		streams:         streams,
 		logDir:          logDir,
 		steamcmdPath:    steamcmdPath,
+		steamUsername:   steamUsername,
 		shutdownTimeout: defaultShutdownTimeout,
 		running:         make(map[int64]*procHandle),
 		installing:      make(map[int64]struct{}),
+		updatingMods:    make(map[int64]struct{}),
 	}
 }
 
@@ -311,4 +327,173 @@ func (m *Manager) InstallServer(serverID int64, out io.Writer) error {
 	_ = m.clearError(serverID)
 	_ = m.db.Model(&models.Server{}).Where("id = ?", serverID).Update("installed", true).Error
 	return nil
+}
+
+// IsUpdatingMods reports whether a mod update is currently in progress.
+func (m *Manager) IsUpdatingMods(serverID int64) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, ok := m.updatingMods[serverID]
+	return ok
+}
+
+// UpdateMods downloads every mod registered for the server via SteamCMD,
+// deploys each into <installPath>/Mods/Workshop/<workshopID>/, backfills
+// package_name/version/install_path from each mod's Info.json, then rewrites
+// PalModSettings.ini so only enabled mods appear in ActiveModList. SteamCMD
+// output is written to out (persisted + streamed by the caller, mirroring
+// InstallServer).
+//
+// Concurrency: it is refused while an install or another mod update is in
+// progress, but NOT while the server is running — copying into Mods/Workshop
+// does not touch the live process; the change only takes effect on the next
+// restart (the UI surfaces the "needs restart" hint). Progress is tracked in
+// memory only (never persisted), like InstallServer.
+//
+// A single mod's failure (invalid id, anonymous login denied, missing
+// Info.json) is recorded and processing continues with the rest (partial
+// success). The aggregate outcome is persisted to last_error: cleared on full
+// success, populated with a readable multi-line summary otherwise.
+func (m *Manager) UpdateMods(serverID int64, out io.Writer) error {
+	if out == nil {
+		out = io.Discard
+	}
+
+	m.mu.Lock()
+	if _, ok := m.installing[serverID]; ok {
+		m.mu.Unlock()
+		return fmt.Errorf("server %d is installing", serverID)
+	}
+	if _, ok := m.updatingMods[serverID]; ok {
+		m.mu.Unlock()
+		return fmt.Errorf("server %d mods are already updating", serverID)
+	}
+	m.updatingMods[serverID] = struct{}{}
+	m.mu.Unlock()
+
+	defer func() {
+		m.mu.Lock()
+		delete(m.updatingMods, serverID)
+		m.mu.Unlock()
+	}()
+
+	var srv models.Server
+	if err := m.db.Select("install_path").First(&srv, serverID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("server %d not found", serverID)
+		}
+		return err
+	}
+	installPath := srv.InstallPath
+	if installPath == "" {
+		err := fmt.Errorf("server %d has no install directory", serverID)
+		_ = m.setError(serverID, err.Error())
+		return err
+	}
+
+	var mods []models.Mod
+	if err := m.db.Where("server_id = ?", serverID).Find(&mods).Error; err != nil {
+		return err
+	}
+
+	var failures []string
+	for i := range mods {
+		mod := &mods[i]
+		fmt.Fprintf(out, "==> Processing mod %s (%s)...\n", mod.WorkshopID, mod.Name)
+
+		downloaded, err := steamcmd.DownloadWorkshopItem(m.steamcmdPath, m.steamUsername, mod.WorkshopID, out)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("mod %s: %v", mod.WorkshopID, err))
+			continue
+		}
+
+		dst, err := palmod.Deploy(installPath, mod.WorkshopID, downloaded)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("mod %s: deploy: %v", mod.WorkshopID, err))
+			continue
+		}
+
+		info, err := palmod.ParseInfo(dst)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("mod %s: %v", mod.WorkshopID, err))
+			// Still record the install path so the content is tracked.
+			_ = m.db.Model(&models.Mod{}).Where("id = ?", mod.ID).
+				Update("install_path", dst).Error
+			mod.InstallPath = dst
+			continue
+		}
+
+		if !info.IsServer {
+			fmt.Fprintf(out, "==> Warning: mod %s (%s) is not marked IsServer; it may not be designed for dedicated servers\n",
+				mod.WorkshopID, info.PackageName)
+		}
+
+		if err := m.db.Model(&models.Mod{}).Where("id = ?", mod.ID).
+			Updates(map[string]any{
+				"package_name": info.PackageName,
+				"version":      info.Version,
+				"install_path": dst,
+			}).Error; err != nil {
+			failures = append(failures, fmt.Sprintf("mod %s: persist metadata: %v", mod.WorkshopID, err))
+			continue
+		}
+		// Reflect the backfill locally so the ActiveModList uses the resolved name.
+		mod.PackageName = info.PackageName
+		mod.Version = info.Version
+		mod.InstallPath = dst
+	}
+
+	// Rewrite PalModSettings.ini from the (possibly partially updated) enabled
+	// set. Only mods with a resolved PackageName can be referenced.
+	var enabled []palmod.EnabledMod
+	for i := range mods {
+		if mods[i].Enabled && strings.TrimSpace(mods[i].PackageName) != "" {
+			enabled = append(enabled, palmod.EnabledMod{PackageName: mods[i].PackageName})
+		}
+	}
+	m.iniMu.Lock()
+	err := palmod.WriteModSettings(installPath, enabled)
+	m.iniMu.Unlock()
+	if err != nil {
+		failures = append(failures, fmt.Sprintf("write PalModSettings.ini: %v", err))
+	}
+
+	if len(failures) > 0 {
+		msg := "Mod update completed with errors:\n" + strings.Join(failures, "\n")
+		fmt.Fprintf(out, "==> %s\n", msg)
+		_ = m.setError(serverID, msg)
+		return errors.New(msg)
+	}
+
+	fmt.Fprintf(out, "==> Mod update complete\n")
+	_ = m.clearError(serverID)
+	return nil
+}
+
+// RewriteModSettings recomputes PalModSettings.ini for a server from its current
+// mod rows (used after a toggle or delete, which do not re-download). Only
+// enabled mods with a resolved PackageName are written to ActiveModList.
+func (m *Manager) RewriteModSettings(serverID int64) error {
+	var srv models.Server
+	if err := m.db.Select("install_path").First(&srv, serverID).Error; err != nil {
+		return err
+	}
+	if srv.InstallPath == "" {
+		return fmt.Errorf("server %d has no install directory", serverID)
+	}
+
+	var mods []models.Mod
+	if err := m.db.Where("server_id = ?", serverID).Find(&mods).Error; err != nil {
+		return err
+	}
+
+	var enabled []palmod.EnabledMod
+	for i := range mods {
+		if mods[i].Enabled && strings.TrimSpace(mods[i].PackageName) != "" {
+			enabled = append(enabled, palmod.EnabledMod{PackageName: mods[i].PackageName})
+		}
+	}
+	m.iniMu.Lock()
+	defer m.iniMu.Unlock()
+	return palmod.WriteModSettings(srv.InstallPath, enabled)
 }

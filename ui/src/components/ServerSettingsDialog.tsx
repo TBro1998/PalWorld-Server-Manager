@@ -9,10 +9,11 @@ import { Button } from './ui/button'
 import { Switch } from './ui/switch'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
-import { Eye, EyeOff } from 'lucide-react'
-import { serversApi } from '@/lib/api'
+import { Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
+import { serversApi, modsApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
-import type { Server, ConfigParamDef, LaunchArgs } from '@/types/server'
+import type { Server, ConfigParamDef, LaunchArgs, Mod } from '@/types/server'
+import { ServerLogsDialog } from './ServerLogsDialog'
 
 interface ServerSettingsDialogProps {
   open: boolean
@@ -195,7 +196,7 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
 
   const pathChanged = server ? installPath !== server.install_path : false
 
-  const tabs = ['basics', ...CATEGORIES, 'launch', 'raw']
+  const tabs = ['basics', 'mods', ...CATEGORIES, 'launch', 'raw']
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -305,6 +306,8 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
                 />
               </div>
             </div>
+          ) : tab === 'mods' ? (
+            server ? <ModsSection server={server} /> : null
           ) : isLoading ? (
             <p className="text-sm text-muted-foreground py-6 text-center">{t('loading')}</p>
           ) : CATEGORIES.includes(tab as (typeof CATEGORIES)[number]) ? (
@@ -363,6 +366,194 @@ export function ServerSettingsDialog({ open, onOpenChange, server }: ServerSetti
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ModsSection is the Mods tab: manual mod-list CRUD plus the "update mods"
+// action that runs SteamCMD (download + deploy + config write). It reuses the
+// steamcmd log stream via ServerLogsDialog for progress. Changes only take
+// effect after a server restart, so a hint is shown while the server runs.
+function ModsSection({ server }: { server: Server }) {
+  const t = useTranslations('serverConfig')
+  const queryClient = useQueryClient()
+  const [workshopId, setWorkshopId] = useState('')
+  const [name, setName] = useState('')
+  const [logsOpen, setLogsOpen] = useState(false)
+  // Set once any mod change is made this session; drives the restart hint.
+  const [dirty, setDirty] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['mods', server.id] })
+  const onError = (err: unknown) => {
+    const e = err as { response?: { data?: { error?: string } } }
+    setError(e.response?.data?.error ?? 'Request failed')
+  }
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['mods', server.id],
+    queryFn: async () => (await modsApi.list(server.id)).data,
+  })
+  const mods: Mod[] = data?.mods ?? []
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      await modsApi.add(server.id, { workshopId: workshopId.trim(), name: name.trim() || undefined })
+    },
+    onSuccess: () => {
+      setWorkshopId('')
+      setName('')
+      setError(null)
+      setDirty(true)
+      invalidate()
+    },
+    onError,
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: async (modId: number) => {
+      await modsApi.toggle(server.id, modId)
+    },
+    onSuccess: () => {
+      setError(null)
+      setDirty(true)
+      invalidate()
+    },
+    onError,
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: async (modId: number) => {
+      await modsApi.remove(server.id, modId)
+    },
+    onSuccess: () => {
+      setError(null)
+      setDirty(true)
+      invalidate()
+    },
+    onError,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      await modsApi.update(server.id)
+    },
+    onSuccess: () => {
+      setError(null)
+      setDirty(true)
+      setLogsOpen(true)
+      // Metadata (version / package name) is backfilled asynchronously; refetch
+      // shortly after so the list reflects the results once downloads finish.
+      setTimeout(invalidate, 3000)
+    },
+    onError,
+  })
+
+  const busy = addMutation.isPending || updateMutation.isPending
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{t('mods.hint')}</p>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => updateMutation.mutate()}
+          disabled={busy || mods.length === 0}
+        >
+          {updateMutation.isPending ? t('mods.updating') : t('mods.update')}
+        </Button>
+      </div>
+
+      <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground whitespace-pre-line">
+        {t('mods.loginHint')}
+      </p>
+
+      {server.status === 'running' && dirty && (
+        <p className="text-sm text-warning">{t('mods.restartNeeded')}</p>
+      )}
+
+      {/* Add form */}
+      <div className="flex flex-wrap items-end gap-2 border-b border-dashed pb-3">
+        <div className="space-y-1">
+          <Label htmlFor="mod-workshop-id">{t('mods.workshopId')}</Label>
+          <Input
+            id="mod-workshop-id"
+            value={workshopId}
+            onChange={(e) => setWorkshopId(e.target.value)}
+            placeholder="1234567890"
+            className="max-w-[200px]"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="mod-name">{t('mods.name')}</Label>
+          <Input
+            id="mod-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('mods.namePlaceholder')}
+            className="max-w-[200px]"
+          />
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => addMutation.mutate()}
+          disabled={busy || workshopId.trim() === ''}
+        >
+          {t('mods.add')}
+        </Button>
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Mod list */}
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">{t('loading')}</p>
+      ) : mods.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">{t('mods.empty')}</p>
+      ) : (
+        <div className="space-y-2">
+          {mods.map((m) => (
+            <div key={m.id} className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  {m.name || m.workshop_id}
+                  {m.package_name === '' && (
+                    <AlertTriangle
+                      size={14}
+                      className="text-warning"
+                      aria-label={t('mods.notDownloaded')}
+                    />
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  {m.workshop_id}
+                  {m.version ? ` · v${m.version}` : ''}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                <Switch
+                  checked={m.enabled}
+                  onCheckedChange={() => toggleMutation.mutate(m.id)}
+                  disabled={busy}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeMutation.mutate(m.id)}
+                  disabled={busy}
+                  className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+                  aria-label={t('mods.remove')}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ServerLogsDialog open={logsOpen} onOpenChange={setLogsOpen} server={server} kind="steamcmd" />
+    </div>
   )
 }
 

@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "代码标准与禁用模式,复核 palmod/handlers/manager 实现是否合规"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "错误类型与处理策略;校验下载失败/无效 ID/缺 Info.json 的错误归一化与 last_error 聚合"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "校验 Mod 增列的列名 tag、AutoMigrate 幂等与 server_id 隔离查询正确"}
+{"file": ".trellis/spec/backend/save-file-handling.md", "reason": "对照先例契约:async+capture/SSE、DTO 字段一致、并发读写无竞态的复核基线"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨 API/process/palmod/DB/前端逐字段一致性与 SSE 事件消费的跨层复核"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复核是否真正复用 InstallServer 管线、有无重复实现日志/并发/INI 逻辑"}
