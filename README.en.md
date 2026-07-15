@@ -4,6 +4,10 @@
 
 A comprehensive management tool for Palworld dedicated servers with mod support, multi-server management, and a beautiful web UI.
 
+> ⚠️ **Project Status: In Development**
+>
+> This project has not been officially released yet and is still under active development. Features may be unstable, subject to change, or incomplete, and it is not recommended for production use. Feedback and testing are welcome — stay tuned for the official release.
+
 ## Features
 
 - 🚀 **One-click Server Management** - Start, stop, restart servers with ease
