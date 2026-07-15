@@ -167,3 +167,40 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Mod 管理与 SteamCMD 工坊下载/应用内 Steam 登录
+
+**Date**: 2026-07-16
+**Task**: Mod 管理与 SteamCMD 工坊下载/应用内 Steam 登录
+**Branch**: `feat/mod-management`
+
+### Summary
+
+实现 Palworld 服务器 Mod 管理:Mods tab 手动维护 mod 列表,经 SteamCMD workshop_download_item(app 1623730)下载并复制部署到 <installPath>/Mods/Workshop/,解析 Info.json 回填 PackageName/Version,面向行幂等读写 PalModSettings.ini(ActiveModList 重复键)。新增 internal/palmod 纯逻辑包 + steamcmd/workshop.go + process.UpdateMods(复用 InstallServer async+capture/SSE 管线,iniMu 串行化 ini 写)。真机证实匿名登录无法下载付费游戏工坊内容,遂做 D7 应用内 Steam 登录:DB settings 存 steam_username(config 回退),steamcmd.Login 用 +login user pass [guardcode](Guard 码作第三参免伪终端),密码只临时用于登录、绝不落盘/日志/响应。登录日志经 SSE(sentinel serverID=0)实时逐行流式展示。真机验证修正 classifyLogin 为 success 优先(手机验证器账号成功时也含 'Steam Guard'/'authenticator' 文案,旧 guard-first 顺序误判),超时放宽到 180s 给手机确认时间,前端加'去手机确认'提示。新增 spec: backend/mod-handling.md。全程 go build/vet/test + bun lint/build + 嵌入 + Linux 交叉编译通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3fa9953` | (see git log) |
+| `a26ba0c` | (see git log) |
+| `4cb3068` | (see git log) |
+| `f4bda7e` | (see git log) |
+| `49d67f6` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
