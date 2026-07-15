@@ -24,7 +24,8 @@
 
 **Why**: 用户不必开终端;会话由 SteamCMD 自管(登录成功即缓存 sentry),后续下载只需用户名。
 
-**SECURITY(强约束)**: Steam **密码只临时用于本次登录**——只进 `Login` 的子进程 argv,**绝不**写入 `out`/返回错误/DB/日志/last_error/HTTP 响应;handler 用 `out=nil` 丢弃 steamcmd 输出、调用后立即清空 `req.Password`;`models.Setting` 只有 Key/Value,永不存密码;调用方**禁止**记录 argv。改任何登录相关代码必须守住这条。
+**SECURITY(强约束)**: Steam **密码只临时用于本次登录**——只进 `Login` 的子进程 argv,**绝不**写入 `out`/返回错误/DB/日志/last_error/HTTP 响应;调用后立即清空 `req.Password`;`models.Setting` 只有 Key/Value,永不存密码;调用方**禁止**记录 argv。改任何登录相关代码必须守住这条。
+  - steamcmd 的**登录输出会随响应 `log` 字段返回前端**(供用户看登录进度),但**密码不在 steamcmd 输出里**(只在 argv,steamcmd 不回显),故返回输出不泄露密码;handler 把输出捕获进本地 buffer、`tailString` 截断后返回,不落盘。Guard 码同理(argv,不回显,单次有效)。
 
 **Rule**: 工坊下载走 `DownloadWorkshopItem` 并透传解析后的用户名;登录走 `steamcmd.Login`;`classifyLogin` 关键字**待真机核对**(不同 steamcmd 版本/语言文案可能不同),Guard 判定须先于 badCredentials。
 

@@ -139,6 +139,7 @@ export const steamApi = {
     apiClient.post<{
       result: 'success' | 'needGuard' | 'badCredentials' | 'error'
       message?: string
+      log?: string
     }>('/api/steam/login', data),
 }
 

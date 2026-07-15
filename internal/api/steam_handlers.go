@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"strings"
@@ -14,6 +15,10 @@ import (
 // steamLoginTimeout bounds a synchronous steamcmd login so a stuck child process
 // cannot hang the HTTP request indefinitely.
 const steamLoginTimeout = 60 * time.Second
+
+// steamLoginLogCap caps the steamcmd output returned to the client (tail kept).
+// Login output is small; this only guards against a pathological run.
+const steamLoginLogCap = 64 * 1024
 
 // SteamStatus reports the configured Steam username and whether a cached login
 // session is believed ready. This drives the Mods-tab account UI (not
@@ -44,11 +49,28 @@ func (r *Router) SteamStatus(c *gin.Context) {
 // SteamLoginRequest is the body for POST /api/steam/login.
 //
 // SECURITY: Password is used only for this single login call. It is never
-// persisted, logged, added to last_error, or echoed back in the response.
+// persisted, logged, added to last_error, or echoed back in the response. The
+// steamcmd output IS returned to the client as `log` (so the user can see the
+// login progress), but steamcmd never echoes the password — it only appears in
+// the child process argv, which is not written to that output.
 type SteamLoginRequest struct {
 	Username  string `json:"username" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 	GuardCode string `json:"guardCode"`
+}
+
+// tailString returns at most the last max bytes of s (rune-safe at the cut),
+// prefixed with an elision marker when truncated.
+func tailString(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	cut := s[len(s)-max:]
+	// Advance to the next line boundary so we don't start mid-line.
+	if i := strings.IndexByte(cut, '\n'); i >= 0 && i+1 < len(cut) {
+		cut = cut[i+1:]
+	}
+	return "...\n" + cut
 }
 
 // SteamLogin runs steamcmd +login synchronously and classifies the result. On
@@ -70,12 +92,16 @@ func (r *Router) SteamLogin(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), steamLoginTimeout)
 	defer cancel()
 
-	// out=nil: steamcmd's login output is discarded, not persisted. The password
-	// is not echoed by steamcmd, but discarding output is defense-in-depth.
-	result, _ := steamcmd.Login(ctx, r.config.SteamCMDPath, username, req.Password, req.GuardCode, nil)
+	// Capture steamcmd's output so it can be shown to the user (see SECURITY note
+	// on SteamLoginRequest: the password is never in this output). The buffer is
+	// process-local and returned only in this response.
+	var buf bytes.Buffer
+	result, _ := steamcmd.Login(ctx, r.config.SteamCMDPath, username, req.Password, req.GuardCode, &buf)
 
 	// Drop the password reference immediately after the login call returns.
 	req.Password = ""
+
+	logOut := tailString(buf.String(), steamLoginLogCap)
 
 	switch result {
 	case steamcmd.LoginSuccess:
@@ -87,12 +113,12 @@ func (r *Router) SteamLogin(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session state"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"result": "success", "message": "Steam login successful"})
+		c.JSON(http.StatusOK, gin.H{"result": "success", "message": "Steam login successful", "log": logOut})
 	case steamcmd.LoginNeedGuard:
-		c.JSON(http.StatusOK, gin.H{"result": "needGuard", "message": "Steam Guard code required"})
+		c.JSON(http.StatusOK, gin.H{"result": "needGuard", "message": "Steam Guard code required", "log": logOut})
 	case steamcmd.LoginBadCredentials:
-		c.JSON(http.StatusOK, gin.H{"result": "badCredentials", "message": "Invalid username or password"})
+		c.JSON(http.StatusOK, gin.H{"result": "badCredentials", "message": "Invalid username or password", "log": logOut})
 	default:
-		c.JSON(http.StatusOK, gin.H{"result": "error", "message": "Steam login failed"})
+		c.JSON(http.StatusOK, gin.H{"result": "error", "message": "Steam login failed", "log": logOut})
 	}
 }

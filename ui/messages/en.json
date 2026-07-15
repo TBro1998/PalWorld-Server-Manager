@@ -359,6 +359,7 @@
       "password": "Steam password",
       "guardCode": "Steam Guard code",
       "guardHint": "Check your email for the code, or open the Steam Mobile Authenticator.",
+      "output": "SteamCMD output",
       "passwordNotStored": "The password is used only for this sign-in and is never stored by this tool (not in the database or logs).",
       "success": "Signed in successfully.",
       "badCredentials": "Invalid username or password.",

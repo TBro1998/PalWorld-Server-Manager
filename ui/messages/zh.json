@@ -359,6 +359,7 @@
       "password": "Steam 密码",
       "guardCode": "Steam 令牌验证码",
       "guardHint": "请查收邮箱验证码，或打开 Steam 手机令牌获取验证码。",
+      "output": "SteamCMD 输出",
       "passwordNotStored": "密码仅用于本次登录，不会被保存到本工具（不写入数据库或日志）。",
       "success": "登录成功。",
       "badCredentials": "用户名或密码错误。",

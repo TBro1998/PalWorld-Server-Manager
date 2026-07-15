@@ -580,6 +580,8 @@ function SteamAccountSection() {
   const [guardCode, setGuardCode] = useState('')
   const [needGuard, setNeedGuard] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loginLog, setLoginLog] = useState('')
+  const [loggedIn, setLoggedIn] = useState(false)
 
   const { data: status } = useQuery({
     queryKey: ['steamStatus'],
@@ -595,6 +597,8 @@ function SteamAccountSection() {
     setGuardCode('')
     setNeedGuard(false)
     setError(null)
+    setLoginLog('')
+    setLoggedIn(false)
     setOpen(true)
   }
 
@@ -608,11 +612,13 @@ function SteamAccountSection() {
         })
       ).data,
     onSuccess: (data) => {
+      setLoginLog(data.log ?? '')
       switch (data.result) {
         case 'success':
           setPassword('')
           setGuardCode('')
-          setOpen(false)
+          setError(null)
+          setLoggedIn(true)
           queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
           break
         case 'needGuard':
@@ -690,7 +696,22 @@ function SteamAccountSection() {
             )}
 
             <p className="text-xs text-muted-foreground">{t('steam.passwordNotStored')}</p>
+            {loggedIn && (
+              <p className="flex items-center gap-1.5 text-sm text-success">
+                <CheckCircle2 size={14} className="shrink-0" />
+                {t('steam.success')}
+              </p>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
+
+            {loginLog && (
+              <div className="space-y-1">
+                <Label>{t('steam.output')}</Label>
+                <pre className="max-h-48 overflow-auto rounded-md bg-black/90 p-2 text-xs text-green-200 whitespace-pre-wrap break-words">
+                  {loginLog}
+                </pre>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -707,6 +728,7 @@ function SteamAccountSection() {
               onClick={() => loginMutation.mutate()}
               disabled={
                 loginMutation.isPending ||
+                loggedIn ||
                 username.trim() === '' ||
                 password === '' ||
                 (needGuard && guardCode.trim() === '')
