@@ -31,7 +31,8 @@ func sysProcAttr() *syscall.SysProcAttr {
 // live) and pipe its stdout/stderr. Falls back to the launcher only if the
 // direct binary is missing (log capture will then be limited).
 func launchTarget(installPath string) (exe, workDir string, err error) {
-	cmdExe := filepath.Join(installPath, "Pal", "Binaries", "Win64", "PalServer-Win64-Shipping-Cmd.exe")
+	cmdExe := filepath.Join(installPath, "PalServer.exe")
+	// cmdExe := filepath.Join(installPath, "Pal", "Binaries", "Win64", "PalServer-Win64-Shipping-Cmd.exe")
 	if _, statErr := os.Stat(cmdExe); statErr == nil {
 		return cmdExe, filepath.Dir(cmdExe), nil
 	}
