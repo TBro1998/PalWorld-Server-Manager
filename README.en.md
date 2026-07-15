@@ -2,7 +2,7 @@
 
 > English | [中文](./README.md) | [日本語](./README.ja.md)
 
-A comprehensive management tool for Palworld dedicated servers with mod support, multi-server management, and a beautiful web UI.
+A comprehensive management tool for Palworld dedicated servers with mod support, multi-server management, and a modern web UI.
 
 > ⚠️ **Project Status: In Development**
 >
@@ -10,15 +10,24 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 ## Features
 
-- 🚀 **One-click Server Management** - Start, stop, restart servers with ease
-- 🎮 **Multi-server Support** - Manage multiple servers with independent configs
-- 🔧 **Mod Management** - Install and manage Workshop mods via SteamCMD
-- 📊 **Real-time Monitoring** - CPU, memory, and player statistics
-- 📝 **Live Logs** - Real-time server logs via SSE
-- 🌍 **Multi-language** - English, Chinese, Japanese support
-- 🔒 **Secure** - JWT authentication and user management
-- 📦 **Single Binary** - Frontend embedded in Go binary (~15-25MB)
-- 🖥️ **Cross-platform** - Windows and Linux support
+### Implemented
+
+- 🚀 **One-click Server Management** - Start, stop, and restart servers with ease
+- 📥 **One-click Server Installation** - Download and install the Palworld dedicated server via SteamCMD
+- 🎮 **Multi-server Support** - Manage multiple servers with independent configs, saves, and ports
+- ⚙️ **Visual Configuration Editing** - Graphically edit launch arguments and `PalWorldSettings.ini`
+- 📝 **Live Logs** - View server logs in real time via SSE (including historical logs)
+- 🎛️ **REST API Commands** - broadcast / save / shutdown / kick / ban as an RCON replacement
+- 🌍 **Multi-language** - Chinese, English, and Japanese support
+- 📦 **Single Binary** - Frontend embedded in the Go binary (~15-25MB)
+- 🖥️ **Cross-platform Architecture** - Cross-platform at the code level; currently only Windows is officially supported due to mod constraints
+
+### Planned
+
+- 🔧 **Mod Management** - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
+- 🔒 **Authentication** - JWT authentication and user management to protect remote access
+- 📊 **Real-time Monitoring** - CPU, memory, and online player statistics
+- ⬆️ **Auto-update** - Update detection and one-click update based on GitHub Releases
 
 ## Installation & Usage
 
@@ -30,27 +39,70 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 ### First Time Setup
 
-1. After the program starts, your browser will automatically open to `http://127.0.0.1:8080`
+1. After the program starts, open `http://127.0.0.1:8080` in your browser (for Docker/remote deployments, visit `http://<host-IP>:8080`)
 2. Create an administrator account on first visit
 3. Log in and start managing your Palworld servers
 
+### Docker Deployment (Recommended for Linux)
+
+The manager and the Palworld game server run inside the **same container**, with data persisted to a volume so rebuilding the container won't lose saves.
+
+```bash
+# 1. Get the code
+git clone https://github.com/TBro1998/PalWorld-Server-Manager.git
+cd PalWorld-Server-Manager
+
+# 2. Build and start (the first build compiles frontend + backend, takes a few minutes)
+docker compose up -d --build
+
+# 3. Visit http://<host-IP>:8080, create an admin account, then install/manage servers
+```
+
+Key points:
+
+- **Be sure to change `JWT_SECRET` in `docker-compose.yml`** before using it in production.
+- SteamCMD and the Palworld server are **auto-downloaded on first run** by the program into the `/data` volume; no manual pre-installation needed.
+- Default port mappings: `8080/tcp` (management UI), `8211/udp` (game), `27015/udp` (query).
+  If you change a server's `-port` / `-QueryPort` in the UI, update the compose port mappings accordingly.
+- The `psm-data` volume mounts to `/data` in the container and contains the database, SteamCMD, saves, and logs. Back up this volume to back up all data.
+- The image is based on Debian (glibc) with the runtime libraries required by SteamCMD and the Palworld Linux server built in; the container runs as the non-root user `steam`.
+
+### Native Linux Deployment
+
+Without Docker, you can also run directly on a Linux host (requires x86_64, glibc):
+
+```bash
+# Dependencies (Debian/Ubuntu example): SteamCMD is a 32-bit program
+sudo dpkg --add-architecture i386 && sudo apt-get update
+sudo apt-get install -y ca-certificates lib32gcc-s1 libstdc++6 libstdc++6:i386
+
+# Run (set HOST=0.0.0.0 for external access)
+HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
+```
+
+The program automatically creates the `steamclient.so` symlink required by Palworld under `~/.steam/sdk64`; once installation completes, you can start the server.
+
 ## Main Features
 
-### Server Management
+### Server Management (Implemented)
 - One-click Palworld dedicated server installation
 - Start, stop, restart servers
-- Configure server parameters and ports
+- Visually edit server parameters, launch arguments, and ports
 - View server running status
+- Independent management of multiple servers
 
-### Mod Management
-- Auto-download and install mods by Workshop ID
-- Enable/disable mods with one click
-- Manage installed mod list
+### Logs (Implemented)
+- View server logs in real time (SSE push)
+- View historical logs
 
-### Monitoring & Logs
-- Real-time server log viewing
-- Monitor server CPU and memory usage
-- View online player count
+### REST API Commands (Implemented)
+- broadcast / save / shutdown / kick / ban (RCON replacement)
+
+### Planned
+- **Mod Management**: Enter a Workshop ID to auto-download and install mods, enable/disable with one click, manage the installed list
+- **Authentication**: Username/password login with JWT session protection
+- **System Monitoring**: Server CPU, memory usage, and online player count
+- **Auto-update**: Update detection and one-click update based on GitHub Releases
 
 ## Configuration
 
@@ -97,7 +149,7 @@ If you want to contribute or learn about technical details, please refer to:
 
 ## License
 
-MIT
+[GNU Affero General Public License v3.0](./LICENSE)
 
 ## Contributing
 

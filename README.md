@@ -17,6 +17,7 @@
 - 🎮 **多服务器支持** - 管理多个独立配置、独立存档、独立端口的服务器
 - ⚙️ **可视化配置编辑** - 图形化编辑启动参数与 `PalWorldSettings.ini`
 - 📝 **实时日志** - 通过 SSE 实时查看服务器日志（含历史日志）
+- 🎛️ **REST API 命令** - 替代 RCON 的 broadcast / save / shutdown / kick / ban
 - 🌍 **多语言支持** - 支持中文、英文、日文
 - 📦 **单一可执行文件** - 前端嵌入 Go 二进制文件（约 15-25MB）
 - 🖥️ **跨平台架构** - 代码层跨平台，由于 Mod 原因当前仅正式支持 Windows
@@ -26,7 +27,6 @@
 - 🔧 **模组管理** - 输入创意工坊 ID，通过 SteamCMD 自动下载、安装与启停模组
 - 🔒 **登录鉴权** - JWT 认证与用户管理，保护远程访问场景
 - 📊 **实时监控** - CPU、内存和在线玩家统计
-- 🎛️ **REST API 命令** - 替代 RCON 的 broadcast / save / shutdown / kick / ban
 - ⬆️ **自动更新** - 基于 GitHub Releases 的更新检测与一键更新
 
 ## 安装使用
@@ -95,11 +95,13 @@ HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
 - 实时查看服务器日志（SSE 推送）
 - 查看历史日志
 
+### REST API 命令（已实现）
+- broadcast / save / shutdown / kick / ban（替代 RCON）
+
 ### 计划开发中
 - **模组管理**：输入创意工坊 ID 自动下载安装模组、一键启用/禁用、管理已安装列表
 - **登录鉴权**：用户名密码登录与 JWT 会话保护
 - **系统监控**：服务器 CPU、内存使用情况与在线玩家数量
-- **REST API 命令**：broadcast / save / shutdown / kick / ban（替代 RCON）
 - **自动更新**：基于 GitHub Releases 的更新检测与一键更新
 
 ## 配置说明
@@ -147,7 +149,7 @@ jwt_secret: "your-secure-secret-key"
 
 ## 许可证
 
-MIT
+[GNU Affero General Public License v3.0](./LICENSE)
 
 ## 贡献
 
