@@ -2,7 +2,17 @@
 
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Megaphone, Save, Power, PowerOff } from 'lucide-react'
+import {
+  Megaphone,
+  Save,
+  Power,
+  PowerOff,
+  Play,
+  Square,
+  RotateCw,
+  Download,
+  Terminal,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,7 +29,8 @@ import { serversApi } from '@/lib/api'
 import { getApiErrorMessage } from '@/lib/apiError'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { useRestStatus } from '@/hooks/useRestStatus'
-import { SectionShell, PanelCard, useServerId } from './shared'
+import { ServerLogsDialog } from '@/components/ServerLogsDialog'
+import { SectionShell, PanelCard, useServer, useServerId } from './shared'
 import { RestUnavailableNotice } from './RestUnavailableNotice'
 
 type Feedback = { kind: 'success' | 'error'; text: string } | null
@@ -89,6 +100,10 @@ export function OperationsSection() {
 
   return (
     <SectionShell title={t('operations.title')} desc={t('operations.desc')} comingSoon={false}>
+      {/* Process lifecycle controls — start/stop/restart/update. Independent of
+          the REST API (these drive the server process directly). */}
+      <LifecycleControls />
+
       {!isAvailable && <RestUnavailableNotice status={status} />}
 
       {feedback && (
@@ -218,5 +233,100 @@ export function OperationsSection() {
         </DialogContent>
       </Dialog>
     </SectionShell>
+  )
+}
+
+// LifecycleControls drives the server process (start / stop / restart / install
+// -update) from the manage page, mirroring the list-page card actions so the
+// user doesn't have to go back to the list to control the server. These are
+// process-level operations and do NOT depend on the REST API.
+function LifecycleControls() {
+  const t = useTranslations('servers')
+  const tm = useTranslations('serverManage')
+  const serverId = useServerId()
+  const queryClient = useQueryClient()
+  const { data: server } = useServer()
+  const [installLogsOpen, setInstallLogsOpen] = useState(false)
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['server', serverId] })
+    queryClient.invalidateQueries({ queryKey: ['servers'] })
+  }
+
+  const startMut = useMutation({ mutationFn: () => serversApi.start(serverId), onSuccess: invalidate })
+  const stopMut = useMutation({ mutationFn: () => serversApi.stop(serverId), onSuccess: invalidate })
+  const restartMut = useMutation({ mutationFn: () => serversApi.restart(serverId), onSuccess: invalidate })
+  const installMut = useMutation({
+    mutationFn: () => serversApi.install(serverId),
+    onSuccess: () => {
+      // Surface live SteamCMD output, matching the list-page install flow.
+      setInstallLogsOpen(true)
+      invalidate()
+    },
+  })
+
+  if (!server) return null
+
+  const idle = server.status === 'stopped' || server.status === 'error'
+  const needsInstall =
+    !server.installed && server.status !== 'installing' && server.status !== 'running'
+  const busy =
+    startMut.isPending || stopMut.isPending || restartMut.isPending || installMut.isPending
+
+  return (
+    <PanelCard icon={<Power className="h-4 w-4" />} title={tm('operations.control')}>
+      <div className="flex flex-wrap gap-2">
+        {needsInstall && (
+          <Button size="sm" onClick={() => installMut.mutate()} disabled={busy}>
+            <Download size={16} className="mr-1" />
+            {t('installUpdate')}
+          </Button>
+        )}
+        {idle && !needsInstall && (
+          <Button size="sm" onClick={() => startMut.mutate()} disabled={busy}>
+            <Play size={16} className="mr-1" />
+            {t('start')}
+          </Button>
+        )}
+        {server.status === 'running' && (
+          <>
+            <Button size="sm" variant="secondary" onClick={() => stopMut.mutate()} disabled={busy}>
+              <Square size={16} className="mr-1" />
+              {t('stop')}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => restartMut.mutate()} disabled={busy}>
+              <RotateCw size={16} className="mr-1" />
+              {t('restart')}
+            </Button>
+          </>
+        )}
+        {server.status === 'installing' && (
+          <div className="flex items-center gap-2">
+            <span className="flex items-center text-sm text-muted-foreground">
+              <span className="mr-2 animate-spin">⏳</span>
+              {t('installing')}
+            </span>
+            <Button size="sm" variant="outline" onClick={() => setInstallLogsOpen(true)}>
+              <Terminal size={16} className="mr-1" />
+              {t('installLogs')}
+            </Button>
+          </div>
+        )}
+        {/* Update is available for idle installed servers too. */}
+        {idle && !needsInstall && (
+          <Button size="sm" variant="outline" onClick={() => installMut.mutate()} disabled={busy}>
+            <Download size={16} className="mr-1" />
+            {t('installUpdate')}
+          </Button>
+        )}
+      </div>
+
+      <ServerLogsDialog
+        open={installLogsOpen}
+        onOpenChange={setInstallLogsOpen}
+        server={server}
+        kind="steamcmd"
+      />
+    </PanelCard>
   )
 }

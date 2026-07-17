@@ -120,7 +120,12 @@
       "operations": "運用操作",
       "map": "マップとホワイトリスト",
       "backup": "セーブとバックアップ",
-      "settings": "サーバー設定"
+      "logs": "ログ",
+      "basics": "基本設定",
+      "game": "ゲーム設定",
+      "launch": "起動引数",
+      "mods": "Mod",
+      "raw": "詳細(Raw)"
     },
     "overview": {
       "title": "サーバー概要",
@@ -248,7 +253,8 @@
         "shutdownFail": "シャットダウンの予約に失敗しました",
         "stopOk": "サーバーを停止しています",
         "stopFail": "停止に失敗しました"
-      }
+      },
+      "control": "サーバー制御"
     },
     "map": {
       "title": "マップとホワイトリスト",
@@ -278,11 +284,35 @@
       "auto": "自動バックアップ",
       "manage": "バックアップ管理"
     },
-    "settings": {
-      "title": "サーバー設定",
-      "desc": "基本設定、ゲームパラメータ、起動引数を編集",
-      "hint": "サーバー名、パスワード、ゲームプレイや起動引数などの設定はここで編集します。",
-      "open": "サーバー設定を開く"
+    "groups": {
+      "monitor": "モニター",
+      "config": "設定",
+      "more": "その他"
+    },
+    "save": {
+      "unsaved": "未保存の変更",
+      "metaOnly": "サーバー未インストール — 基本情報のみ保存",
+      "discard": "破棄",
+      "saving": "保存中…",
+      "save": "保存"
+    },
+    "basicsSection": {
+      "desc": "サーバー名・ポート・パスワード・REST API"
+    },
+    "gameSection": {
+      "desc": "パフォーマンス・管理・ゲームプレイ・バランス設定"
+    },
+    "launchSection": {
+      "desc": "サーバープロセスの起動引数"
+    },
+    "rawSection": {
+      "desc": "OptionSettings を直接編集"
+    },
+    "modsSection": {
+      "desc": "Workshop Mod の管理と Steam ログイン"
+    },
+    "logsSection": {
+      "desc": "サーバーの実行ログをリアルタイム表示"
     }
   },
   "addServer": {

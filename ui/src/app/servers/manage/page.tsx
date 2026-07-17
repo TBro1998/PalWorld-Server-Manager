@@ -9,9 +9,14 @@ import {
   LayoutDashboard,
   Users,
   Wrench,
+  ScrollText,
+  SlidersHorizontal,
+  Gamepad2,
+  Terminal,
+  Package,
+  FileCode,
   Map as MapIcon,
   Archive,
-  Settings,
   Server as ServerIcon,
 } from 'lucide-react'
 import { serversApi } from '@/lib/api'
@@ -19,26 +24,54 @@ import type { Server as ServerType } from '@/types/server'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ServerSettingsDialog } from '@/components/ServerSettingsDialog'
 import { OverviewSection } from '@/components/server-manage/OverviewSection'
 import { PlayersSection } from '@/components/server-manage/PlayersSection'
 import { OperationsSection } from '@/components/server-manage/OperationsSection'
+import { LogsSection } from '@/components/server-manage/LogsSection'
 import { MapSection } from '@/components/server-manage/MapSection'
 import { BackupSection } from '@/components/server-manage/BackupSection'
-import { SettingsSection } from '@/components/server-manage/SettingsSection'
+import { ModsSection } from '@/components/server-manage/ModsSection'
+import { SettingsDraftProvider } from '@/components/server-manage/SettingsDraftContext'
+import { SettingsSaveBar } from '@/components/server-manage/SettingsSaveBar'
+import { BasicsSettings } from '@/components/server-manage/settings/BasicsSettings'
+import { GameSettings } from '@/components/server-manage/settings/GameSettings'
+import { LaunchSettings } from '@/components/server-manage/settings/LaunchSettings'
+import { RawSettings } from '@/components/server-manage/settings/RawSettings'
 
-// Left sub-nav definition. `key` maps into the serverManage.sections.* i18n keys
-// and drives the active-section switch below.
-const SECTIONS = [
-  { key: 'overview', icon: LayoutDashboard },
-  { key: 'players', icon: Users },
-  { key: 'operations', icon: Wrench },
-  { key: 'map', icon: MapIcon },
-  { key: 'backup', icon: Archive },
-  { key: 'settings', icon: Settings },
+// Grouped left sub-nav. `key` maps into serverManage.sections.* and drives the
+// active-section switch below; `group` maps into serverManage.groups.*.
+const NAV_GROUPS = [
+  {
+    group: 'monitor',
+    items: [
+      { key: 'overview', icon: LayoutDashboard },
+      { key: 'players', icon: Users },
+      { key: 'operations', icon: Wrench },
+      { key: 'logs', icon: ScrollText },
+    ],
+  },
+  {
+    group: 'config',
+    items: [
+      { key: 'basics', icon: SlidersHorizontal },
+      { key: 'game', icon: Gamepad2 },
+      { key: 'launch', icon: Terminal },
+      { key: 'mods', icon: Package },
+      { key: 'raw', icon: FileCode },
+    ],
+  },
+  {
+    group: 'more',
+    items: [
+      { key: 'map', icon: MapIcon },
+      { key: 'backup', icon: Archive },
+    ],
+  },
 ] as const
 
-type SectionKey = (typeof SECTIONS)[number]['key']
+type SectionKey = (typeof NAV_GROUPS)[number]['items'][number]['key']
+
+const ALL_KEYS = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.key)) as SectionKey[]
 
 const statusBadge: Record<
   ServerType['status'],
@@ -50,8 +83,8 @@ const statusBadge: Record<
   error: { variant: 'destructive', key: 'statusError' },
 }
 
-// The panel reads ?id= at runtime; static export requires useSearchParams to be
-// wrapped in a Suspense boundary, so the real panel lives in ManagePanel.
+// The panel reads ?id= / ?section= at runtime; static export requires
+// useSearchParams to be wrapped in a Suspense boundary.
 export default function ServerManagePage() {
   return (
     <Suspense fallback={<div className="p-10 text-muted-foreground">…</div>}>
@@ -67,8 +100,14 @@ function ManagePanel() {
   const rawId = searchParams.get('id')
   const serverId = rawId ? Number(rawId) : NaN
 
-  const [active, setActive] = useState<SectionKey>('overview')
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  // Optional deep-link into a specific section (e.g. from the list-page logs
+  // shortcut). Falls back to overview when absent/invalid.
+  const rawSection = searchParams.get('section')
+  const initialSection: SectionKey =
+    rawSection && (ALL_KEYS as string[]).includes(rawSection)
+      ? (rawSection as SectionKey)
+      : 'overview'
+  const [active, setActive] = useState<SectionKey>(initialSection)
 
   const { data: server, isLoading } = useQuery({
     queryKey: ['server', serverId],
@@ -124,49 +163,60 @@ function ManagePanel() {
         )}
       </div>
 
-      {/* Body: left sub-nav rail + section content */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-[13rem_1fr]">
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          <nav className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
-            {SECTIONS.map(({ key, icon: Icon }) => {
-              const isActive = active === key
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setActive(key)}
-                  className={
-                    'flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ' +
-                    (isActive
-                      ? 'bg-primary text-primary-foreground shadow-pal'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground')
-                  }
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {t(`sections.${key}`)}
-                </button>
-              )
-            })}
-          </nav>
-        </aside>
+      {/* Body: left grouped sub-nav rail + section content. The settings draft
+          provider wraps both so the shared save bar and config pages align. */}
+      <SettingsDraftProvider server={server ?? null}>
+        <div className="mt-8 grid gap-6 lg:grid-cols-[13rem_1fr]">
+          <aside className="lg:sticky lg:top-8 lg:self-start">
+            <nav className="flex flex-col gap-3">
+              {NAV_GROUPS.map(({ group, items }) => (
+                <div key={group} className="flex flex-col gap-1">
+                  <span className="px-3.5 pb-0.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                    {t(`groups.${group}`)}
+                  </span>
+                  {items.map(({ key, icon: Icon }) => {
+                    const isActive = active === key
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setActive(key)}
+                        className={
+                          'flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ' +
+                          (isActive
+                            ? 'bg-primary text-primary-foreground shadow-pal'
+                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground')
+                        }
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {t(`sections.${key}`)}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </nav>
+          </aside>
 
-        <section className="min-w-0">
-          {active === 'overview' && <OverviewSection />}
-          {active === 'players' && <PlayersSection />}
-          {active === 'operations' && <OperationsSection />}
-          {active === 'map' && <MapSection />}
-          {active === 'backup' && <BackupSection />}
-          {active === 'settings' && <SettingsSection onOpen={() => setSettingsOpen(true)} />}
-        </section>
-      </div>
+          <section className="min-w-0">
+            {active === 'overview' && <OverviewSection />}
+            {active === 'players' && <PlayersSection />}
+            {active === 'operations' && <OperationsSection />}
+            {active === 'logs' && <LogsSection />}
+            {active === 'basics' && <BasicsSettings />}
+            {active === 'game' && <GameSettings />}
+            {active === 'launch' && <LaunchSettings />}
+            {active === 'mods' && <ModsSection />}
+            {active === 'raw' && <RawSettings />}
+            {active === 'map' && <MapSection />}
+            {active === 'backup' && <BackupSection />}
 
-      {/* Reused, still-functional server config editor. The panel now owns the
-          entry that previously lived on the server card. */}
-      <ServerSettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        server={server ?? null}
-      />
+            {/* Shared sticky save bar: visible on any config page whenever the
+                draft is dirty; stays across page switches. */}
+            <SettingsSaveBar />
+          </section>
+        </div>
+      </SettingsDraftProvider>
     </div>
   )
 }

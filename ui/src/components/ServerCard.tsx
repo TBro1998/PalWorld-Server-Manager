@@ -7,7 +7,7 @@ import { Server } from '@/types/server'
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Play, Square, RotateCw, Trash2, Download, SlidersHorizontal, ScrollText, Terminal, Eye, EyeOff, Server as ServerIcon, Plug } from 'lucide-react'
+import { Play, Square, RotateCw, Trash2, Download, SlidersHorizontal, Terminal, Eye, EyeOff, Server as ServerIcon, Plug } from 'lucide-react'
 import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 
@@ -18,7 +18,6 @@ interface ServerCardProps {
   onStop: (id: number) => void
   onRestart: (id: number) => void
   onDelete: (id: number) => void
-  onLogs: (server: Server) => void
   onInstallLogs: (server: Server) => void
 }
 
@@ -103,7 +102,6 @@ export function ServerCard({
   onStop,
   onRestart,
   onDelete,
-  onLogs,
   onInstallLogs,
 }: ServerCardProps) {
   const t = useTranslations('servers')
@@ -202,35 +200,27 @@ export function ServerCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex-wrap gap-2 border-t border-border bg-secondary/30 pt-4">
-        {idle && (
-          <>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => onStart(server.id)}
-              disabled={!server.installed}
-            >
-              <Play size={16} className="mr-1" />
-              {t('start')}
-            </Button>
-            <Button
-              size="sm"
-              variant={needsInstall ? 'default' : 'outline'}
-              onClick={() => onInstall(server.id)}
-            >
-              <Download size={16} className="mr-1" />
-              {t('installUpdate')}
-            </Button>
-          </>
+      <CardFooter className="flex-wrap items-center gap-2 border-t border-border bg-secondary/30 pt-4">
+        {/* Primary lifecycle action — a single prominent button per state. */}
+        {needsInstall && (
+          <Button size="sm" variant="default" onClick={() => onInstall(server.id)}>
+            <Download size={16} className="mr-1" />
+            {t('installUpdate')}
+          </Button>
+        )}
+        {idle && !needsInstall && (
+          <Button size="sm" variant="default" onClick={() => onStart(server.id)}>
+            <Play size={16} className="mr-1" />
+            {t('start')}
+          </Button>
         )}
         {server.status === 'running' && (
           <>
-            <Button size="sm" variant="secondary" onClick={() => onStop(server.id)}>
+            <Button size="sm" variant="default" onClick={() => onStop(server.id)}>
               <Square size={16} className="mr-1" />
               {t('stop')}
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => onRestart(server.id)}>
+            <Button size="sm" variant="outline" onClick={() => onRestart(server.id)}>
               <RotateCw size={16} className="mr-1" />
               {t('restart')}
             </Button>
@@ -248,25 +238,32 @@ export function ServerCard({
             </Button>
           </>
         )}
-        <Link href={`/servers/manage?id=${server.id}`} prefetch={false}>
+
+        {/* Secondary: re-install/update stays available for idle installed
+            servers, de-emphasised next to the primary Start. */}
+        {idle && !needsInstall && (
+          <Button size="sm" variant="outline" onClick={() => onInstall(server.id)}>
+            <Download size={16} className="mr-1" />
+            {t('installUpdate')}
+          </Button>
+        )}
+
+        {/* Manage is the gateway to settings, logs and everything else. */}
+        <Link href={`/servers/manage?id=${server.id}`} prefetch={false} className="ml-auto">
           <Button size="sm" variant="secondary">
             <SlidersHorizontal size={16} className="mr-1" />
             {t('manage')}
           </Button>
         </Link>
-        <Button size="sm" variant="ghost" onClick={() => onLogs(server)}>
-          <ScrollText size={16} className="mr-1" />
-          {t('logs')}
-        </Button>
         <Button
           size="sm"
           variant="ghost"
-          className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => onDelete(server.id)}
           disabled={server.status === 'running' || server.status === 'installing'}
+          aria-label={t('delete')}
         >
-          <Trash2 size={16} className="mr-1" />
-          {t('delete')}
+          <Trash2 size={16} />
         </Button>
       </CardFooter>
     </Card>

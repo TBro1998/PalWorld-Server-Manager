@@ -120,7 +120,12 @@
       "operations": "Operations",
       "map": "Map & whitelist",
       "backup": "Saves & backups",
-      "settings": "Server settings"
+      "logs": "Logs",
+      "basics": "Basics",
+      "game": "Game",
+      "launch": "Launch Args",
+      "mods": "Mods",
+      "raw": "Raw"
     },
     "overview": {
       "title": "Server overview",
@@ -248,7 +253,8 @@
         "shutdownFail": "Failed to schedule shutdown",
         "stopOk": "Server is stopping",
         "stopFail": "Failed to stop server"
-      }
+      },
+      "control": "Server Control"
     },
     "map": {
       "title": "Map & whitelist",
@@ -278,11 +284,35 @@
       "auto": "Auto backup",
       "manage": "Backup management"
     },
-    "settings": {
-      "title": "Server settings",
-      "desc": "Edit basic config, gameplay parameters and launch args",
-      "hint": "Server name, passwords, gameplay and launch parameters are all edited here.",
-      "open": "Open server settings"
+    "groups": {
+      "monitor": "Monitor",
+      "config": "Configuration",
+      "more": "More"
+    },
+    "save": {
+      "unsaved": "Unsaved changes",
+      "metaOnly": "Server not installed — only basic info is saved",
+      "discard": "Discard",
+      "saving": "Saving…",
+      "save": "Save"
+    },
+    "basicsSection": {
+      "desc": "Server name, port, passwords and REST API"
+    },
+    "gameSection": {
+      "desc": "Performance, management, gameplay and balance settings"
+    },
+    "launchSection": {
+      "desc": "Server process launch arguments"
+    },
+    "rawSection": {
+      "desc": "Edit the raw OptionSettings line directly"
+    },
+    "modsSection": {
+      "desc": "Manage Workshop mods and sign in to Steam"
+    },
+    "logsSection": {
+      "desc": "Live server runtime logs"
     }
   },
   "addServer": {

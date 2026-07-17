@@ -1,10 +1,15 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Construction } from 'lucide-react'
+import { Construction, Eye, EyeOff } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { useQuery } from '@tanstack/react-query'
+import { serversApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 
 // Reads the ?id= query param the manage panel routes on and returns it as a
@@ -15,6 +20,20 @@ export function useServerId(): number {
   const searchParams = useSearchParams()
   const raw = searchParams.get('id')
   return raw ? Number(raw) : NaN
+}
+
+// Shared server query. Sections that need the full server object (status,
+// installed, launch_args) call this instead of taking props; the ['server', id]
+// key is deduped with the manage page's own query. Polls every 5s to keep
+// status fresh, matching the manage page.
+export function useServer() {
+  const serverId = useServerId()
+  return useQuery({
+    queryKey: ['server', serverId],
+    queryFn: async () => (await serversApi.get(serverId)).data,
+    enabled: Number.isFinite(serverId),
+    refetchInterval: 5000,
+  })
 }
 
 // Shared layout primitives for the server-manage sections. Each section file
@@ -72,6 +91,83 @@ export function Placeholder({
       }
     >
       {children}
+    </div>
+  )
+}
+
+// PasswordInput is a text input masked by default with a show/hide toggle.
+// Shared by the Basics settings page and the Steam login form.
+export function PasswordInput({
+  id,
+  value,
+  onChange,
+}: {
+  id?: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [show, setShow] = useState(false)
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="pr-9"
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setShow((s) => !s)}
+        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground"
+      >
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  )
+}
+
+// LaunchToggle / LaunchNumber: label + control rows used by the Launch settings
+// page (and the port row on Basics).
+export function LaunchToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (c: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
+      <Label>{label}</Label>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  )
+}
+
+export function LaunchNumber({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: number | undefined
+  onChange: (v: number | undefined) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
+      <Label>{label}</Label>
+      <Input
+        type="number"
+        value={value ?? ''}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+        className="max-w-[220px]"
+      />
     </div>
   )
 }

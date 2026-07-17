@@ -120,7 +120,12 @@
       "operations": "运维操作",
       "map": "地图与白名单",
       "backup": "存档与备份",
-      "settings": "服务器设置"
+      "logs": "日志",
+      "basics": "基础设置",
+      "game": "游戏配置",
+      "launch": "启动参数",
+      "mods": "Mods",
+      "raw": "原始配置"
     },
     "overview": {
       "title": "服务器概览",
@@ -248,7 +253,8 @@
         "shutdownFail": "平滑关服失败",
         "stopOk": "服务器正在停止",
         "stopFail": "停止失败"
-      }
+      },
+      "control": "服务器控制"
     },
     "map": {
       "title": "地图与白名单",
@@ -278,11 +284,35 @@
       "auto": "自动备份",
       "manage": "备份管理"
     },
-    "settings": {
-      "title": "服务器设置",
-      "desc": "编辑服务器基础配置、游戏参数与启动参数",
-      "hint": "服务器的名称、密码、游戏玩法与启动参数等配置均在此编辑。",
-      "open": "打开服务器设置"
+    "groups": {
+      "monitor": "监控",
+      "config": "配置",
+      "more": "更多"
+    },
+    "save": {
+      "unsaved": "有未保存的改动",
+      "metaOnly": "服务器未安装，仅保存基础信息",
+      "discard": "放弃",
+      "saving": "保存中…",
+      "save": "保存"
+    },
+    "basicsSection": {
+      "desc": "服务器名称、端口、密码与 REST API"
+    },
+    "gameSection": {
+      "desc": "性能、管理、玩法与平衡等游戏参数"
+    },
+    "launchSection": {
+      "desc": "服务器进程启动参数"
+    },
+    "rawSection": {
+      "desc": "直接编辑原始 OptionSettings"
+    },
+    "modsSection": {
+      "desc": "管理创意工坊模组并登录 Steam"
+    },
+    "logsSection": {
+      "desc": "实时查看服务器运行日志"
     }
   },
   "addServer": {

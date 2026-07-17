@@ -38,9 +38,9 @@ function SkeletonCard() {
 export default function ServersPage() {
   const t = useTranslations('servers')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [logsServer, setLogsServer] = useState<Server | null>(null)
   // SteamCMD install/update log viewer. Opens automatically on install/update
-  // and streams live SteamCMD output; separate from the server runtime logs.
+  // and streams live SteamCMD output. Runtime server logs live inline in the
+  // manage page (Logs section), reachable via each card's Manage button.
   const [installLogsServer, setInstallLogsServer] = useState<Server | null>(null)
   const queryClient = useQueryClient()
 
@@ -174,7 +174,6 @@ export default function ServersPage() {
               onStop={(id) => stopServerMutation.mutate(id)}
               onRestart={(id) => restartServerMutation.mutate(id)}
               onDelete={handleDelete}
-              onLogs={(s) => setLogsServer(s)}
               onInstallLogs={(s) => setInstallLogsServer(s)}
             />
           ))}
@@ -200,13 +199,6 @@ export default function ServersPage() {
         onSubmit={(data) => createServerMutation.mutate(data)}
         isLoading={createServerMutation.isPending}
         nextServerId={nextServerId}
-      />
-
-      <ServerLogsDialog
-        open={logsServer !== null}
-        onOpenChange={(open) => !open && setLogsServer(null)}
-        server={logsServer}
-        kind="server"
       />
 
       <ServerLogsDialog
