@@ -116,9 +116,8 @@ function ModsBody({ server }: { server: Server }) {
       setError(null)
       setDirty(true)
       setLogsOpen(true)
-      // Metadata (version / package name) is backfilled asynchronously; refetch
-      // shortly after so the list reflects the results once downloads finish.
-      setTimeout(invalidate, 3000)
+      // The run is async; completion arrives via the log dialog's `done` event
+      // (see onDone below), which refreshes the list and closes on full success.
     },
     onError,
   })
@@ -197,7 +196,9 @@ function ModsBody({ server }: { server: Server }) {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 text-sm font-medium">
-                  {m.name || m.workshop_id}
+                  {/* Prefer the Info.json ModName once downloaded; fall back to
+                      the user-supplied name, then the workshop id. */}
+                  {m.mod_name || m.name || m.workshop_id}
                   {m.package_name === '' && (
                     <AlertTriangle
                       size={14}
@@ -208,8 +209,21 @@ function ModsBody({ server }: { server: Server }) {
                 </div>
                 <div className="font-mono text-xs text-muted-foreground">
                   {m.workshop_id}
+                  {m.package_name ? ` · ${m.package_name}` : ''}
                   {m.version ? ` · v${m.version}` : ''}
                 </div>
+                {(m.tags ?? []).length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {(m.tags ?? []).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-border/60 bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <Switch
@@ -232,7 +246,18 @@ function ModsBody({ server }: { server: Server }) {
         </div>
       )}
 
-      <ServerLogsDialog open={logsOpen} onOpenChange={setLogsOpen} server={server} kind="steamcmd" />
+      <ServerLogsDialog
+        open={logsOpen}
+        onOpenChange={setLogsOpen}
+        server={server}
+        kind="steamcmd"
+        onDone={(success) => {
+          // Async update finished: refresh the list (metadata backfilled) and,
+          // when every mod succeeded, close the log dialog automatically.
+          invalidate()
+          if (success) setLogsOpen(false)
+        }}
+      />
     </div>
   )
 }

@@ -135,11 +135,11 @@ func (r *Router) SteamLogStream(c *gin.Context) {
 	ctx := c.Request.Context()
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case line, ok := <-ch:
+		case msg, ok := <-ch:
 			if !ok {
 				return false
 			}
-			c.SSEvent("log", line)
+			c.SSEvent(msg.Event, msg.Data)
 			return true
 		case <-ctx.Done():
 			return false

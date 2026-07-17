@@ -188,15 +188,18 @@ func TestDeployAndRemove(t *testing.T) {
 func TestParseInfoTolerant(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "Info.json"),
-		[]byte(`{"PackageName":"MyMod","Version":"1.2.3","InstallRule":[{"IsServer":true}]}`), 0o644); err != nil {
+		[]byte(`{"ModName":"My Mod","PackageName":"MyMod","Version":"1.2.3","Tags":["Gameplay","QoL"],"InstallRule":[{"IsServer":true}]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	info, err := ParseInfo(dir)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if info.PackageName != "MyMod" || info.Version != "1.2.3" || !info.IsServer {
+	if info.PackageName != "MyMod" || info.ModName != "My Mod" || info.Version != "1.2.3" || !info.IsServer {
 		t.Errorf("unexpected info: %+v", info)
+	}
+	if len(info.Tags) != 2 || info.Tags[0] != "Gameplay" || info.Tags[1] != "QoL" {
+		t.Errorf("unexpected tags: %#v", info.Tags)
 	}
 }
 
@@ -216,6 +219,13 @@ func TestParseInfoNumericVersionAndMissingFields(t *testing.T) {
 	}
 	if info.IsServer {
 		t.Errorf("IsServer should default to false when no rules present")
+	}
+	// Absent ModName/Tags must be zero-valued, not an error.
+	if info.ModName != "" {
+		t.Errorf("ModName should default to empty: %q", info.ModName)
+	}
+	if info.Tags != nil {
+		t.Errorf("Tags should default to nil when absent: %#v", info.Tags)
 	}
 }
 

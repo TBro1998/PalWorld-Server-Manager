@@ -14,6 +14,10 @@ interface ServerLogsDialogProps {
   // Which log stream to show: 'server' (running process) or 'steamcmd'
   // (install/update output). Defaults to 'server'.
   kind?: LogKind
+  // Fired when the backend broadcasts a terminal `done` event on the stream
+  // (currently only the mod-update run on the steamcmd stream). success is true
+  // when the run fully succeeded. Lets the opener close/refresh without polling.
+  onDone?: (success: boolean) => void
 }
 
 type StreamState = 'connecting' | 'live' | 'closed'
@@ -23,11 +27,19 @@ export function ServerLogsDialog({
   onOpenChange,
   server,
   kind = 'server',
+  onDone,
 }: ServerLogsDialogProps) {
   const t = useTranslations('servers')
   const [lines, setLines] = useState<string[]>([])
   const [streamState, setStreamState] = useState<StreamState>('closed')
   const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  // Keep the latest onDone in a ref so the SSE effect need not depend on its
+  // identity (which would tear down and re-open the stream on every render).
+  const onDoneRef = useRef(onDone)
+  useEffect(() => {
+    onDoneRef.current = onDone
+  }, [onDone])
 
   const serverId = server?.id
   const title = kind === 'steamcmd' ? t('steamcmdLogsTitle') : t('logsTitle')
@@ -55,6 +67,11 @@ export function ServerLogsDialog({
     const es = new EventSource(serversApi.logStreamUrl(serverId, kind))
     es.addEventListener('log', (e) => {
       setLines((prev) => [...prev, (e as MessageEvent).data])
+    })
+    // Terminal completion signal for async runs (mod update). Payload is
+    // 'ok' on full success, 'error' otherwise.
+    es.addEventListener('done', (e) => {
+      onDoneRef.current?.((e as MessageEvent).data === 'ok')
     })
     es.onopen = () => setStreamState('live')
     es.onerror = () => {

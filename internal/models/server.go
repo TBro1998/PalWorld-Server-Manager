@@ -24,10 +24,11 @@ type Server struct {
 // Mod represents a workshop mod.
 //
 // WorkshopID is the user-supplied Steam Workshop item id — the business key
-// unique per server. PackageName and Version are backfilled from the mod's
-// Info.json after a successful download (empty until then): PackageName is what
-// PalModSettings.ini's ActiveModList must reference (NOT the folder name or
-// Workshop id), and Version drives update detection / display. InstallPath holds
+// unique per server. PackageName, ModName, Version and Tags are backfilled from
+// the mod's Info.json after a successful download (empty until then):
+// PackageName is what PalModSettings.ini's ActiveModList must reference (NOT the
+// folder name or Workshop id), Version drives update detection / display, and
+// ModName/Tags are display-only metadata shown in the Mods UI. InstallPath holds
 // <installPath>/Mods/Workshop/<workshopID> after deployment.
 type Mod struct {
 	ID          int64     `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
@@ -37,7 +38,9 @@ type Mod struct {
 	Enabled     bool      `json:"enabled" gorm:"column:enabled;default:true"`
 	InstallPath string    `json:"install_path" gorm:"column:install_path"`
 	PackageName string    `json:"package_name" gorm:"column:package_name;default:''"` // from Info.json; ActiveModList uses this
+	ModName     string    `json:"mod_name" gorm:"column:mod_name;default:''"`         // from Info.json; display-only
 	Version     string    `json:"version" gorm:"column:version;default:''"`           // from Info.json; update detection / display
+	Tags        []string  `json:"tags" gorm:"column:tags;serializer:json"`            // from Info.json; display-only (JSON in DB, may be null)
 	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
 }

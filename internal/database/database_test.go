@@ -84,6 +84,62 @@ func TestZeroValueUpdatesPersist(t *testing.T) {
 	}
 }
 
+// TestModTagsSerializerRoundTrip guards the mod_name/tags backfill: the Tags
+// []string column uses gorm serializer:json, and the manager backfills it via
+// Updates(map[string]any{...}) (mirrored here). This verifies the serializer is
+// applied through the map-update path — a []string in, a []string out — and that
+// an absent value reads back as nil (empty mod list case).
+func TestModTagsSerializerRoundTrip(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "mods.db")
+	db, err := Initialize(dbPath)
+	if err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	defer closeDB(t, db)
+
+	srv := models.Server{Name: "s", InstallPath: "/p"}
+	if err := db.Create(&srv).Error; err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	mod := models.Mod{ServerID: srv.ID, WorkshopID: "123", Name: "123", Enabled: true}
+	if err := db.Create(&mod).Error; err != nil {
+		t.Fatalf("create mod: %v", err)
+	}
+	// Fresh row: tags absent -> nil.
+	var fresh models.Mod
+	if err := db.First(&fresh, mod.ID).Error; err != nil {
+		t.Fatalf("first fresh: %v", err)
+	}
+	if fresh.Tags != nil {
+		t.Errorf("fresh Tags should be nil, got %#v", fresh.Tags)
+	}
+
+	// Backfill exactly as manager.UpdateMods does (Select + struct Updates so the
+	// Tags serializer is applied and zero values are still written).
+	if err := db.Model(&models.Mod{}).Where("id = ?", mod.ID).
+		Select("package_name", "mod_name", "version", "tags", "install_path").
+		Updates(models.Mod{
+			PackageName: "MyMod",
+			ModName:     "My Mod",
+			Version:     "1.2.3",
+			Tags:        []string{"Gameplay", "QoL"},
+			InstallPath: "/p/Mods/Workshop/123",
+		}).Error; err != nil {
+		t.Fatalf("backfill: %v", err)
+	}
+
+	var got models.Mod
+	if err := db.First(&got, mod.ID).Error; err != nil {
+		t.Fatalf("first: %v", err)
+	}
+	if got.ModName != "My Mod" || got.PackageName != "MyMod" || got.Version != "1.2.3" {
+		t.Fatalf("unexpected scalar backfill: %+v", got)
+	}
+	if len(got.Tags) != 2 || got.Tags[0] != "Gameplay" || got.Tags[1] != "QoL" {
+		t.Fatalf("tags serializer round-trip failed: %#v", got.Tags)
+	}
+}
+
 // TestInitializeLegacyDB verifies AutoMigrate opens an existing database that
 // still carries deprecated columns (port/query_port/rcon_port/rcon_enabled) and
 // the unused status column without error (AC4).

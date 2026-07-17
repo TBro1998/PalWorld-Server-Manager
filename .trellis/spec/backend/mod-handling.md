@@ -38,7 +38,7 @@
 
 **What**:
 - `palmod.Deploy(installPath, workshopID, srcDir) → dstDir`：**先清目标再递归复制**到 `<installPath>/Mods/Workshop/<workshopID>/`；`palmod.Remove(installPath, workshopID)` 删该目录。
-- `palmod.ParseInfo(dir) → *Info{PackageName, Version, InstallRules[].IsServer}`：读 `<dir>/Info.json`，**容忍式**（缺字段/大小写/Version 为字符串或数字都不 panic），`IsServer` 缺省 false。
+- `palmod.ParseInfo(dir) → *Info{PackageName, ModName, Version, Tags, InstallRules[].IsServer}`：读 `<dir>/Info.json`，**容忍式**（缺字段/大小写/Version 为字符串或数字都不 panic），`IsServer` 缺省 false，`ModName`/`Tags` 缺失为零值（`""`/`nil`）。`PackageName`/`Version`/`IsServer` 参与加载逻辑；`ModName`/`Tags` 仅展示用。
 - `palmod.WriteModSettings(installPath, enabled)`：写 `<installPath>/Mods/PalModSettings.ini`。
 
 **Why**: 与 `palsave`/`palconfig` 同构——纯逻辑可单测、不依赖 models/api/db。编排层（`process.Manager`）负责下载→部署→回填→写配置的串联与 DB 落库。
@@ -65,6 +65,16 @@
 
 **Rule**: mod 更新错误复用 server 级 `last_error`（MVP 取舍，与 install/start 共享，成功清除）；不要为 mod 单独加错误列，除非产品需要区分域。
 
+## Convention: 异步完成走 SSE `done` 事件，前端不轮询
+
+**What**: `UpdateMods` 后台 goroutine 结束后，handler 依 `process.UpdateMods` 返回值广播一个终止事件：`r.streams.BroadcastEvent(id, KindSteamCMD, "done", "ok"|"error")`（nil 返回=全成功→`ok`，否则 `error`）。前端 `ServerLogsDialog` 监听 `done` 事件（SSE 具名事件），`ModsSection` 的 `onDone(success)` 据此**刷新 mod 列表**并在**全成功时关闭日志弹窗**；失败保持打开以便看错误。**不轮询、不读库、不匹配日志文本**——完成/成功信号直接来自函数返回值。
+
+**How（SSE 通道升级）**: `logger.StreamManager` 的通道从 `chan string` 升级为 `chan logger.Msg{Event,Data}`。`Broadcast(id,kind,line)` 仍是唯一日志入口（内部包成 `Msg{Event:"log"}`，故 `broadcastWriter` 与所有既有调用零改动）；新增 `BroadcastEvent(id,kind,event,data)` 发具名控制事件。两个 SSE handler（`StreamLogs`/`SteamLogStream`）读 `Msg` 后 `c.SSEvent(msg.Event, msg.Data)`。前端用 `es.addEventListener('<event>')` 分别接 `log`/`done`。
+
+**Why**: 安装/更新是异步 202，此前前端只能靠 `setTimeout` 猜测完成时机。函数返回值是最可靠的成功判据（避免 last_error 竞态与日志文案匹配的脆弱性，呼应 `classifyLogin` 的教训）。
+
+**Rule**: 新增异步任务的完成/进度信号走 `BroadcastEvent` 具名事件，不要往 `log` 文本里塞控制标记，也不要加轮询端点；前端 `onDone` 回调用 ref 承接，避免进 SSE effect 依赖导致重连。当前仅 mod 更新广播 `done`；install 复用同管线但未发 `done`（如需可照此追加）。
+
 ---
 
 ## Gotcha: 并发——`updatingMods` 与 `installing` 互斥；运行中不拦截；INI 写有独立锁
@@ -82,11 +92,25 @@
 
 ## 跨层字段一致性
 
-`Mod` 的 DB 列（`internal/models/server.go`，显式 `gorm:"column:..."`，`PackageName`/`Version` 为 D5 新增）→ Go `json` tag（snake_case）→ 前端 `ui/src/types/server.ts` 的 `Mod` 接口（snake_case）→ i18n `serverConfig.mods.*`（zh/en/ja 三语齐全）。改任一侧四处同步。UI 的 Mods tab 在 `ServerSettingsDialog` 的 `tabs` 数组追加 `'mods'`，`ModsSection` 顶部常驻 `mods.loginHint`（配 `steam_username` + 一次性手动登录说明）。
+`Mod` 的 DB 列（`internal/models/server.go`，显式 `gorm:"column:..."`，`PackageName`/`Version` 为 D5 新增，`ModName`/`Tags` 为展示元信息新增）→ Go `json` tag（snake_case）→ 前端 `ui/src/types/server.ts` 的 `Mod` 接口（snake_case）→ i18n `serverConfig.mods.*`（zh/en/ja 三语齐全）。改任一侧四处同步。UI 的 Mods tab 在 `ServerSettingsDialog` 的 `tabs` 数组追加 `'mods'`，`ModsSection` 顶部常驻 `mods.loginHint`（配 `steam_username` + 一次性手动登录说明）。
+
+**展示层级（Mods 列表条目）**：主标题优先 `mod_name`（Info.json ModName），回退用户 `name`，再回退 `workshop_id`；次级 mono 小字行拼 `package_name`+`workshop_id`+`v{version}`；`tags` 有值时以 badge 展示（`tags ?? []` 容错——见下方 serializer 陷阱，DB 空值反序列化为 `null`）。纯展示字段不新增 i18n 文案（tag 文本/包名直显）。
+
+## Gotcha: `Tags []string` 用 `serializer:json`，回填必须 `Select`+结构体 `Updates`（禁用 `Updates(map)`）
+
+**What**: `models.Mod.Tags` 为 `[]string` + `gorm:"column:tags;serializer:json"`（SQLite 存 JSON 文本，API 直接输出数组）。回填**必须**用 `db.Model(&Mod{}).Where("id=?",id).Select("package_name","mod_name","version","tags","install_path").Updates(models.Mod{...})`。**不能**用 `Updates(map[string]any{"tags": info.Tags, ...})`——map 路径不走列的 serializer，把 `[]string` 当 SQL 行值元组发出，SQLite 报 `SQL logic error: row value misused (1)`（2026-07-18 单测证实）。
+
+**Why**: `Select` 强制写入所有列名（含空 `PackageName`/`ModName`/`Version`、`nil` Tags 等零值——struct Updates 默认跳零值），同时结构体路径对 `tags` 列应用 json serializer；map 路径二者皆失。
+
+**Rule**: 任何写 serializer 列的更新都用 `Select`+结构体 `Updates`，别用 map；`internal/database` 有 `TestModTagsSerializerRoundTrip` 守此 round-trip，改回填逻辑要保它绿。前端读 `tags` 用 `?? []`（未下载/缺字段时后端返回 `null`）。
 
 ---
 
-## 待真机复核（截至 2026-07-15）
+## Info.json 真机键名（2026-07-18 真实 mod 样本确认）
 
-- `Info.json` 的确切键名/结构（`PackageName` / `Version` / `InstallRule[].IsServer`）依官方文档实现，**尚未用真实 mod 核对**；`ParseInfo` 已容忍式，真机拿到真实 mod 后须比对键名，不符则微调。
+- 真实样本（工作区 `steamcmd/.../content/1623730/<id>/Info.json`）确认键名：`ModName`、`PackageName`、`Thumbnail`、`Version`（字符串如 `"1.7.2"`）、`Tags`（字符串数组如 `["Gameplay"]`）、`Author`、`Dependencies`、`MinRevision`、`InstallRule[]`（`Type`/`IsServer`/`Targets`）。此前"依官方文档、未真机核对"的疑虑已消除；`ParseInfo` 键名与之一致。
+- 本项目现用字段：`PackageName`/`Version`/`InstallRule[].IsServer`（加载逻辑）+ `ModName`/`Tags`（展示）。`Thumbnail`（缩略图文件名，如 `thumbnail.png`）**已知但故意不展示**（产品决策，避免额外图片服务端点）；`Author`/`Dependencies`/`MinRevision` 暂未使用。
+
+## 待真机复核
+
 - 真实工坊下载（配 `steam_username` + 预登录后）端到端成功与否，以 Windows 真机为准。

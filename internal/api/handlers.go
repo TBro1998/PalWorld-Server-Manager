@@ -449,11 +449,11 @@ func (r *Router) StreamLogs(c *gin.Context) {
 	ctx := c.Request.Context()
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case line, ok := <-ch:
+		case msg, ok := <-ch:
 			if !ok {
 				return false
 			}
-			c.SSEvent("log", line)
+			c.SSEvent(msg.Event, msg.Data)
 			return true
 		case <-ctx.Done():
 			return false
@@ -744,9 +744,15 @@ func (r *Router) UpdateMods(c *gin.Context) {
 		out := io.MultiWriter(capture, broadcaster)
 		defer capture.Close()
 
+		// UpdateMods returns nil only on full success (some mods failing yields a
+		// non-nil aggregate error). Broadcast a terminal "done" event carrying that
+		// outcome so the live log subscriber can close/refresh without polling.
+		result := "ok"
 		if err := r.process.UpdateMods(id, out); err != nil {
+			result = "error"
 			fmt.Printf("server %d mod update failed: %v\n", id, err)
 		}
+		r.streams.BroadcastEvent(id, logger.KindSteamCMD, "done", result)
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{

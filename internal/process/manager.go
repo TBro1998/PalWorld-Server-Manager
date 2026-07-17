@@ -447,18 +447,27 @@ func (m *Manager) UpdateMods(serverID int64, out io.Writer) error {
 				mod.WorkshopID, info.PackageName)
 		}
 
+		// Select forces all listed columns to be written even when zero-valued
+		// (empty PackageName/ModName/Version, nil Tags) and — unlike a map update —
+		// routes the Tags []string through the column's json serializer instead of
+		// emitting a raw SQL tuple.
 		if err := m.db.Model(&models.Mod{}).Where("id = ?", mod.ID).
-			Updates(map[string]any{
-				"package_name": info.PackageName,
-				"version":      info.Version,
-				"install_path": dst,
+			Select("package_name", "mod_name", "version", "tags", "install_path").
+			Updates(models.Mod{
+				PackageName: info.PackageName,
+				ModName:     info.ModName,
+				Version:     info.Version,
+				Tags:        info.Tags,
+				InstallPath: dst,
 			}).Error; err != nil {
 			failures = append(failures, fmt.Sprintf("mod %s: persist metadata: %v", mod.WorkshopID, err))
 			continue
 		}
 		// Reflect the backfill locally so the ActiveModList uses the resolved name.
 		mod.PackageName = info.PackageName
+		mod.ModName = info.ModName
 		mod.Version = info.Version
+		mod.Tags = info.Tags
 		mod.InstallPath = dst
 	}
 

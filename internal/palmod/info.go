@@ -22,9 +22,13 @@ import (
 // Info is the tolerant projection of a mod's Info.json that we care about.
 // PackageName drives ActiveModList, Version drives update detection, and
 // IsServer (derived from InstallRules) drives the FR9 compatibility warning.
+// ModName and Tags are display-only metadata surfaced in the Mods UI after a
+// successful download.
 type Info struct {
 	PackageName string
+	ModName     string
 	Version     string
+	Tags        []string
 	IsServer    bool
 }
 
@@ -35,7 +39,9 @@ type Info struct {
 // either a string or a number. See design.md risk #1.
 type rawInfo struct {
 	PackageName  string           `json:"PackageName"`
+	ModName      string           `json:"ModName"`
 	Version      json.RawMessage  `json:"Version"`
+	Tags         []string         `json:"Tags"`
 	InstallRules []rawInstallRule `json:"InstallRule"`
 	// InstallRules is an alternate spelling seen in some samples; harmless if absent.
 	InstallRulesAlt []rawInstallRule `json:"InstallRules"`
@@ -63,7 +69,9 @@ func ParseInfo(dir string) (*Info, error) {
 
 	info := &Info{
 		PackageName: raw.PackageName,
+		ModName:     raw.ModName,
 		Version:     decodeVersion(raw.Version),
+		Tags:        raw.Tags,
 	}
 
 	rules := raw.InstallRules

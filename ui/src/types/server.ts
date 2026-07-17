@@ -21,9 +21,11 @@ export interface CreateServerData {
   installPath?: string
 }
 
-// Mod mirrors the backend models.Mod JSON (snake_case tags). package_name and
-// version are backfilled from the mod's Info.json after a successful update
-// (empty until then); package_name is what PalModSettings.ini references.
+// Mod mirrors the backend models.Mod JSON (snake_case tags). package_name,
+// mod_name, version and tags are backfilled from the mod's Info.json after a
+// successful update (empty until then); package_name is what PalModSettings.ini
+// references. tags may arrive as null when absent/not yet downloaded — read it
+// via `tags ?? []`.
 export interface Mod {
   id: number
   server_id: number
@@ -32,7 +34,9 @@ export interface Mod {
   enabled: boolean
   install_path: string
   package_name: string
+  mod_name: string
   version: string
+  tags: string[] | null
   created_at: string
   updated_at: string
 }
