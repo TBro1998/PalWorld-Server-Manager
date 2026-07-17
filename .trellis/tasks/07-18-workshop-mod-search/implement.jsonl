@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/mod-handling.md", "reason": "工坊下载/部署/UpdateMods 管线、add 与 update 分离、settings 键值来源、跨层字段一致性约定、Info.json Dependencies 现状——搜索器添加流程与依赖检测必须与之对齐"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "确认新增 internal/steamworkshop 纯逻辑包与 handler/路由的落位约定"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "settings 键值/GORM 用法约定，新增 KeySteamWebAPIKey 与读写需遵循"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Steam 调用失败/空 key 的错误规范化返回口径"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "新增 Steam 响应字段贯穿 Go struct→前端 types→i18n，规范化后单一数据源，避免 UI 直吃原始 JSON"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复用现有 modsApi.add / settings.Get-Set / steam 路由组 / PasswordInput / SSE 管线，避免重复造轮子"}

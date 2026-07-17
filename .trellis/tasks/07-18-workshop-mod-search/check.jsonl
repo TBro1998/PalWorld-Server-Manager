@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/mod-handling.md", "reason": "校验添加流程遵循 add/update 分离、未触碰 PalModSettings.ini 写路径、依赖检测口径正确"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "后端代码标准与禁用模式核对"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "核对空 key/Steam 错误的规范化处理与 key 明文不外泄"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "核对 Go/前端 types/i18n 三处字段一致、无 UI 直接 cast 原始 Steam JSON"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "核对是否复用现有 add/settings/路由组/组件而非重复实现"}
