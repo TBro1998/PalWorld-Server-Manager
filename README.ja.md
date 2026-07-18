@@ -128,44 +128,46 @@ HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
 
 プログラムは2つの設定方法をサポートしており、優先順位は：**設定ファイル > 環境変数 > デフォルト値**
 
-### 方法1：設定ファイル（推奨）
+> **注意**：プログラムディレクトリに `config.yaml` が存在する場合、環境変数は**完全に無視**されます。2つの方法を混在させることはできません。
 
-プログラムディレクトリに `config.yaml` ファイルを作成します：
+### 初回起動の流れ
+
+設定ファイルを事前に用意する必要はありません。プログラム起動後、初めてWeb UIにアクセスすると管理者パスワードの設定が案内されます。設定完了後、プログラムが**JWTシークレットを自動生成**し、すべての設定を **`config.yaml` に書き込みます**。以降の起動はそのファイルから読み込まれるため、再設定は不要です。
+
+### 設定ファイル
+
+プログラムディレクトリに `config.yaml` を作成します（初回起動**前**にポートやパスをカスタマイズしたい場合）：
 
 ```yaml
-# Webインターフェース設定
-host: "127.0.0.1"  # リッスンアドレス
-port: 8080          # ポート
+# Webインターフェース
+host: "127.0.0.1"  # リッスンアドレス；外部アクセスやDockerの場合は 0.0.0.0 に変更
+port: 8080
 
-# パス設定
-steamcmd_path: "./steamcmd"        # SteamCMDインストールパス
-palworld_base_path: "./palworld"   # Palworldサーバーディレクトリ
+# パス
+steamcmd_path: "./steamcmd"    # SteamCMDインストールパス
+database_path: "./palworld.db" # SQLiteデータベースパス
+log_dir: "./logs"              # ログディレクトリ
 
-# データベース
-database_path: "./palworld.db"
-
-# JWTシークレット（本番環境では変更してください）
-jwt_secret: "your-secure-secret-key"
+# 自動更新：本プロジェクトをフォークした場合のみ変更
+github_repo: "TBro1998/PalWorld-Server-Manager"
 ```
 
-完全な設定例については `config.example.yaml` を参照してください。
+> `jwt_secret` と `password_hash` は初回Web設定時にプログラムが自動生成して書き込みます — **手動で設定する必要はありません**。
 
-### 方法2：環境変数
+### 環境変数（Docker / 設定ファイルなしの場合）
 
-`config.yaml` ファイルが存在しない場合、プログラムは環境変数を使用します：
+プログラムディレクトリに `config.yaml` が**存在しない**場合、以下の環境変数から設定を読み込みます：
 
-- `HOST` - Webインターフェースのリッスンアドレス
-- `PORT` - Webインターフェースのポート
-- `STEAMCMD_PATH` - SteamCMDインストールパス
-- `PALWORLD_BASE_PATH` - Palworldサーバーインストールディレクトリ
+| 環境変数 | 説明 | デフォルト値 |
+|---|---|---|
+| `HOST` | Webインターフェースのリッスンアドレス | `127.0.0.1` |
+| `PORT` | Webインターフェースのポート | `8080` |
+| `DATABASE_PATH` | SQLiteデータベースファイルパス | `./palworld.db` |
+| `STEAMCMD_PATH` | SteamCMDインストールパス | `./steamcmd` |
+| `LOG_DIR` | ログディレクトリ | `./logs` |
+| `GITHUB_REPO` | 自動更新ソースリポジトリ | `TBro1998/PalWorld-Server-Manager` |
 
-## 開発者向けドキュメント
-
-開発に参加したい方、または技術的な詳細を知りたい方は以下をご参照ください：
-
-- [技術提案書](./PalWorld_TECHNICAL_PROPOSAL.md) - 詳細な技術設計
-- [バックエンド開発ガイド](./server/README.md) - Goバックエンド開発ガイド
-- [フロントエンド開発ガイド](./ui/README.md) - Next.jsフロントエンド開発ガイド
+`jwt_secret` と `password_hash` は初回Web設定時に自動生成されて `config.yaml` に書き込まれるため、環境変数で提供する必要はありません。
 
 ## ライセンス
 

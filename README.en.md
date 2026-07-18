@@ -128,44 +128,46 @@ The program automatically creates the `steamclient.so` symlink required by Palwo
 
 The program supports two configuration methods with priority: **config file > environment variables > defaults**
 
-### Method 1: Configuration File (Recommended)
+> **Note**: If `config.yaml` exists in the program directory, environment variables are **completely ignored**. The two methods cannot be mixed.
 
-Create a `config.yaml` file in the program directory:
+### First-run Flow
+
+No configuration file is needed upfront. After the program starts, visiting the web UI for the first time will guide you through setting an admin password. Once set, the program **automatically generates a JWT secret** and **writes all configuration to `config.yaml`**. Subsequent restarts load from that file — no setup needed again.
+
+### Configuration File
+
+Create `config.yaml` in the program directory (if you need to customize the port, paths, etc. **before** the first run):
 
 ```yaml
-# Web interface settings
-host: "127.0.0.1"  # Listen address
-port: 8080          # Port
+# Web interface
+host: "127.0.0.1"  # Listen address; change to 0.0.0.0 for external access or Docker
+port: 8080
 
-# Path settings
-steamcmd_path: "./steamcmd"        # SteamCMD installation path
-palworld_base_path: "./palworld"   # Palworld server directory
+# Paths
+steamcmd_path: "./steamcmd"    # SteamCMD installation path
+database_path: "./palworld.db" # SQLite database path
+log_dir: "./logs"              # Log directory
 
-# Database
-database_path: "./palworld.db"
-
-# JWT secret (change in production)
-jwt_secret: "your-secure-secret-key"
+# Auto-update: only change if you fork this project
+github_repo: "TBro1998/PalWorld-Server-Manager"
 ```
 
-Refer to `config.example.yaml` for a complete configuration example.
+> `jwt_secret` and `password_hash` are written automatically by the program during the first web setup — **do not set them manually**.
 
-### Method 2: Environment Variables
+### Environment Variables (for Docker / no config file)
 
-If no `config.yaml` file exists, the program will use environment variables:
+When `config.yaml` does **not** exist in the program directory, the following environment variables are read:
 
-- `HOST` - Web interface listen address
-- `PORT` - Web interface port
-- `STEAMCMD_PATH` - SteamCMD installation path
-- `PALWORLD_BASE_PATH` - Palworld server installation directory
+| Variable | Description | Default |
+|---|---|---|
+| `HOST` | Web interface listen address | `127.0.0.1` |
+| `PORT` | Web interface port | `8080` |
+| `DATABASE_PATH` | SQLite database file path | `./palworld.db` |
+| `STEAMCMD_PATH` | SteamCMD installation path | `./steamcmd` |
+| `LOG_DIR` | Log directory | `./logs` |
+| `GITHUB_REPO` | Auto-update source repository | `TBro1998/PalWorld-Server-Manager` |
 
-## Developer Documentation
-
-If you want to contribute or learn about technical details, please refer to:
-
-- [Technical Proposal](./PalWorld_TECHNICAL_PROPOSAL.md) - Detailed technical design
-- [Backend Developer Guide](./server/README.md) - Go backend development guide
-- [Frontend Developer Guide](./ui/README.md) - Next.js frontend development guide
+`jwt_secret` and `password_hash` are automatically generated and written to `config.yaml` during the first web setup — they do not need to be provided via environment variables.
 
 ## License
 

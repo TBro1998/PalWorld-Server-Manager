@@ -128,44 +128,46 @@ HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
 
 程序支持两种配置方式，优先级为：**配置文件 > 环境变量 > 默认值**
 
-### 方式一：配置文件（推荐）
+> **注意**：只要程序目录下存在 `config.yaml`，环境变量将**完全被忽略**。两种方式不能混用。
 
-在程序目录下创建 `config.yaml` 文件：
+### 首次运行流程
+
+无需手动创建任何配置文件。程序启动后，首次访问 Web 界面会引导你设置管理员密码；设置完成后，程序会**自动生成 JWT 密钥**并将所有配置**写入 `config.yaml`**。此后重启均从该文件加载，无需再次设置。
+
+### 配置文件
+
+在程序目录下创建 `config.yaml`（如需在首次运行**前**自定义端口、路径等）：
 
 ```yaml
-# Web 界面设置
-host: "127.0.0.1"  # 监听地址
-port: 8080          # 端口
+# Web 界面
+host: "127.0.0.1"  # 监听地址；对外访问或 Docker 部署改为 0.0.0.0
+port: 8080
 
-# 路径设置
-steamcmd_path: "./steamcmd"        # SteamCMD 安装路径
-palworld_base_path: "./palworld"   # Palworld 服务器目录
+# 路径
+steamcmd_path: "./steamcmd"    # SteamCMD 安装路径
+database_path: "./palworld.db" # SQLite 数据库路径
+log_dir: "./logs"              # 日志目录
 
-# 数据库
-database_path: "./palworld.db"
-
-# JWT 密钥（生产环境请修改）
-jwt_secret: "your-secure-secret-key"
+# 自动更新：仅需 fork 本项目时修改
+github_repo: "TBro1998/PalWorld-Server-Manager"
 ```
 
-参考 `config.example.yaml` 文件获取完整配置示例。
+> `jwt_secret` 与 `password_hash` 由程序在首次 Web 设置时自动写入，**无需手动填写**。
 
-### 方式二：环境变量
+### 环境变量（适用于 Docker / 无配置文件场景）
 
-如果没有 `config.yaml` 文件，程序将使用环境变量：
+当程序目录下**不存在 `config.yaml`** 时，从以下环境变量读取配置：
 
-- `HOST` - Web 界面监听地址
-- `PORT` - Web 界面端口
-- `STEAMCMD_PATH` - SteamCMD 安装路径
-- `PALWORLD_BASE_PATH` - Palworld 服务器安装目录
+| 环境变量 | 说明 | 默认值 |
+|---|---|---|
+| `HOST` | Web 界面监听地址 | `127.0.0.1` |
+| `PORT` | Web 界面端口 | `8080` |
+| `DATABASE_PATH` | SQLite 数据库文件路径 | `./palworld.db` |
+| `STEAMCMD_PATH` | SteamCMD 安装路径 | `./steamcmd` |
+| `LOG_DIR` | 日志存放目录 | `./logs` |
+| `GITHUB_REPO` | 自动更新源仓库 | `TBro1998/PalWorld-Server-Manager` |
 
-## 开发文档
-
-如果您想参与开发或了解技术细节，请查看：
-
-- [技术方案](./PalWorld_TECHNICAL_PROPOSAL.md) - 详细技术设计
-- [后端开发文档](./server/README.md) - Go 后端开发指南
-- [前端开发文档](./ui/README.md) - Next.js 前端开发指南
+`jwt_secret` 和 `password_hash` 无论哪种方式，均在首次 Web 设置时自动生成并写入 `config.yaml`，不需要通过环境变量提供。
 
 ## 许可证
 
