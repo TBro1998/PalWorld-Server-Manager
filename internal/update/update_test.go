@@ -56,8 +56,8 @@ func TestAssetName(t *testing.T) {
 		goos, goarch string
 		want         string
 	}{
-		{"windows", "amd64", "psm_windows_amd64.exe"},
-		{"linux", "amd64", "psm_linux_amd64"},
+		{"windows", "amd64", "palsm_windows_amd64.exe"},
+		{"linux", "amd64", "palsm_linux_amd64"},
 		{"darwin", "amd64", ""},
 		{"linux", "arm64", ""},
 		{"windows", "386", ""},
@@ -97,12 +97,12 @@ func TestReplaceAssetFilename(t *testing.T) {
 		want string
 	}{
 		{
-			"https://github.com/o/r/releases/download/v1/psm_linux_amd64",
+			"https://github.com/o/r/releases/download/v1/palsm_linux_amd64",
 			"checksums.txt",
 			"https://github.com/o/r/releases/download/v1/checksums.txt",
 		},
 		{
-			"https://github.com/o/r/releases/download/v1/psm_windows_amd64.exe",
+			"https://github.com/o/r/releases/download/v1/palsm_windows_amd64.exe",
 			"checksums.txt",
 			"https://github.com/o/r/releases/download/v1/checksums.txt",
 		},

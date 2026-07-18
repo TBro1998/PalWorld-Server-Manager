@@ -44,9 +44,9 @@ func HasUpdate(currentTag, latestTag string) bool {
 func AssetName(goos, goarch string) string {
 	switch fmt.Sprintf("%s/%s", goos, goarch) {
 	case "windows/amd64":
-		return "psm_windows_amd64.exe"
+		return "palsm_windows_amd64.exe"
 	case "linux/amd64":
-		return "psm_linux_amd64"
+		return "palsm_linux_amd64"
 	default:
 		return ""
 	}

@@ -64,7 +64,7 @@ jobs:
               -X main.Version=${{ steps.version.outputs.VERSION }} \
               -X main.BuildTime=${{ steps.version.outputs.BUILD_TIME }} \
               -X main.GitCommit=${{ steps.version.outputs.GIT_COMMIT }}" \
-            -o psm_windows_amd64.exe .
+            -o palsm_windows_amd64.exe .
 
       # -----------------------------------------------------------------------
       # Linux amd64
@@ -79,7 +79,7 @@ jobs:
               -X main.Version=${{ steps.version.outputs.VERSION }} \
               -X main.BuildTime=${{ steps.version.outputs.BUILD_TIME }} \
               -X main.GitCommit=${{ steps.version.outputs.GIT_COMMIT }}" \
-            -o psm_linux_amd64 .
+            -o palsm_linux_amd64 .
 
       # -----------------------------------------------------------------------
       # Docker — build & push to Docker Hub
@@ -225,7 +225,7 @@ jobs:
       # file when it is present in the release.
       - name: Generate checksums
         run: |
-          sha256sum psm_windows_amd64.exe psm_linux_amd64 > checksums.txt
+          sha256sum palsm_windows_amd64.exe palsm_linux_amd64 > checksums.txt
           echo "--- checksums.txt ---"
           cat checksums.txt
 
@@ -235,8 +235,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            psm_windows_amd64.exe
-            psm_linux_amd64
+            palsm_windows_amd64.exe
+            palsm_linux_amd64
             checksums.txt
           body_path: /tmp/release_notes.md
           make_latest: true
