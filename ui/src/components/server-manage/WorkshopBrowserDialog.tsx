@@ -71,6 +71,10 @@ export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, exi
   // Reset state when the dialog opens/closes.
   useEffect(() => {
     if (!open) return
+    // Remove cached workshop-search results so the query always re-fetches on
+    // (re)open. Without this, staleTime keeps the cache "fresh" and queryFn
+    // never runs, leaving allItems empty after the first close.
+    queryClient.removeQueries({ queryKey: ['workshop-search'] })
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset all search state on (re)open
     setQuery('')
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -87,7 +91,7 @@ export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, exi
     setAddedIds(new Set())
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null)
-  }, [open])
+  }, [open, queryClient])
 
   const { isFetching } = useQuery({
     queryKey: ['workshop-search', debouncedQuery, cursor],
