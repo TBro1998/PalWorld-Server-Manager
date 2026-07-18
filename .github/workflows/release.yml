@@ -155,12 +155,13 @@ jobs:
                 content: (
                   "你是一位精通中文、英文和日文的专业软件发布说明撰写员。\n\n" +
                   "请根据以下 git commit 列表，为 " + $ver + " 版本生成三语 Release Notes。\n\n" +
-                  "要求：\n" +
-                  "- 按变更类型分组（新功能、问题修复、性能优化、重构、文档、CI/CD、其他）\n" +
-                  "- 每个有内容的分组使用带 emoji 的二级标题，三语并列，例如：## 🚀 新功能 / New Features / 新機能\n" +
-                  "- 每条变更一行，将 commit 含义翻译为三语，格式：`- 中文描述 / English description / 日本語の説明 (commit hash)`\n" +
+                  "格式要求：\n" +
+                  "- 先输出完整的【中文版本】，用单独一行 --- 分隔后输出完整的【英文版本】，再用 --- 分隔后输出完整的【日文版本】\n" +
+                  "- 三个语言版本各自独立，每个版本内按变更类型分组（新功能/New Features/新機能、问题修复/Bug Fixes/バグ修正、性能优化/Performance/パフォーマンス改善、重构/Refactoring/リファクタリング、文档/Documentation/ドキュメント、CI/CD、其他/Other/その他）\n" +
+                  "- 每个有内容的分组使用带 emoji 的二级标题（仅该语言），中文示例：## 🚀 新功能，英文示例：## 🚀 New Features，日文示例：## 🚀 新機能\n" +
+                  "- 每条变更一行，格式：`- 该语言的简洁描述 (commit hash)`\n" +
                   "- 描述要简洁地道，符合各语言习惯\n" +
-                  "- 不要输出 commit hash 以外的额外解释，不要输出分隔线\n" +
+                  "- --- 分隔线前后不加任何额外文字或标注\n" +
                   "- 只输出纯 Markdown，不要包裹在代码块中\n\n" +
                   "Commit 列表：\n" + $log
                 )
@@ -220,15 +221,44 @@ jobs:
               local title="$1" file="$2"
               [ -s "$file" ] && printf "## %s\n%s\n\n" "$title" "$(cat "$file")"
             }
+            # 中文版本
             {
-              section "🚀 新功能 / New Features / 新機能"                   /tmp/s_feat.txt
-              section "🐛 问题修复 / Bug Fixes / バグ修正"                  /tmp/s_fix.txt
-              section "⚡ 性能优化 / Performance / パフォーマンス改善"       /tmp/s_perf.txt
-              section "🔨 重构 / Refactoring / リファクタリング"             /tmp/s_refactor.txt
-              section "📖 文档 / Documentation / ドキュメント"               /tmp/s_docs.txt
-              section "⚙️ CI/CD"                                            /tmp/s_ci.txt
-              section "🔧 其他改动 / Other Changes / その他の変更"           /tmp/s_chore.txt
-              section "📌 其他提交 / Other Commits / その他のコミット"       /tmp/s_other.txt
+              section "🚀 新功能"   /tmp/s_feat.txt
+              section "🐛 问题修复" /tmp/s_fix.txt
+              section "⚡ 性能优化" /tmp/s_perf.txt
+              section "🔨 重构"     /tmp/s_refactor.txt
+              section "📖 文档"     /tmp/s_docs.txt
+              section "⚙️ CI/CD"   /tmp/s_ci.txt
+              section "🔧 其他改动" /tmp/s_chore.txt
+              section "📌 其他提交" /tmp/s_other.txt
+            } > /tmp/notes_zh.md
+            # English version
+            {
+              section "🚀 New Features"   /tmp/s_feat.txt
+              section "🐛 Bug Fixes"      /tmp/s_fix.txt
+              section "⚡ Performance"     /tmp/s_perf.txt
+              section "🔨 Refactoring"     /tmp/s_refactor.txt
+              section "📖 Documentation"   /tmp/s_docs.txt
+              section "⚙️ CI/CD"           /tmp/s_ci.txt
+              section "🔧 Other Changes"   /tmp/s_chore.txt
+              section "📌 Other Commits"   /tmp/s_other.txt
+            } > /tmp/notes_en.md
+            # 日本語版
+            {
+              section "🚀 新機能"             /tmp/s_feat.txt
+              section "🐛 バグ修正"           /tmp/s_fix.txt
+              section "⚡ パフォーマンス改善"  /tmp/s_perf.txt
+              section "🔨 リファクタリング"    /tmp/s_refactor.txt
+              section "📖 ドキュメント"        /tmp/s_docs.txt
+              section "⚙️ CI/CD"              /tmp/s_ci.txt
+              section "🔧 その他の変更"        /tmp/s_chore.txt
+              section "📌 その他のコミット"    /tmp/s_other.txt
+            } > /tmp/notes_ja.md
+            # 三语合并，用 --- 分隔
+            {
+              cat /tmp/notes_zh.md
+              if [ -s /tmp/notes_en.md ]; then printf "\n---\n\n"; cat /tmp/notes_en.md; fi
+              if [ -s /tmp/notes_ja.md ]; then printf "\n---\n\n"; cat /tmp/notes_ja.md; fi
             } > /tmp/release_notes.md
           fi
 
