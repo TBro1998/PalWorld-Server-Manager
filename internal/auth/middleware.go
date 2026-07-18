@@ -9,18 +9,22 @@ import (
 
 // Middleware returns a Gin handler that enforces JWT authentication.
 //
+// getSecret is called on every request so the middleware always uses the
+// current signing secret — important for the first-time setup flow where the
+// secret is generated after the routes have already been registered.
+//
 // The token is read from two sources (first match wins):
 //  1. Authorization: Bearer <token> request header  (standard API calls)
 //  2. ?token=<token> query parameter                 (EventSource / SSE, which
 //     cannot set custom headers in browsers)
-func Middleware(secret string) gin.HandlerFunc {
+func Middleware(getSecret func() string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := extractToken(c)
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 			return
 		}
-		if err := ValidateToken(token, secret); err != nil {
+		if err := ValidateToken(token, getSecret()); err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}

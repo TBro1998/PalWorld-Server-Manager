@@ -18,13 +18,19 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling.
+// Only redirect to /login on 401 for protected API calls — never for the auth
+// endpoints themselves, so login/setup can surface their own error messages.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const url: string = error.config?.url ?? '';
+      const isAuthEndpoint = url.includes('/api/auth/');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

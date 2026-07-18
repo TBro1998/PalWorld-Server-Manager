@@ -57,7 +57,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 
 	// Protected routes — JWT required
 	protected := rg.Group("")
-	protected.Use(auth.Middleware(r.config.JWTSecret))
+	protected.Use(auth.Middleware(func() string { return r.config.JWTSecret }))
 	{
 		// Server management
 		servers := protected.Group("/servers")
