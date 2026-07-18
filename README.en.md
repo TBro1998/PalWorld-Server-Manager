@@ -22,12 +22,13 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 - 📦 **Single Binary** - Frontend embedded in the Go binary (~15-25MB)
 - 🖥️ **Cross-platform Architecture** - Cross-platform at the code level; currently only Windows is officially supported due to mod constraints
 
+- 🔧 **Mod Management** - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
+- ⬆️ **Auto-update** - Update detection and one-click update based on GitHub Releases
+
 ### Planned
 
-- 🔧 **Mod Management** - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
 - 🔒 **Authentication** - JWT authentication and user management to protect remote access
 - 📊 **Real-time Monitoring** - CPU, memory, and online player statistics
-- ⬆️ **Auto-update** - Update detection and one-click update based on GitHub Releases
 
 ## Installation & Usage
 

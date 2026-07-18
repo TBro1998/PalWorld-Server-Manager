@@ -268,9 +268,10 @@ This is an **early-stage project**. Core structure is in place, but many feature
   handling and graceful shutdown (`internal/process/`)
 - Log capture with rotation and real-time SSE streaming (`internal/logger/`)
 - Startup reconciliation of stale server state
+- Mod management: Workshop ID input, SteamCMD-based install/uninstall, enable/disable
+- Auto-update: GitHub Releases-based update detection and one-click update
 
 **To Be Implemented:**
-- SteamCMD integration for mod installation
 - JWT authentication middleware
 - System monitoring (CPU/memory)
 - UI components and pages
