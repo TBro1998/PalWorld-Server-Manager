@@ -60,10 +60,10 @@ echo ========================================
 echo.
 
 
-go build -trimpath -ldflags "-s -w -X main.Version=v0.0.1" -o server.exe .
+go build -trimpath -ldflags "-s -w -X main.Version=v0.0.1" -o palsm.exe .
 
 
 :: Open the management UI in the default browser once the server is up.
 :: This is a debug convenience only; the tool itself never opens a browser.
 start "" /b cmd /c "timeout /t 3 /nobreak >nul & start "" http://127.0.0.1:8080/"
-.\server.exe
+.\palsm.exe

@@ -1,15 +1,80 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, Server } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
+import { authApi } from '@/lib/api';
+
+// Pages that bypass the auth guard and hide the sidebar.
+const AUTH_PATHS = ['/login', '/setup'];
 
 // Persistent sidebar + scrollable content shell. Desktop: a fixed-width rail
 // beside the content. Mobile: the rail collapses into a slide-over drawer
 // opened from the top bar.
+//
+// Auth guard: on mount it calls GET /api/auth/status.
+//   - configured=false  → redirect to /setup  (first-time password setup)
+//   - configured=true   → require a JWT in localStorage; redirect to /login otherwise
+// The guard is skipped on /login and /setup to avoid redirect loops.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isAuthPage = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  useEffect(() => {
+    // No guard needed on the auth pages themselves.
+    if (isAuthPage) {
+      setAuthChecked(true);
+      return;
+    }
+
+    let cancelled = false;
+    authApi.status().then((res) => {
+      if (cancelled) return;
+      const { configured } = res.data;
+      if (!configured) {
+        router.replace('/setup');
+        return;
+      }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.replace('/login');
+        return;
+      }
+      setAuthChecked(true);
+    }).catch(() => {
+      // Network error or backend not ready — let the request interceptor handle
+      // 401s; show the app so the user can at least see a loading state.
+      if (!cancelled) setAuthChecked(true);
+    });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // While checking auth, render nothing (avoids layout flash).
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-sky">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-info text-primary-foreground shadow-pal">
+            <Server className="h-6 w-6" />
+          </div>
+          <span className="text-sm">Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth pages: full-screen, no sidebar.
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[17rem_1fr]">

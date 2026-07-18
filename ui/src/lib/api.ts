@@ -30,6 +30,23 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Returns the stored JWT token (or empty string for SSE URL params).
+export function getToken(): string {
+  return typeof window !== 'undefined' ? (localStorage.getItem('token') ?? '') : '';
+}
+
+// --- Authentication ---
+export const authApi = {
+  // Returns { configured: boolean } — whether a password has been set.
+  status: () => apiClient.get<{ configured: boolean }>('/api/auth/status'),
+  // Sets the initial password; only works when configured=false. Returns { token }.
+  setup: (password: string) =>
+    apiClient.post<{ token: string }>('/api/auth/setup', { password }),
+  // Validates the password and returns { token }.
+  login: (password: string) =>
+    apiClient.post<{ token: string }>('/api/auth/login', { password }),
+};
+
 // Server API functions
 import type {
   Server,
@@ -73,11 +90,10 @@ export const serversApi = {
     apiClient.get<{ serverId: number; kind: LogKind; logs: string[] }>(`/api/servers/${id}/logs`, {
       params: { kind, lines },
     }),
-  // Relative URL for EventSource. EventSource cannot set Authorization headers;
-  // these endpoints currently require no JWT. If auth is enabled later, pass the
-  // token via a query param here instead (not implemented for now).
+  // Relative URL for EventSource. EventSource cannot set custom headers, so the
+  // JWT is passed as a ?token= query parameter which the backend middleware accepts.
   logStreamUrl: (id: number, kind: LogKind = 'server') =>
-    `/api/servers/${id}/logs/stream?kind=${kind}`,
+    `/api/servers/${id}/logs/stream?kind=${kind}&token=${encodeURIComponent(getToken())}`,
 
   // --- Palworld REST API proxy ---
   // The backend forwards these to the game server's official REST API after
@@ -125,7 +141,7 @@ export const globalModsApi = {
   download: (modId: number) => apiClient.post(`/api/mods/${modId}/download`),
   // Relative URL for EventSource: per-mod download progress stream.
   // Each mod uses its own ID as the stream key so concurrent downloads stay independent.
-  logStreamUrl: (modId: number) => `/api/mods/${modId}/logs/stream`,
+  logStreamUrl: (modId: number) => `/api/mods/${modId}/logs/stream?token=${encodeURIComponent(getToken())}`,
 }
 
 // --- Server mod references ---
@@ -162,7 +178,7 @@ export const steamApi = {
     }>('/api/steam/login', data),
   // Relative URL for EventSource. Emits named `log` events, one per steamcmd
   // output line, on the global login stream (no server ID).
-  loginStreamUrl: () => '/api/steam/logs/stream',
+  loginStreamUrl: () => `/api/steam/logs/stream?token=${encodeURIComponent(getToken())}`,
 
   // --- Workshop search (proxies Steam Web API; key stays server-side) ---
   // search queries IPublishedFileService/QueryFiles for Palworld mods.
@@ -203,7 +219,7 @@ export const systemApi = {
   // Poll on page mount to restore progress UI after a navigation or refresh.
   updateStatus: () => apiClient.get<UpdateStatus>('/api/system/update/status'),
   // Relative URL for EventSource.  Open before calling applyUpdate().
-  updateStreamUrl: () => '/api/system/update/stream',
+  updateStreamUrl: () => `/api/system/update/stream?token=${encodeURIComponent(getToken())}`,
   // Returns persisted system settings (download_mirror).
   getSettings: () => apiClient.get<SystemSettings>('/api/system/settings'),
   // Persists system settings.

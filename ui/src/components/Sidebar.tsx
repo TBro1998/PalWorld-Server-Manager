@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Server, Package, Settings, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, Server, Package, Settings, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -13,7 +13,9 @@ import { ThemeToggle } from './ThemeToggle';
 // drawer and passes `onNavigate` to close the drawer after a link is tapped.
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations('nav');
+  const tAuth = useTranslations('auth');
   const pathname = usePathname();
+  const router = useRouter();
 
   const links = [
     { href: '/', label: t('home'), icon: LayoutDashboard, exact: true },
@@ -21,6 +23,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { href: '/mods', label: t('mods'), icon: Package, exact: false },
     { href: '/settings', label: t('settings'), icon: Settings, exact: false },
   ];
+
+  function handleLogout() {
+    localStorage.removeItem('token');
+    router.replace('/login');
+  }
 
   return (
     <div className="flex h-full flex-col gap-6 bg-card/80 p-4 backdrop-blur-sm">
@@ -79,6 +86,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         <LanguageSwitcher />
         <ThemeToggle className="w-full" />
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          {tAuth('logout')}
+        </button>
       </div>
     </div>
   );

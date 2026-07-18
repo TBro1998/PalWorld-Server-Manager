@@ -889,5 +889,27 @@
         "custom": "Custom"
       }
     }
+  },
+  "auth": {
+    "loginSubtitle": "Enter the admin password to continue",
+    "setupSubtitle": "First launch — set an admin password",
+    "setupHint": "A random JWT secret will be generated and saved to config.yaml together with your password hash.",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "newPassword": "Set password",
+    "passwordMinLength": "At least 6 characters",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Re-enter password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "login": "Log in",
+    "loggingIn": "Logging in…",
+    "setup": "Set password",
+    "settingUp": "Saving…",
+    "loginFailed": "Incorrect password, please try again",
+    "setupFailed": "Failed to set password, please try again",
+    "logout": "Log out"
   }
 }

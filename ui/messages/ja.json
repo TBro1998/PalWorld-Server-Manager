@@ -852,5 +852,27 @@
         "custom": "カスタム"
       }
     }
+  },
+  "auth": {
+    "loginSubtitle": "続けるには管理者パスワードを入力してください",
+    "setupSubtitle": "初回起動 — 管理者パスワードを設定してください",
+    "setupHint": "ランダムな JWT シークレットが生成され、パスワードハッシュと共に config.yaml に保存されます。",
+    "password": "パスワード",
+    "passwordPlaceholder": "パスワードを入力",
+    "newPassword": "パスワードを設定",
+    "passwordMinLength": "6文字以上",
+    "confirmPassword": "パスワードの確認",
+    "confirmPasswordPlaceholder": "パスワードを再入力",
+    "passwordMismatch": "パスワードが一致しません",
+    "passwordTooShort": "パスワードは6文字以上が必要です",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを非表示",
+    "login": "ログイン",
+    "loggingIn": "ログイン中…",
+    "setup": "パスワードを設定",
+    "settingUp": "保存中…",
+    "loginFailed": "パスワードが間違っています。再試行してください",
+    "setupFailed": "パスワードの設定に失敗しました。再試行してください",
+    "logout": "ログアウト"
   }
 }

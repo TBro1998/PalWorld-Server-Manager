@@ -18,17 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Login handles user login
-func (r *Router) Login(c *gin.Context) {
-	// TODO: Implement login logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Login endpoint - to be implemented"})
-}
-
-// Register handles user registration
-func (r *Router) Register(c *gin.Context) {
-	// TODO: Implement registration logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Register endpoint - to be implemented"})
-}
+// Note: Login, Register, Setup, and AuthStatus handlers are in auth_handlers.go.
 
 // Creation-time port defaults. The first server uses these values; each
 // additional server increments each value by 1 based on the previous server.

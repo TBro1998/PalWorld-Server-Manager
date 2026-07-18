@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/auth"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
@@ -46,16 +47,17 @@ func (r *Router) Checker() *update.Checker {
 
 // RegisterRoutes registers all API routes
 func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
-	// Auth routes (public)
-	auth := rg.Group("/auth")
+	// Public auth routes — no JWT required
+	authGroup := rg.Group("/auth")
 	{
-		auth.POST("/login", r.Login)
-		auth.POST("/register", r.Register)
+		authGroup.GET("/status", r.AuthStatus)
+		authGroup.POST("/setup", r.Setup)
+		authGroup.POST("/login", r.Login)
 	}
 
-	// Protected routes (require JWT)
+	// Protected routes — JWT required
 	protected := rg.Group("")
-	// protected.Use(authMiddleware(r.config.JWTSecret))
+	protected.Use(auth.Middleware(r.config.JWTSecret))
 	{
 		// Server management
 		servers := protected.Group("/servers")

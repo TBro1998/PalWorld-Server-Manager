@@ -17,11 +17,13 @@ type Config struct {
 	DatabasePath string `yaml:"database_path" env:"DATABASE_PATH" envDefault:"./palworld.db"`
 
 	// JWT
-	JWTSecret string `yaml:"jwt_secret" env:"JWT_SECRET" envDefault:"change-me-in-production"`
+	JWTSecret string `yaml:"jwt_secret" env:"JWT_SECRET" envDefault:""`
+
+	// Auth — bcrypt hash of the admin password; empty means not yet configured.
+	PasswordHash string `yaml:"password_hash" env:"PASSWORD_HASH" envDefault:""`
 
 	// Palworld server paths
 	SteamCMDPath string `yaml:"steamcmd_path" env:"STEAMCMD_PATH" envDefault:"./steamcmd"`
-	//PalworldBasePath string `yaml:"palworld_base_path" env:"PALWORLD_BASE_PATH" envDefault:"./palworld"`
 
 	// SteamUsername is the Steam account used to download Workshop mods. Palworld
 	// is a paid title, so anonymous login cannot download its workshop content —
@@ -39,13 +41,17 @@ type Config struct {
 	GitHubRepo string `yaml:"github_repo" env:"GITHUB_REPO" envDefault:"TBro1998/PalWorld-Server-Manager"`
 }
 
+// Configured reports whether an admin password has been set.
+func (c *Config) Configured() bool {
+	return c.PasswordHash != ""
+}
+
 // Load loads configuration with priority: config.yaml > environment variables > defaults
 func Load() (*Config, error) {
 	cfg := &Config{}
 
 	// Try to load from config.yaml first
 	if data, err := os.ReadFile("config.yaml"); err == nil {
-		// config.yaml exists, use it
 		if err := yaml.Unmarshal(data, cfg); err != nil {
 			return nil, err
 		}
@@ -58,4 +64,15 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// Save writes the current configuration to config.yaml, creating the file if
+// it does not yet exist. Called after the first-time password setup so that the
+// generated jwt_secret and password_hash are persisted.
+func (c *Config) Save() error {
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("config.yaml", data, 0600)
 }
