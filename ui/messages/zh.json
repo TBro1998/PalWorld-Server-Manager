@@ -876,11 +876,18 @@
     },
     "mirror": {
       "title": "下载镜像",
-      "label": "GitHub 下载镜像前缀",
-      "placeholder": "例：https://ghproxy.com（留空直连 GitHub）",
+      "placeholder": "例：https://myproxy.com（留空直连 GitHub）",
+      "customLabel": "自定义镜像地址",
       "save": "保存",
       "saved": "已保存",
-      "saveFailed": "保存失败"
+      "saveFailed": "保存失败",
+      "preset": {
+        "direct": "直连 GitHub",
+        "ghfast": "ghfast.top",
+        "ghproxynet": "ghproxy.net",
+        "ghproxyme": "gh-proxy.com",
+        "custom": "自定义"
+      }
     }
   }
 }

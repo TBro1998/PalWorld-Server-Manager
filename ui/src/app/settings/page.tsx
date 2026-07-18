@@ -6,6 +6,21 @@ import { useTranslations } from '@/contexts/LanguageContext'
 import { systemApi } from '@/lib/api'
 import type { VersionInfo, CheckResult } from '@/types/system'
 
+// Preset GitHub download mirrors.  value='' means direct (no proxy).
+// value=null means "custom" — the user fills in their own URL.
+const PRESET_MIRRORS: Array<{ id: string; value: string | null }> = [
+  { id: 'direct',     value: '' },
+  { id: 'ghfast',     value: 'https://ghfast.top' },
+  { id: 'ghproxynet', value: 'https://ghproxy.net' },
+  { id: 'ghproxyme',  value: 'https://gh-proxy.com' },
+  { id: 'custom',     value: null },
+]
+
+function detectPreset(mirrorValue: string): string {
+  const match = PRESET_MIRRORS.find(p => p.value === mirrorValue)
+  return match ? match.id : 'custom'
+}
+
 export default function SettingsPage() {
   const t = useTranslations('settingsPage')
 
@@ -24,6 +39,7 @@ export default function SettingsPage() {
 
   // --- Mirror settings ---
   const [mirror, setMirror] = useState('')
+  const [selectedPreset, setSelectedPreset] = useState('direct')
   const [mirrorSaving, setMirrorSaving] = useState(false)
   const [mirrorSaved, setMirrorSaved] = useState(false)
   const [mirrorError, setMirrorError] = useState('')
@@ -34,7 +50,11 @@ export default function SettingsPage() {
   useEffect(() => {
     systemApi.version().then(r => setVersionInfo(r.data)).catch(() => {})
     systemApi.checkUpdate(true).then(r => setCheckResult(r.data)).catch(() => {})
-    systemApi.getSettings().then(r => setMirror(r.data.download_mirror ?? '')).catch(() => {})
+    systemApi.getSettings().then(r => {
+      const v = r.data.download_mirror ?? ''
+      setMirror(v)
+      setSelectedPreset(detectPreset(v))
+    }).catch(() => {})
   }, [])
 
   // Check for updates
@@ -132,6 +152,15 @@ export default function SettingsPage() {
       es.close()
     }
   }, [checkResult, t])
+
+  // Select a preset mirror
+  const handleSelectPreset = useCallback((preset: { id: string; value: string | null }) => {
+    setSelectedPreset(preset.id)
+    if (preset.value !== null) {
+      setMirror(preset.value)
+    }
+    setMirrorSaved(false)
+  }, [])
 
   // Save mirror
   const handleSaveMirror = useCallback(async () => {
@@ -277,30 +306,60 @@ export default function SettingsPage() {
       {/* ── Mirror ── */}
       <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <h2 className="text-lg font-bold text-foreground">{t('mirror.title')}</h2>
-        <div className="space-y-2">
-          <label className="block text-sm text-muted-foreground" htmlFor="mirror-input">
-            {t('mirror.label')}
-          </label>
-          <div className="flex gap-2">
+
+        {/* Preset options */}
+        <div className="flex flex-wrap gap-2">
+          {PRESET_MIRRORS.map(preset => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handleSelectPreset(preset)}
+              className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                selectedPreset === preset.id
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-background text-foreground hover:border-primary/40'
+              }`}
+            >
+              <span className="font-semibold">{t(`mirror.preset.${preset.id}`)}</span>
+              {preset.value && (
+                <span className="mt-0.5 text-xs text-muted-foreground">{preset.value}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom URL input — only shown when "custom" preset is selected */}
+        {selectedPreset === 'custom' && (
+          <div className="space-y-1.5">
+            <label className="block text-sm text-muted-foreground" htmlFor="mirror-input">
+              {t('mirror.customLabel')}
+            </label>
             <input
               id="mirror-input"
               type="url"
               value={mirror}
-              onChange={e => { setMirror(e.target.value); setMirrorSaved(false) }}
+              onChange={e => {
+                setMirror(e.target.value)
+                setMirrorSaved(false)
+              }}
               placeholder={t('mirror.placeholder')}
-              className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <button
-              type="button"
-              onClick={handleSaveMirror}
-              disabled={mirrorSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary/80 disabled:opacity-50"
-            >
-              {mirrorSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {mirrorSaved ? t('mirror.saved') : t('mirror.save')}
-            </button>
           </div>
-          {mirrorError && <p className="text-xs text-destructive">{mirrorError}</p>}
+        )}
+
+        {/* Save */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveMirror}
+            disabled={mirrorSaving}
+            className="inline-flex items-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary/80 disabled:opacity-50"
+          >
+            {mirrorSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {mirrorSaved ? t('mirror.saved') : t('mirror.save')}
+          </button>
+          {mirrorError && <p className="text-sm text-destructive">{mirrorError}</p>}
         </div>
       </section>
     </div>

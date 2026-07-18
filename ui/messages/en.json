@@ -876,11 +876,18 @@
     },
     "mirror": {
       "title": "Download Mirror",
-      "label": "GitHub download mirror prefix",
-      "placeholder": "e.g. https://ghproxy.com (leave blank to connect directly)",
+      "placeholder": "e.g. https://myproxy.com (leave blank for direct GitHub)",
+      "customLabel": "Custom mirror URL",
       "save": "Save",
       "saved": "Saved",
-      "saveFailed": "Failed to save"
+      "saveFailed": "Failed to save",
+      "preset": {
+        "direct": "Direct (GitHub)",
+        "ghfast": "ghfast.top",
+        "ghproxynet": "ghproxy.net",
+        "ghproxyme": "gh-proxy.com",
+        "custom": "Custom"
+      }
     }
   }
 }
