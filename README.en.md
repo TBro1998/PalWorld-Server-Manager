@@ -29,6 +29,10 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 ### Planned
 
 - 📊 **Real-time Monitoring** - CPU, memory, and online player statistics
+- ⏰ **Scheduled Tasks** - Configure scheduled restarts, saves, and other recurring tasks
+- 💾 **Backup Management** - Automatic save backups and one-click restore
+- 🔄 **Crash Recovery** - Auto-restart on unexpected server exit with alert notifications
+- 🌐 **Player Portal** - A dedicated login page for game players to check server status and submit requests
 
 ## Installation & Usage
 
@@ -114,7 +118,11 @@ The program automatically creates the `steamclient.so` symlink required by Palwo
 - Update detection and one-click update based on GitHub Releases
 
 ### Planned
-- **System Monitoring**: Server CPU, memory usage, and online player count
+- **Real-time Monitoring**: Server CPU, memory usage, and online player count
+- **Scheduled Tasks**: Configure scheduled restarts, saves, and other recurring tasks
+- **Backup Management**: Automatic save backups and one-click restore
+- **Crash Recovery**: Auto-restart on unexpected server exit with alert notifications
+- **Player Portal**: A dedicated login page for game players to check server status and submit requests
 
 ## Configuration
 
