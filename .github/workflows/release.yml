@@ -52,6 +52,25 @@ jobs:
           cache: true
 
       # -----------------------------------------------------------------------
+      # Embed the application icon (and version metadata) into the Windows exe.
+      # goversioninfo emits a COFF .syso that the Go linker picks up for
+      # windows/amd64 automatically; the _windows_amd64 suffix scopes it to that
+      # target, so the Linux build below ignores it.
+      - name: Generate Windows icon resource
+        run: |
+          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+          V="${{ steps.version.outputs.VERSION }}"; V="${V#v}"
+          IFS='.' read -r MA MI PA <<< "${V%%-*}"
+          MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
+          "$(go env GOPATH)/bin/goversioninfo" \
+            -64 \
+            -icon=ui/src/app/favicon.ico \
+            -o=resource_windows_amd64.syso \
+            -ver-major="$MA" -ver-minor="$MI" -ver-patch="$PA" \
+            -product-ver-major="$MA" -product-ver-minor="$MI" -product-ver-patch="$PA" \
+            versioninfo.json
+
+      # -----------------------------------------------------------------------
       # Windows amd64
       - name: Build — Windows amd64
         env:

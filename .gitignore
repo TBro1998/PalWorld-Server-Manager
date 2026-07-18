@@ -10,6 +10,9 @@ dist/
 # Test binary
 *.test
 
+# Generated Windows resource (icon/version info) — produced during build
+*.syso
+
 # Output of go coverage tool
 *.out
 
