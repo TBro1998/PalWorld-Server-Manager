@@ -1,9 +1,12 @@
 // Package settings provides tiny helpers over the models.Setting key/value
-// table for runtime-adjustable app-wide settings (currently the Steam username
-// and login-session marker used for workshop downloads).
+// table for runtime-adjustable app-wide settings (Steam username,
+// login-session marker, and Steam Web API key for workshop search).
 //
-// SECURITY: this store never holds secrets. Steam passwords are only used
-// transiently during a login call and are never written here.
+// SECURITY: Steam passwords are only used transiently during a login call and
+// are never written here. The Steam Web API key (KeySteamWebAPIKey) is a
+// low-sensitivity read-only personal key used solely for querying public
+// workshop data; it is stored here for user convenience and is never echoed
+// back in HTTP responses.
 package settings
 
 import (
@@ -20,6 +23,10 @@ const (
 	// KeySteamSessionReady is "true" once an app-in login has cached a SteamCMD
 	// session; empty/unset otherwise.
 	KeySteamSessionReady = "steam_session_ready"
+	// KeySteamWebAPIKey is a standard Steam Web API key used to query the
+	// workshop search API (IPublishedFileService/QueryFiles). It is a low-
+	// sensitivity read-only personal key; see package doc for SECURITY notes.
+	KeySteamWebAPIKey = "steam_web_api_key"
 )
 
 // Get returns the stored value for key, or "" when it has never been set.

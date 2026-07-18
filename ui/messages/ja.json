@@ -396,7 +396,46 @@
       "badCredentials": "ユーザー名またはパスワードが正しくありません。",
       "error": "ログインに失敗しました。もう一度お試しください。",
       "live": "ライブ",
-      "outputEmpty": "SteamCMD の出力を待っています…"
+      "outputEmpty": "SteamCMD の出力を待っています…",
+      "webApiKey": {
+        "label": "Steam Web API Key",
+        "placeholder": "Steam Web API Key を貼り付け",
+        "save": "保存",
+        "clear": "クリア",
+        "configured": "設定済み",
+        "notConfigured": "未設定 — ワークショップ検索は利用できません",
+        "hint": "ワークショップ検索に使用します。steamcommunity.com/dev/apikey で無料取得できます。",
+        "saving": "保存中...",
+        "saved": "保存しました",
+        "cleared": "クリアしました"
+      }
+    },
+    "workshop": {
+      "browse": "ワークショップを閲覧",
+      "title": "ワークショップ MOD 検索",
+      "searchPlaceholder": "MOD 名を検索...",
+      "add": "追加",
+      "added": "追加済み",
+      "openPage": "ページを見る",
+      "empty": "MOD が見つかりません。別のキーワードをお試しください。",
+      "loading": "読み込み中...",
+      "loadMore": "さらに読み込む",
+      "noKey": "ワークショップ検索を使用するには、上の Steam Web API Key を設定してください。",
+      "total": "{{total}} 件",
+      "subscribers": "{{count}} サブスクライバー",
+      "deps": {
+        "title": "必須 MOD が未追加です",
+        "hint": "この MOD は Steam レイヤーで以下の依存関係を宣言していますが、このサーバーの MOD リストにまだ追加されていません。",
+        "addAll": "すべての依存関係を追加",
+        "skip": "スキップ",
+        "adding": "追加中...",
+        "done": "追加完了"
+      },
+      "errors": {
+        "noKey": "Steam Web API Key が未設定です。Steam アカウントセクションで設定してください。",
+        "steamError": "ワークショップリクエストに失敗しました。API Key が有効か確認するか、後でやり直してください。",
+        "addFailed": "MOD の追加に失敗しました: {{msg}}"
+      }
     },
     "launch": {
       "port": "ポート (-port)",

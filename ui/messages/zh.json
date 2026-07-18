@@ -396,7 +396,46 @@
       "badCredentials": "用户名或密码错误。",
       "error": "登录失败，请稍后重试。",
       "live": "实时",
-      "outputEmpty": "等待 SteamCMD 输出…"
+      "outputEmpty": "等待 SteamCMD 输出…",
+      "webApiKey": {
+        "label": "Steam Web API Key",
+        "placeholder": "粘贴您的 Steam Web API Key",
+        "save": "保存",
+        "clear": "清除",
+        "configured": "已配置",
+        "notConfigured": "未配置，无法使用创意工坊搜索",
+        "hint": "用于搜索创意工坊。在 steamcommunity.com/dev/apikey 免费申请。",
+        "saving": "保存中...",
+        "saved": "已保存",
+        "cleared": "已清除"
+      }
+    },
+    "workshop": {
+      "browse": "浏览创意工坊",
+      "title": "创意工坊 Mod 搜索",
+      "searchPlaceholder": "搜索 Mod 名称...",
+      "add": "添加",
+      "added": "已添加",
+      "openPage": "查看页面",
+      "empty": "未找到相关 Mod，请尝试其他关键词。",
+      "loading": "加载中...",
+      "loadMore": "加载更多",
+      "noKey": "请先在上方配置 Steam Web API Key 才能使用搜索功能。",
+      "total": "共 {{total}} 个结果",
+      "subscribers": "{{count}} 订阅",
+      "deps": {
+        "title": "检测到未添加的前置 Mod",
+        "hint": "该 Mod 在 Steam 层声明了以下前置依赖，尚未添加到本服务器的模组列表。",
+        "addAll": "一键添加全部前置",
+        "skip": "跳过",
+        "adding": "添加中...",
+        "done": "添加完成"
+      },
+      "errors": {
+        "noKey": "未配置 Steam Web API Key，请先在 Steam 账号区块填写。",
+        "steamError": "创意工坊请求失败，请检查 API Key 是否有效或稍后重试。",
+        "addFailed": "添加模组失败：{{msg}}"
+      }
     },
     "launch": {
       "port": "端口 (-port)",

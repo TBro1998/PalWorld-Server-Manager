@@ -46,9 +46,17 @@ func (r *Router) SteamStatus(c *gin.Context) {
 		return
 	}
 
+	webAPIKey, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read settings"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"username":     username,
-		"sessionReady": ready == "true",
+		"username":           username,
+		"sessionReady":       ready == "true",
+		"webApiKeyConfigured": strings.TrimSpace(webAPIKey) != "",
+		// webAPIKey itself is intentionally omitted — the key is never echoed back.
 	})
 }
 

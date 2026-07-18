@@ -396,7 +396,46 @@
       "badCredentials": "Invalid username or password.",
       "error": "Sign-in failed. Please try again.",
       "live": "Live",
-      "outputEmpty": "Waiting for SteamCMD output…"
+      "outputEmpty": "Waiting for SteamCMD output…",
+      "webApiKey": {
+        "label": "Steam Web API Key",
+        "placeholder": "Paste your Steam Web API Key",
+        "save": "Save",
+        "clear": "Clear",
+        "configured": "Configured",
+        "notConfigured": "Not configured — Workshop search unavailable",
+        "hint": "Used for Workshop search. Get one free at steamcommunity.com/dev/apikey.",
+        "saving": "Saving...",
+        "saved": "Saved",
+        "cleared": "Cleared"
+      }
+    },
+    "workshop": {
+      "browse": "Browse Workshop",
+      "title": "Workshop Mod Search",
+      "searchPlaceholder": "Search mod name...",
+      "add": "Add",
+      "added": "Added",
+      "openPage": "View page",
+      "empty": "No mods found. Try a different search term.",
+      "loading": "Loading...",
+      "loadMore": "Load more",
+      "noKey": "Configure a Steam Web API Key above to enable Workshop search.",
+      "total": "{{total}} results",
+      "subscribers": "{{count}} subscribers",
+      "deps": {
+        "title": "Missing required mods detected",
+        "hint": "This mod declares the following Steam-layer dependencies that are not yet in this server's mod list.",
+        "addAll": "Add all dependencies",
+        "skip": "Skip",
+        "adding": "Adding...",
+        "done": "Done"
+      },
+      "errors": {
+        "noKey": "Steam Web API Key not configured. Fill it in the Steam account section.",
+        "steamError": "Workshop request failed. Check whether the API Key is valid or try again later.",
+        "addFailed": "Failed to add mod: {{msg}}"
+      }
     },
     "launch": {
       "port": "Port (-port)",

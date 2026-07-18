@@ -48,6 +48,8 @@ import type {
   SavePals,
   SaveInventory,
   Mod,
+  WorkshopItem,
+  WorkshopDep,
 } from '@/types/server'
 
 export const serversApi = {
@@ -137,7 +139,7 @@ export const modsApi = {
 // first lines.
 export const steamApi = {
   status: () =>
-    apiClient.get<{ username: string; sessionReady: boolean }>('/api/steam/status'),
+    apiClient.get<{ username: string; sessionReady: boolean; webApiKeyConfigured: boolean }>('/api/steam/status'),
   login: (data: { username: string; password: string; guardCode?: string }) =>
     apiClient.post<{
       result: 'success' | 'needGuard' | 'badCredentials' | 'error'
@@ -146,6 +148,28 @@ export const steamApi = {
   // Relative URL for EventSource. Emits named `log` events, one per steamcmd
   // output line, on the global login stream (no server ID).
   loginStreamUrl: () => '/api/steam/logs/stream',
+
+  // --- Workshop search (proxies Steam Web API; key stays server-side) ---
+  // search queries IPublishedFileService/QueryFiles for Palworld mods.
+  // cursor: omit or "*" for the first page; pass nextCursor to paginate.
+  workshopSearch: (params: { q?: string; cursor?: string; num?: number }) =>
+    apiClient.get<{ items: WorkshopItem[]; next_cursor: string; total: number }>(
+      '/api/steam/workshop/search',
+      { params: { q: params.q ?? '', cursor: params.cursor ?? '*', num: params.num ?? 20 } },
+    ),
+  // workshopDependencies resolves all transitive Steam Workshop deps of a mod.
+  // Returns a flat deduplicated list (not including the mod itself).
+  workshopDependencies: (workshopId: string) =>
+    apiClient.get<{ dependencies: WorkshopDep[] }>(
+      `/api/steam/workshop/mods/${workshopId}/dependencies`,
+    ),
+  // getWebApiKey returns the stored key so the browser can call Steam API
+  // directly, bypassing server-side network restrictions (e.g. firewall).
+  // Returns {key, configured}. The key is empty when not configured.
+  getWebApiKey: () =>
+    apiClient.get<{ key: string; configured: boolean }>('/api/steam/webapi-key'),
+  setWebApiKey: (key: string) =>
+    apiClient.post<{ configured: boolean }>('/api/steam/webapi-key', { key }),
 }
 
 export default apiClient;

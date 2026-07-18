@@ -148,7 +148,28 @@ export interface RestStatus {
   info?: PalInfo
 }
 
-// --- Save-file inspection (GET /api/servers/:id/save/*) ---
+// --- Workshop browser (GET /api/steam/workshop/search + /dependencies) ---
+
+// WorkshopItem is a single search result from IPublishedFileService/QueryFiles.
+export interface WorkshopItem {
+  workshop_id: string
+  title: string
+  description: string   // short description; may be empty
+  preview_url: string   // thumbnail image URL
+  author: string        // Steam display name / steam ID of creator
+  subscriptions: number
+  views: number
+  time_updated: number  // Unix timestamp
+  tags: string[]
+}
+
+// WorkshopDep is a lightweight entry in the dependency list returned by
+// ResolveDependencies. Only the fields needed for the confirmation dialog.
+export interface WorkshopDep {
+  workshop_id: string
+  title: string
+  preview_url: string
+}
 // These mirror the DTOs in internal/api/save_handlers.go and describe parsed
 // Level.sav / Players/*.sav data (offline players included), independent of the
 // live REST API.

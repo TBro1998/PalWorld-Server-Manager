@@ -13,6 +13,7 @@ import { useTranslations } from '@/contexts/LanguageContext'
 import type { Server, Mod } from '@/types/server'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
 import { SectionShell, PasswordInput, Placeholder, useServer } from './shared'
+import { WorkshopBrowserDialog } from './WorkshopBrowserDialog'
 
 // Mods nav item for the manage page. Manual mod-list CRUD plus the "update mods"
 // action that runs SteamCMD (download + deploy + config write). Reuses the
@@ -46,6 +47,11 @@ function ModsBody({ server }: { server: Server }) {
   const [workshopId, setWorkshopId] = useState('')
   const [name, setName] = useState('')
   const [logsOpen, setLogsOpen] = useState(false)
+  // True while a mod-update job is running on the backend (set on 202 response,
+  // cleared when the SSE `done` event arrives). Used to reopen the log dialog
+  // instead of starting a second update when the user clicks the button again.
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
   // Set once any mod change is made this session; drives the restart hint.
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,6 +60,19 @@ function ModsBody({ server }: { server: Server }) {
   const onError = (err: unknown) => {
     const e = err as { response?: { data?: { error?: string } } }
     setError(e.response?.data?.error ?? 'Request failed')
+  }
+  // Specific error handler for the update-mods mutation. If the backend reports
+  // that an update is already running (e.g. after a page reload mid-update),
+  // reopen the log dialog instead of surfacing an error to the user.
+  const onUpdateError = (err: unknown) => {
+    const e = err as { response?: { data?: { error?: string } } }
+    const msg = e.response?.data?.error ?? 'Request failed'
+    if (msg === 'Server is installing or mods are already updating') {
+      setIsUpdating(true)
+      setLogsOpen(true)
+      return
+    }
+    setError(msg)
   }
 
   const { data, isLoading } = useQuery({
@@ -69,6 +88,7 @@ function ModsBody({ server }: { server: Server }) {
     queryFn: async () => (await steamApi.status()).data,
   })
   const sessionReady = steamStatus?.sessionReady ?? false
+  const webApiKeyConfigured = steamStatus?.webApiKeyConfigured ?? false
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -115,11 +135,12 @@ function ModsBody({ server }: { server: Server }) {
     onSuccess: () => {
       setError(null)
       setDirty(true)
+      setIsUpdating(true)
       setLogsOpen(true)
       // The run is async; completion arrives via the log dialog's `done` event
-      // (see onDone below), which refreshes the list and closes on full success.
+      // (see onDone below), which refreshes the list and clears isUpdating.
     },
-    onError,
+    onError: onUpdateError,
   })
 
   const busy = addMutation.isPending || updateMutation.isPending
@@ -131,10 +152,21 @@ function ModsBody({ server }: { server: Server }) {
         <Button
           type="button"
           size="sm"
-          onClick={() => updateMutation.mutate()}
-          disabled={busy || mods.length === 0 || !sessionReady}
+          onClick={() => {
+            if (isUpdating) {
+              // Update already running — just reopen the log dialog.
+              setLogsOpen(true)
+            } else {
+              updateMutation.mutate()
+            }
+          }}
+          disabled={
+            addMutation.isPending ||
+            updateMutation.isPending ||
+            (!isUpdating && (mods.length === 0 || !sessionReady))
+          }
         >
-          {updateMutation.isPending ? t('mods.updating') : t('mods.update')}
+          {updateMutation.isPending || isUpdating ? t('mods.updating') : t('mods.update')}
         </Button>
       </div>
 
@@ -148,7 +180,7 @@ function ModsBody({ server }: { server: Server }) {
         <p className="text-sm text-warning">{t('mods.restartNeeded')}</p>
       )}
 
-      {/* Add form */}
+      {/* Add form + Browse Workshop */}
       <div className="flex flex-wrap items-end gap-2 rounded-2xl border-2 p-4 shadow-pal">
         <div className="space-y-1">
           <Label htmlFor="mod-workshop-id">{t('mods.workshopId')}</Label>
@@ -177,6 +209,16 @@ function ModsBody({ server }: { server: Server }) {
           disabled={busy || workshopId.trim() === ''}
         >
           {t('mods.add')}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setBrowseOpen(true)}
+          disabled={!webApiKeyConfigured}
+          title={webApiKeyConfigured ? undefined : t('workshop.noKey')}
+        >
+          {t('workshop.browse')}
         </Button>
       </div>
 
@@ -252,11 +294,17 @@ function ModsBody({ server }: { server: Server }) {
         server={server}
         kind="steamcmd"
         onDone={(success) => {
-          // Async update finished: refresh the list (metadata backfilled) and,
-          // when every mod succeeded, close the log dialog automatically.
+          setIsUpdating(false)
           invalidate()
           if (success) setLogsOpen(false)
         }}
+      />
+
+      <WorkshopBrowserDialog
+        open={browseOpen}
+        onOpenChange={setBrowseOpen}
+        server={server}
+        mods={mods}
       />
     </div>
   )
@@ -279,6 +327,10 @@ function SteamAccountSection() {
   const [live, setLive] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const logScrollRef = useRef<HTMLDivElement | null>(null)
+
+  // Web API Key sub-state
+  const [keyInput, setKeyInput] = useState('')
+  const [keySaved, setKeySaved] = useState<'saved' | 'cleared' | null>(null)
 
   const { data: status } = useQuery({
     queryKey: ['steamStatus'],
@@ -360,6 +412,16 @@ function SteamAccountSection() {
     onError: () => setError(t('steam.error')),
   })
 
+  const saveKeyMutation = useMutation({
+    mutationFn: async (key: string) => (await steamApi.setWebApiKey(key)).data,
+    onSuccess: (_data, key) => {
+      setKeySaved(key.trim() ? 'saved' : 'cleared')
+      setKeyInput('')
+      queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
+      setTimeout(() => setKeySaved(null), 3000)
+    },
+  })
+
   // Steam Guard mobile-authenticator accounts block on the user approving the
   // login in the phone app ("Waiting for confirmation..."); surface a clear hint
   // while that is pending so the user knows to check their phone.
@@ -391,6 +453,64 @@ function SteamAccountSection() {
           <LogIn size={14} className="mr-1" />
           {sessionReady ? t('steam.relogin') : t('steam.login')}
         </Button>
+      </div>
+
+      {/* Web API Key row — for Workshop search (low-sensitivity read-only key) */}
+      <div className="mt-3 border-t border-border/40 pt-3">
+        <div className="flex items-center gap-2">
+          <div className="text-xs font-medium text-muted-foreground shrink-0">
+            {t('steam.webApiKey.label')}
+          </div>
+          {status?.webApiKeyConfigured ? (
+            <span className="flex items-center gap-1 text-xs text-success">
+              <CheckCircle2 size={12} className="shrink-0" />
+              {t('steam.webApiKey.configured')}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {t('steam.webApiKey.notConfigured')}
+            </span>
+          )}
+          {keySaved === 'saved' && (
+            <span className="text-xs text-success">{t('steam.webApiKey.saved')}</span>
+          )}
+          {keySaved === 'cleared' && (
+            <span className="text-xs text-muted-foreground">{t('steam.webApiKey.cleared')}</span>
+          )}
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <Input
+            id="steam-webapi-key"
+            type="password"
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            placeholder={t('steam.webApiKey.placeholder')}
+            className="h-8 text-xs"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 shrink-0 px-2.5 text-xs"
+            disabled={saveKeyMutation.isPending || keyInput.trim() === ''}
+            onClick={() => saveKeyMutation.mutate(keyInput.trim())}
+          >
+            {saveKeyMutation.isPending ? t('steam.webApiKey.saving') : t('steam.webApiKey.save')}
+          </Button>
+          {status?.webApiKeyConfigured && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 shrink-0 px-2.5 text-xs text-muted-foreground"
+              disabled={saveKeyMutation.isPending}
+              onClick={() => saveKeyMutation.mutate('')}
+            >
+              {t('steam.webApiKey.clear')}
+            </Button>
+          )}
+        </div>
+        <p className="mt-1 text-[10px] text-muted-foreground">{t('steam.webApiKey.hint')}</p>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
