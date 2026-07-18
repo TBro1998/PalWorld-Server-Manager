@@ -267,7 +267,7 @@
       "noData": "暂无数据",
       "unavailableTitle": "REST API 不可用",
       "badge": "不可用",
-      "settingsHint": "请前往“服务器设置”开启 RESTAPIEnabled 并设置 AdminPassword，然后重启服务器。",
+      "settingsHint": "请前往「服务器设置」设置 AdminPassword，然后重启服务器。",
       "reason": {
         "not_found": "未找到该服务器。",
         "not_running": "服务器未运行，请先启动服务器。",

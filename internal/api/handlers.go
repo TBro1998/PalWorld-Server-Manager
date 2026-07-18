@@ -1,6 +1,7 @@
 package api
 
 import (
+	cryptorand "crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,6 +28,54 @@ func (r *Router) Login(c *gin.Context) {
 func (r *Router) Register(c *gin.Context) {
 	// TODO: Implement registration logic
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "Register endpoint - to be implemented"})
+}
+
+// Creation-time port defaults. The first server uses these values; each
+// additional server increments each value by 1 based on the previous server.
+const (
+	firstGamePort    = 8211
+	firstQueryPort   = 27015
+	firstRESTAPIPort = 8311
+)
+
+// randomAdminPassword generates a 12-character random alphanumeric password
+// using crypto/rand for use as the initial AdminPassword on new servers.
+func randomAdminPassword() string {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	raw := make([]byte, 12)
+	if _, err := cryptorand.Read(raw); err != nil {
+		return "PalAdmin1234" // safe fallback; crypto/rand failure is extremely rare
+	}
+	out := make([]byte, 12)
+	for i, b := range raw {
+		out[i] = charset[int(b)%len(charset)]
+	}
+	return string(out)
+}
+
+// lastServerPorts returns the game port, Steam query port, and REST API port
+// of the most recently created server so the next server can default to each
+// plus one. Returns the first-server defaults when no servers exist yet.
+func (r *Router) lastServerPorts() (gamePort, queryPort, restAPIPort int) {
+	gamePort, queryPort, restAPIPort = firstGamePort, firstQueryPort, firstRESTAPIPort
+	var last models.Server
+	if err := r.db.Order("created_at DESC").Select("launch_args").First(&last).Error; err != nil {
+		return // no servers yet — use first-server defaults
+	}
+	args, err := palconfig.ParseLaunchArgs(last.LaunchArgs)
+	if err != nil {
+		return
+	}
+	if args.Port != nil {
+		gamePort = *args.Port + 1
+	}
+	if args.QueryPort != nil {
+		queryPort = *args.QueryPort + 1
+	}
+	if args.RESTAPIPort != nil {
+		restAPIPort = *args.RESTAPIPort + 1
+	}
+	return
 }
 
 // absInstallPath normalizes a server install path to an absolute path. SteamCMD's
@@ -89,12 +138,27 @@ func (r *Router) CreateServer(c *gin.Context) {
 	// (SteamCMD, launch cwd, config I/O) always see a stable, absolute location.
 	installPath := absInstallPath(req.InstallPath)
 
+	// Pre-compute per-server port defaults (+1 from the most recently created
+	// server) and generate a random admin password. These are stored in
+	// launch_args and used by GetServerConfig to pre-fill the config form
+	// before the server is installed.
+	gamePort, queryPort, restAPIPort := r.lastServerPorts()
+	adminPass := randomAdminPassword()
+	initArgs := palconfig.LaunchArgs{
+		Port:                 &gamePort,
+		QueryPort:            &queryPort,
+		RESTAPIPort:          &restAPIPort,
+		InitialAdminPassword: adminPass,
+	}
+	argsJSON, _ := initArgs.Marshal()
+
 	// Status is never persisted as a truth source (it is derived); the model omits
 	// it (gorm:"-"). GORM auto-populates ID, created_at and updated_at on Create.
 	server := models.Server{
 		Name:        req.Name,
 		InstallPath: installPath,
 		PID:         0,
+		LaunchArgs:  argsJSON,
 	}
 	if err := r.db.Create(&server).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
@@ -506,9 +570,18 @@ func (r *Router) GetServerConfig(c *gin.Context) {
 
 	launchArgs, _ := palconfig.ParseLaunchArgs(launchArgsJSON)
 
-	// Without an install path we cannot touch disk; return registry defaults.
-	if installPath == "" {
+	// Before the server is installed (or when no install path is set), return
+	// schema defaults augmented with the creation-time port/password presets
+	// stored in launch_args. This lets the config form show the correct
+	// per-server defaults without touching disk.
+	if !installed || installPath == "" {
 		defaults := palconfig.Defaults()
+		if launchArgs.RESTAPIPort != nil {
+			defaults["RESTAPIPort"] = strconv.Itoa(*launchArgs.RESTAPIPort)
+		}
+		if launchArgs.InitialAdminPassword != "" {
+			defaults["AdminPassword"] = launchArgs.InitialAdminPassword
+		}
 		c.JSON(http.StatusOK, ServerConfigResponse{
 			Settings:   defaults,
 			LaunchArgs: launchArgs,

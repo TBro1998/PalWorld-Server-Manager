@@ -162,7 +162,7 @@ export function ServerCard({
           <StatTile icon={<Terminal className="h-4 w-4" />} label="REST API">
             {config
               ? restEnabled
-                ? `${t('enabled')} · ${settings.RESTAPIPort || '8212'}`
+                ? `${t('enabled')} · ${settings.RESTAPIPort || '8311'}`
                 : t('disabled')
               : '—'}
           </StatTile>

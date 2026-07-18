@@ -267,7 +267,7 @@
       "noData": "データがありません",
       "unavailableTitle": "REST API を利用できません",
       "badge": "利用不可",
-      "settingsHint": "「サーバー設定」で RESTAPIEnabled を有効にし AdminPassword を設定してから、サーバーを再起動してください。",
+      "settingsHint": "「サーバー設定」で AdminPassword を設定してから、サーバーを再起動してください。",
       "reason": {
         "not_found": "サーバーが見つかりません。",
         "not_running": "サーバーが起動していません。先に起動してください。",

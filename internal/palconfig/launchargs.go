@@ -12,6 +12,11 @@ import (
 //
 // Pointer fields are omitted from the command line when nil; bools are emitted
 // only when true (they are presence flags).
+//
+// RESTAPIPort and InitialAdminPassword are NOT launch arguments — they are
+// stored here as creation-time presets so GetServerConfig can seed the correct
+// values before the server is installed (and PalWorldSettings.ini exists).
+// ToArgs() intentionally omits both fields.
 type LaunchArgs struct {
 	Port                  *int   `json:"port,omitempty"`
 	Players               *int   `json:"players,omitempty"`
@@ -22,8 +27,10 @@ type LaunchArgs struct {
 	PublicLobby           bool   `json:"publicLobby,omitempty"`
 	PublicIP              string `json:"publicIP,omitempty"`
 	PublicPort            *int   `json:"publicPort,omitempty"`
-	QueryPort             *int   `json:"queryPort,omitempty"` // Steam query port, defaults to 27015 when unset
-	LogFormat             string `json:"logFormat,omitempty"` // "", "text", "json"
+	QueryPort             *int   `json:"queryPort,omitempty"`     // Steam query port, defaults to 27015 when unset
+	LogFormat             string `json:"logFormat,omitempty"`     // "", "text", "json"
+	RESTAPIPort           *int   `json:"restAPIPort,omitempty"`   // preset only — not a launch flag
+	InitialAdminPassword  string `json:"initialAdminPassword,omitempty"` // preset only — not a launch flag
 }
 
 // ParseLaunchArgs decodes the JSON stored in servers.launch_args. An empty or

@@ -25,6 +25,6 @@ export const BASICS_INI_KEYS = new Set<string>([
   'ServerPassword',
   'AdminPassword',
   'ServerDescription',
-  'RESTAPIEnabled',
+  'RESTAPIEnabled',  // always True; hidden from UI but kept here so it never appears in generic form
   'RESTAPIPort',
 ])

@@ -267,7 +267,7 @@
       "noData": "No data",
       "unavailableTitle": "REST API unavailable",
       "badge": "Unavailable",
-      "settingsHint": "Open Server settings to enable RESTAPIEnabled and set AdminPassword, then restart the server.",
+      "settingsHint": "Open Server settings to set AdminPassword, then restart the server.",
       "reason": {
         "not_found": "Server not found.",
         "not_running": "The server is not running. Start it first.",

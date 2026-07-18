@@ -26,7 +26,7 @@ const (
 
 // defaultRESTAPIPort is used when RESTAPIPort is missing or unparsable. Mirrors the
 // registry default in palconfig/schema.go.
-const defaultRESTAPIPort = 8212
+const defaultRESTAPIPort = 8311
 
 // restResolution is the outcome of resolveRest: everything a REST handler needs
 // to either forward a call or explain why it cannot. AdminPassword lives only

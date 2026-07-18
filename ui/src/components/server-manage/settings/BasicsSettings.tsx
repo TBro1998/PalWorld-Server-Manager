@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { SectionShell, PasswordInput, LaunchNumber, useServer } from '../shared'
@@ -10,8 +9,8 @@ import { useSettingsDraft } from '../SettingsDraftContext'
 import { useParamText } from './paramText'
 
 // Basics config page: server name / install path / port / passwords /
-// description / REST API. All fields are controlled by the shared settings
-// draft; edits surface in the sticky save bar.
+// description / REST API port. REST API is always enabled; only the port is
+// configurable here. The game port (-port) is a launch argument set below.
 export function BasicsSettings() {
   const t = useTranslations('serverConfig')
   const tm = useTranslations('serverManage')
@@ -55,6 +54,7 @@ export function BasicsSettings() {
           label={t('basics.port')}
           value={launchArgs.port}
           onChange={(v) => setLaunch({ port: v })}
+          placeholder="8211"
         />
 
         <div className="space-y-2">
@@ -82,14 +82,6 @@ export function BasicsSettings() {
             value={iniValue('ServerDescription')}
             onChange={(e) => setSetting('ServerDescription', e.target.value)}
             className="min-h-[72px]"
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-4 border-b border-dashed pb-2">
-          <Label>{paramLabel('RESTAPIEnabled')}</Label>
-          <Switch
-            checked={iniValue('RESTAPIEnabled') === 'True'}
-            onCheckedChange={(c) => setSetting('RESTAPIEnabled', c ? 'True' : 'False')}
           />
         </div>
 
