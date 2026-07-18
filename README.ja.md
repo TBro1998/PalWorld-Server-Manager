@@ -47,15 +47,19 @@ Palworld専用サーバーのための包括的な管理ツール。MODサポー
 
 マネージャーとPalworldゲームサーバーは**同一のコンテナ**内で動作し、データはボリュームに永続化されるため、コンテナを再構築してもセーブは失われません。
 
+Docker Hubにイメージを公開しています：[`tbro98/palsm`](https://hub.docker.com/r/tbro98/palsm)
+
 ```bash
-# 1. コードを取得
-git clone https://github.com/TBro1998/PalWorld-Server-Manager.git
-cd PalWorld-Server-Manager
+# 1. docker-compose.yml をダウンロード
+curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. ビルドして起動（初回ビルドはフロントエンド+バックエンドをコンパイルするため数分かかります）
-docker compose up -d --build
+# 2. JWT_SECRET を変更（必須）
+#    docker-compose.yml を編集し、JWT_SECRET を強力なランダム値に設定
 
-# 3. ブラウザで http://<ホストIP>:8080 にアクセスし、管理者アカウントを作成後、サーバーをインストール・管理
+# 3. イメージを取得して起動（Docker Hubから自動取得、ローカルビルド不要）
+docker compose up -d
+
+# 4. ブラウザで http://<ホストIP>:8080 にアクセスし、管理者アカウントを作成後、サーバーをインストール・管理
 ```
 
 要点：
@@ -64,8 +68,9 @@ docker compose up -d --build
 - SteamCMDとPalworldサーバーは、プログラムがコンテナ内で**初回実行時に自動的に** `/data` ボリュームへダウンロードします。手動での事前インストールは不要です。
 - デフォルトのポートマッピング：`8080/tcp`（管理画面）、`8211/udp`（ゲーム）、`27015/udp`（クエリ）。
   UIでサーバーの `-port` / `-QueryPort` を変更した場合は、composeのポートマッピングも合わせて調整してください。
-- データボリューム `psm-data` はコンテナの `/data` にマウントされ、データベース、SteamCMD、セーブ、ログを含みます。このボリュームをバックアップすれば全データをバックアップできます。
+- `./psm-data` ディレクトリはコンテナの `/data` にマウントされ、データベース、SteamCMD、セーブ、ログを含みます。このディレクトリをバックアップすれば全データをバックアップできます。
 - イメージはDebian（glibc）ベースで、SteamCMDとPalworld Linuxサーバーに必要なランタイムライブラリを内蔵しています。コンテナは非rootユーザー `steam` で実行されます。
+- 最新版へ更新：`docker compose pull && docker compose up -d`
 
 ### Linuxネイティブデプロイ
 

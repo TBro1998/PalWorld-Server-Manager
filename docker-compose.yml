@@ -1,16 +1,15 @@
 # Palworld Server Manager — Docker 运行模式
 # 管理器与 Palworld 游戏服运行在同一个容器内，管理器直接拉起游戏进程。
 #
-# 使用:
-#   docker compose up -d --build
+# 使用（直接拉取 Docker Hub 镜像，无需本地构建）:
+#   docker compose up -d
 #   然后浏览器打开 http://<主机IP>:8080
 #
 # ⚠ 生产环境务必修改下方 JWT_SECRET。
 
 services:
   palworld-server-manager:
-    build: .
-    image: palworld-server-manager:local
+    image: tbro98/palsm:latest
     container_name: palworld-server-manager
     restart: unless-stopped
     ports:
@@ -18,14 +17,12 @@ services:
       - "8211:8211/udp"     # Palworld 游戏端口（与服务器 -port 保持一致）
       - "27015:27015/udp"   # Steam 查询端口（与 -QueryPort 保持一致）
     environment:
-      HOST: "0.0.0.0"                      # 容器内必须监听 0.0.0.0 才能对外访问
+      HOST: "0.0.0.0"                       # 容器内必须监听 0.0.0.0 才能对外访问
       PORT: "8080"
-      JWT_SECRET: "change-me-in-production" # ⚠ 请务必修改
+      JWT_SECRET: "change-me-in-production"  # ⚠ 请务必修改
       DATABASE_PATH: "/data/palworld.db"
       STEAMCMD_PATH: "/data/steamcmd"
+      PALWORLD_BASE_PATH: "/data/palworld"
       LOG_DIR: "/data/logs"
     volumes:
-      - ./psm-data:/data      # 数据库/SteamCMD/存档/日志 统一持久化
-
-volumes:
-  psm-data:
+      - ./psm-data:/data    # 数据库/SteamCMD/存档/日志 统一持久化

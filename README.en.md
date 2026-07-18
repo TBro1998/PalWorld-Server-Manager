@@ -47,15 +47,19 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 The manager and the Palworld game server run inside the **same container**, with data persisted to a volume so rebuilding the container won't lose saves.
 
+Image available on Docker Hub: [`tbro98/palsm`](https://hub.docker.com/r/tbro98/palsm)
+
 ```bash
-# 1. Get the code
-git clone https://github.com/TBro1998/PalWorld-Server-Manager.git
-cd PalWorld-Server-Manager
+# 1. Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. Build and start (the first build compiles frontend + backend, takes a few minutes)
-docker compose up -d --build
+# 2. Change JWT_SECRET (required)
+#    Edit docker-compose.yml and set JWT_SECRET to a strong random value
 
-# 3. Visit http://<host-IP>:8080, create an admin account, then install/manage servers
+# 3. Pull and start (image pulled from Docker Hub automatically — no local build needed)
+docker compose up -d
+
+# 4. Visit http://<host-IP>:8080, create an admin account, then install/manage servers
 ```
 
 Key points:
@@ -64,8 +68,9 @@ Key points:
 - SteamCMD and the Palworld server are **auto-downloaded on first run** by the program into the `/data` volume; no manual pre-installation needed.
 - Default port mappings: `8080/tcp` (management UI), `8211/udp` (game), `27015/udp` (query).
   If you change a server's `-port` / `-QueryPort` in the UI, update the compose port mappings accordingly.
-- The `psm-data` volume mounts to `/data` in the container and contains the database, SteamCMD, saves, and logs. Back up this volume to back up all data.
+- The `./psm-data` directory mounts to `/data` in the container and contains the database, SteamCMD, saves, and logs. Back up this directory to back up all data.
 - The image is based on Debian (glibc) with the runtime libraries required by SteamCMD and the Palworld Linux server built in; the container runs as the non-root user `steam`.
+- To update to the latest version: `docker compose pull && docker compose up -d`
 
 ### Native Linux Deployment
 

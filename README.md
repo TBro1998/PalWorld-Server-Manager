@@ -47,15 +47,19 @@
 
 管理器与 Palworld 游戏服运行在**同一个容器**内，数据持久化到卷，重建容器不丢档。
 
+镜像已发布到 Docker Hub：[`tbro98/palsm`](https://hub.docker.com/r/tbro98/palsm)
+
 ```bash
-# 1. 获取代码
-git clone https://github.com/TBro1998/PalWorld-Server-Manager.git
-cd PalWorld-Server-Manager
+# 1. 下载 docker-compose.yml
+curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. 构建并启动（首次构建会编译前端+后端，需数分钟）
-docker compose up -d --build
+# 2. 修改 JWT_SECRET（必须）
+#    编辑 docker-compose.yml，将 JWT_SECRET 改为随机强密码
 
-# 3. 浏览器访问 http://<主机IP>:8080，创建管理员账号后即可安装/管理服务器
+# 3. 拉取镜像并启动（自动从 Docker Hub 拉取，无需本地构建）
+docker compose up -d
+
+# 4. 浏览器访问 http://<主机IP>:8080，创建管理员账号后即可安装/管理服务器
 ```
 
 要点：
@@ -64,8 +68,9 @@ docker compose up -d --build
 - SteamCMD 与 Palworld 服务端由程序在容器内**首次运行时自动下载**到 `/data` 卷；无需手动预装。
 - 端口映射默认：`8080/tcp`（管理界面）、`8211/udp`（游戏）、`27015/udp`（查询）。
   若在界面里修改了服务器的 `-port` / `-QueryPort`，需同步调整 compose 的端口映射。
-- 数据卷 `psm-data` 挂载到容器 `/data`，包含数据库、SteamCMD、存档与日志。备份该卷即可备份全部数据。
+- 数据目录 `./psm-data` 挂载到容器 `/data`，包含数据库、SteamCMD、存档与日志。备份该目录即可备份全部数据。
 - 镜像基于 Debian（glibc），已内置 SteamCMD 与 Palworld Linux 服务端所需运行库；容器以非 root 用户 `steam` 运行。
+- 更新到最新版本：`docker compose pull && docker compose up -d`
 
 ### Linux 原生部署
 
