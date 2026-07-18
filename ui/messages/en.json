@@ -336,6 +336,34 @@
     "enable": "Enable",
     "uninstall": "Uninstall"
   },
+  "modLibrary": {
+    "title": "Mod Library",
+    "desc": "Global mod repository — manage Steam Workshop mod downloads and updates in one place",
+    "add": "Add Mod",
+    "addByWorkshopId": "Add by Workshop ID",
+    "workshopIdLabel": "Workshop ID",
+    "workshopIdPlaceholder": "e.g. 1234567890",
+    "nameLabel": "Label (optional)",
+    "namePlaceholder": "Custom name",
+    "browse": "Browse Workshop",
+    "download": "Download",
+    "redownload": "Re-download",
+    "downloading": "Downloading...",
+    "downloadAll": "Update all",
+    "remove": "Remove from library",
+    "removeConfirm": "Remove this mod from the library? All server references will be unlinked and deployed files removed. This cannot be undone.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "empty": "Library is empty. Click \"Add Mod\" or \"Browse Workshop\" to get started.",
+    "status": {
+      "downloaded": "Downloaded",
+      "notDownloaded": "Not downloaded",
+      "downloading": "Downloading"
+    },
+    "serverCount": "Used by {{count}} server(s)",
+    "noServers": "Not used by any server",
+    "logs": "Download logs"
+  },
   "serverConfig": {
     "title": "Server Config",
     "loading": "Loading config...",
@@ -362,18 +390,19 @@
       "pathChangedHint": "Directory changed. Save will re-check whether server files exist there."
     },
     "mods": {
-      "hint": "Add Workshop mod IDs manually, then click \"Update mods\" to download and deploy.",
-      "workshopId": "Workshop ID",
-      "name": "Label (optional)",
-      "namePlaceholder": "Custom name",
-      "add": "Add",
-      "update": "Update mods",
-      "updating": "Updating...",
-      "empty": "No mods yet. Add a Workshop ID above.",
-      "remove": "Remove",
+      "hint": "Select downloaded mods from the library, then click \"Deploy mods\" to copy them to the server directory.",
+      "addFromLibrary": "Add from Library",
+      "deploy": "Deploy mods",
+      "deploying": "Deploying...",
+      "empty": "No mods linked yet. Click \"Add from Library\".",
+      "remove": "Unlink",
       "restartNeeded": "Mod changes take effect after restarting the server.",
-      "notDownloaded": "Not downloaded yet. Click \"Update mods\".",
-      "incompatible": "This mod may not be designed for dedicated servers."
+      "notDownloaded": "This mod hasn't been downloaded yet. Download it from the Mod Library first.",
+      "versionMismatch": "Version mismatch — will auto-sync on next start.",
+      "incompatible": "This mod may not be designed for dedicated servers.",
+      "deployedVersion": "Deployed",
+      "libraryVersion": "Library",
+      "noDownloadedMods": "No downloaded mods in the library yet"
     },
     "steam": {
       "title": "Steam Account",

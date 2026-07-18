@@ -98,14 +98,24 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 		// Config schema (drives the structured config form)
 		protected.GET("/config/schema", r.GetConfigSchema)
 
-		// Mod management
-		mods := protected.Group("/servers/:id/mods")
+		// Global mod library (workshop-independent of any server)
+		globalMods := protected.Group("/mods")
 		{
-			mods.GET("", r.ListMods)
-			mods.POST("", r.InstallMod)
-			mods.POST("/update", r.UpdateMods)
-			mods.DELETE("/:modId", r.UninstallMod)
-			mods.PUT("/:modId/toggle", r.ToggleMod)
+			globalMods.GET("", r.ListGlobalMods)
+			globalMods.POST("", r.AddGlobalMod)
+			globalMods.DELETE("/:modId", r.DeleteGlobalMod)
+			globalMods.POST("/:modId/download", r.DownloadGlobalMod)
+			globalMods.GET("/logs/stream", r.GlobalModLogStream)
+		}
+
+		// Per-server mod references (link/unlink/toggle/deploy from global library)
+		serverMods := protected.Group("/servers/:id/mods")
+		{
+			serverMods.GET("", r.ListServerMods)
+			serverMods.POST("", r.LinkServerMod)
+			serverMods.DELETE("/:serverModId", r.UnlinkServerMod)
+			serverMods.PUT("/:serverModId/toggle", r.ToggleServerMod)
+			serverMods.POST("/deploy", r.DeployServerMods)
 		}
 
 		// Steam account (global, not per-server): app-in login that caches a

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Server, X } from 'lucide-react';
+import { LayoutDashboard, Server, Package, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -18,6 +18,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const links = [
     { href: '/', label: t('home'), icon: LayoutDashboard, exact: true },
     { href: '/servers', label: t('servers'), icon: Server, exact: false },
+    { href: '/mods', label: t('mods'), icon: Package, exact: false },
   ];
 
   return (

@@ -48,6 +48,7 @@ import type {
   SavePals,
   SaveInventory,
   Mod,
+  ServerMod,
   WorkshopItem,
   WorkshopDep,
 } from '@/types/server'
@@ -114,19 +115,32 @@ export const serversApi = {
     apiClient.get<SaveInventory>(`/api/servers/${id}/save/players/${uid}/inventory`),
 }
 
-// --- Mod management ---
-// list/add/remove/toggle are synchronous CRUD; update triggers the async
-// SteamCMD download + deploy + config write (progress observed via the existing
-// steamcmd log stream, serversApi.logStreamUrl(id, 'steamcmd')).
+// --- Global mod library ---
+// CRUD for the shared mod library. Downloads are triggered separately.
+export const globalModsApi = {
+  list: () => apiClient.get<{ mods: Mod[] }>('/api/mods'),
+  add: (data: { workshopId: string; name?: string }) =>
+    apiClient.post<Mod>('/api/mods', data),
+  remove: (modId: number) => apiClient.delete(`/api/mods/${modId}`),
+  download: (modId: number) => apiClient.post(`/api/mods/${modId}/download`),
+  // Relative URL for EventSource: global mod download progress (no server ID).
+  logStreamUrl: () => '/api/mods/logs/stream',
+}
+
+// --- Server mod references ---
+// Links between servers and the global library. deploy copies staged files into
+// the server's Mods/Workshop directory. Progress observed via steamcmd log stream.
 export const modsApi = {
-  list: (id: number) => apiClient.get<{ mods: Mod[] }>(`/api/servers/${id}/mods`),
-  add: (id: number, data: { workshopId: string; name?: string }) =>
-    apiClient.post<Mod>(`/api/servers/${id}/mods`, data),
-  remove: (id: number, modId: number) =>
-    apiClient.delete(`/api/servers/${id}/mods/${modId}`),
-  toggle: (id: number, modId: number) =>
-    apiClient.put<Mod>(`/api/servers/${id}/mods/${modId}/toggle`),
-  update: (id: number) => apiClient.post(`/api/servers/${id}/mods/update`),
+  list: (serverId: number) =>
+    apiClient.get<{ mods: ServerMod[] }>(`/api/servers/${serverId}/mods`),
+  link: (serverId: number, data: { modId?: number; workshopId?: string }) =>
+    apiClient.post<ServerMod>(`/api/servers/${serverId}/mods`, data),
+  unlink: (serverId: number, serverModId: number) =>
+    apiClient.delete(`/api/servers/${serverId}/mods/${serverModId}`),
+  toggle: (serverId: number, serverModId: number) =>
+    apiClient.put<ServerMod>(`/api/servers/${serverId}/mods/${serverModId}/toggle`),
+  deploy: (serverId: number) =>
+    apiClient.post(`/api/servers/${serverId}/mods/deploy`),
 }
 
 // --- Steam account (global) ---

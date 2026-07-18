@@ -6,29 +6,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Plus, Check, AlertTriangle, Search } from 'lucide-react'
-import { modsApi, steamApi } from '@/lib/api'
+import { modsApi, globalModsApi, steamApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
-import type { Server, Mod, WorkshopItem, WorkshopDep } from '@/types/server'
+import type { Server, Mod, ServerMod, WorkshopItem, WorkshopDep } from '@/types/server'
 
-// WorkshopBrowserDialog renders a modal workshop search experience:
-//   - keyword search (debounced) + paginated results
-//   - each result: thumbnail, title, short description, subscriber count
-//   - "View page" → opens the Steam community page in a new tab
-//   - "Add" → adds to this server's mod list (DB only, not yet downloaded)
-//     and checks for missing Steam-layer dependencies, prompting to add them too.
+// WorkshopBrowserDialog renders a modal workshop search experience.
+//
+// Two usage modes:
+//   1. Global library (from /mods page): pass only `onAdded`. Adds to global
+//      library via globalModsApi; never links to a server.
+//   2. Server-scoped (no longer used from server mods page — kept for reuse
+//      in future if needed). Pass `server` to enable server-specific logic.
 //
 // Props:
 //   open / onOpenChange  — controlled visibility
-//   server               — current server (for modsApi calls)
-//   mods                 — the server's current mod list (for already-added detection)
+//   onAdded              — called after a mod is added to the global library
+//   server               — optional; when present, mods are also linked to server
+//   existingServerMods   — current server mods list (for already-added detection)
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  server: Server
-  mods: Mod[]
+  onAdded?: (mod: Mod) => void
+  server?: Server
+  existingServerMods?: ServerMod[]
 }
 
-export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Props) {
+export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, existingServerMods }: Props) {
   const t = useTranslations('serverConfig')
   const queryClient = useQueryClient()
 
@@ -47,8 +50,10 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
   const [pendingDeps, setPendingDeps] = useState<WorkshopDep[]>([])
   const [addingDeps, setAddingDeps] = useState(false)
 
-  // Set of workshop IDs already in the mod list on open.
-  const existingIds = new Set(mods.map((m) => m.workshop_id))
+  // Set of workshop IDs already in the library or linked to this server.
+  const existingIds = new Set([
+    ...(existingServerMods ?? []).map((m) => m.workshop_id),
+  ])
 
   // Debounce the search query.
   useEffect(() => {
@@ -112,27 +117,40 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
   }, [nextCursor])
 
   const invalidateMods = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['mods', server.id] }),
-    [queryClient, server.id],
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['globalMods'] })
+      if (server) {
+        queryClient.invalidateQueries({ queryKey: ['serverMods', server.id] })
+      }
+    },
+    [queryClient, server],
   )
 
-  // Add a single mod (DB only), then check its Steam-layer dependencies.
+  // Add a single mod to the global library, optionally link to server, then
+  // check Steam-layer dependencies.
   const handleAdd = useCallback(
     async (item: WorkshopItem) => {
       if (addingId) return
       setAddingId(item.workshop_id)
       setError(null)
       try {
-        await modsApi.add(server.id, { workshopId: item.workshop_id, name: item.title })
+        // Always add to global library first.
+        const res = await globalModsApi.add({ workshopId: item.workshop_id, name: item.title })
+        const newMod = res.data
         setAddedIds((prev) => new Set([...prev, item.workshop_id]))
+        onAdded?.(newMod)
+
+        // If used from a server context, also link the mod to the server.
+        if (server) {
+          await modsApi.link(server.id, { modId: newMod.id })
+        }
         invalidateMods()
 
         // Resolve Steam-layer dependencies.
         const depRes = await steamApi.workshopDependencies(item.workshop_id)
         const allDeps = depRes.data.dependencies ?? []
-        // Filter out deps already in the mod list or just added in this session.
         const currentIds = new Set([
-          ...mods.map((m) => m.workshop_id),
+          ...(existingServerMods ?? []).map((m) => m.workshop_id),
           ...addedIds,
           item.workshop_id,
         ])
@@ -148,17 +166,21 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
         setAddingId(null)
       }
     },
-    [addingId, addedIds, mods, server.id, invalidateMods, t],
+    [addingId, addedIds, existingServerMods, server, invalidateMods, onAdded, t],
   )
 
-  // Add all missing dependencies in sequence.
+  // Add all missing dependencies to the global library (and optionally the server).
   const handleAddAllDeps = useCallback(async () => {
     setAddingDeps(true)
     try {
       for (const dep of pendingDeps) {
         if (existingIds.has(dep.workshop_id) || addedIds.has(dep.workshop_id)) continue
-        await modsApi.add(server.id, { workshopId: dep.workshop_id, name: dep.title })
+        const res = await globalModsApi.add({ workshopId: dep.workshop_id, name: dep.title })
+        if (server) {
+          await modsApi.link(server.id, { modId: res.data.id })
+        }
         setAddedIds((prev) => new Set([...prev, dep.workshop_id]))
+        onAdded?.(res.data)
       }
       invalidateMods()
     } catch (err) {
@@ -169,7 +191,7 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
       setDepsOpen(false)
       setPendingDeps([])
     }
-  }, [addedIds, existingIds, pendingDeps, server.id, invalidateMods, t])
+  }, [addedIds, existingIds, pendingDeps, server, invalidateMods, onAdded, t])
 
   const canLoadMore = !!nextCursor && nextCursor !== '*' && allItems.length < total
 

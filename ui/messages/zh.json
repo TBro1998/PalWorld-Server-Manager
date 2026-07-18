@@ -336,6 +336,34 @@
     "enable": "启用",
     "uninstall": "卸载"
   },
+  "modLibrary": {
+    "title": "模组库",
+    "desc": "全局模组仓库，统一管理 Steam 创意工坊模组的下载与更新",
+    "add": "添加模组",
+    "addByWorkshopId": "通过创意工坊 ID 添加",
+    "workshopIdLabel": "创意工坊 ID",
+    "workshopIdPlaceholder": "例如：1234567890",
+    "nameLabel": "备注名（可选）",
+    "namePlaceholder": "自定义名称",
+    "browse": "浏览创意工坊",
+    "download": "下载",
+    "redownload": "重新下载",
+    "downloading": "下载中...",
+    "downloadAll": "更新全部",
+    "remove": "从库中删除",
+    "removeConfirm": "确认删除此模组？这将同时解绑所有服务器对该模组的引用，且无法撤销。",
+    "confirm": "确认",
+    "cancel": "取消",
+    "empty": "模组库为空，请点击「添加模组」或「浏览创意工坊」添加。",
+    "status": {
+      "downloaded": "已下载",
+      "notDownloaded": "未下载",
+      "downloading": "下载中"
+    },
+    "serverCount": "{{count}} 个服务器在使用",
+    "noServers": "未被任何服务器引用",
+    "logs": "下载日志"
+  },
   "serverConfig": {
     "title": "服务器配置",
     "loading": "正在加载配置...",
@@ -362,18 +390,19 @@
       "pathChangedHint": "目录已更改。保存时将重新检测该目录下是否已安装服务端文件。"
     },
     "mods": {
-      "hint": "手动添加创意工坊模组 ID，然后点击「更新模组」下载并部署。",
-      "workshopId": "创意工坊 ID",
-      "name": "备注名（可选）",
-      "namePlaceholder": "自定义名称",
-      "add": "添加",
-      "update": "更新模组",
-      "updating": "更新中...",
-      "empty": "暂无模组，请在上方添加创意工坊 ID。",
-      "remove": "删除",
+      "hint": "从模组库中选择已下载的模组，然后点击「部署模组」将其复制到服务器目录。",
+      "addFromLibrary": "从模组库添加",
+      "deploy": "部署模组",
+      "deploying": "部署中...",
+      "empty": "暂无引用的模组，请点击「从模组库添加」。",
+      "remove": "解绑",
       "restartNeeded": "模组变更需重启服务器后生效。",
-      "notDownloaded": "尚未下载，请点击「更新模组」。",
-      "incompatible": "该模组可能并非为服务器设计。"
+      "notDownloaded": "该模组尚未下载，请先在模组库中下载。",
+      "versionMismatch": "版本不匹配，将在启动时自动同步。",
+      "incompatible": "该模组可能并非为服务器设计。",
+      "deployedVersion": "已部署",
+      "libraryVersion": "库版本",
+      "noDownloadedMods": "模组库中暂无已下载的模组"
     },
     "steam": {
       "title": "Steam 账号",

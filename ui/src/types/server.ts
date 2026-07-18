@@ -21,22 +21,44 @@ export interface CreateServerData {
   installPath?: string
 }
 
-// Mod mirrors the backend models.Mod JSON (snake_case tags). package_name,
-// mod_name, version and tags are backfilled from the mod's Info.json after a
-// successful update (empty until then); package_name is what PalModSettings.ini
-// references. tags may arrive as null when absent/not yet downloaded — read it
-// via `tags ?? []`.
+// Mod mirrors models.Mod — the global mod library entry.
+// package_name, mod_name, version and tags are backfilled from Info.json after
+// a successful download. tags may arrive as null — read via `tags ?? []`.
 export interface Mod {
   id: number
-  server_id: number
   workshop_id: string
   name: string
-  enabled: boolean
-  install_path: string
+  downloaded: boolean
+  download_path: string
   package_name: string
   mod_name: string
   version: string
   tags: string[] | null
+  created_at: string
+  updated_at: string
+  // server_count is included when fetched via GET /api/mods
+  server_count?: number
+}
+
+// ServerMod mirrors models.ServerMod — a server's reference to a global Mod.
+// The flat global-mod fields (workshop_id, name, …) are joined server-side by
+// ListServerMods so the UI never needs a second round-trip.
+export interface ServerMod {
+  id: number
+  server_id: number
+  mod_id: number
+  enabled: boolean
+  deployed_version: string
+  // Fields joined from the global Mod:
+  workshop_id: string
+  name: string
+  mod_name: string
+  package_name: string
+  version: string
+  tags: string[] | null
+  downloaded: boolean
+  // True when global library has a newer version than deployed_version.
+  version_mismatch: boolean
   created_at: string
   updated_at: string
 }

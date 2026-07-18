@@ -1,0 +1,527 @@
+package api
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/palmod"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+// ── Global mod library ────────────────────────────────────────────────────────
+
+// ModWithStatus extends models.Mod with runtime-computed fields for the UI.
+type ModWithStatus struct {
+	models.Mod
+	// ServerCount is how many servers currently reference this mod.
+	ServerCount int `json:"server_count"`
+}
+
+// ListGlobalMods returns all mods in the global library, ordered by creation
+// time. Each entry includes a server_count so the UI can indicate if a mod is
+// in use before deletion.
+func (r *Router) ListGlobalMods(c *gin.Context) {
+	var mods []models.Mod
+	if err := r.db.Order("created_at DESC").Find(&mods).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mods"})
+		return
+	}
+	if mods == nil {
+		mods = []models.Mod{}
+	}
+
+	// Count server references per mod in one query.
+	type countRow struct {
+		ModID int64
+		Count int
+	}
+	var counts []countRow
+	r.db.Model(&models.ServerMod{}).
+		Select("mod_id, COUNT(*) as count").
+		Group("mod_id").
+		Scan(&counts)
+	countMap := make(map[int64]int, len(counts))
+	for _, cr := range counts {
+		countMap[cr.ModID] = cr.Count
+	}
+
+	result := make([]ModWithStatus, len(mods))
+	for i, m := range mods {
+		result[i] = ModWithStatus{Mod: m, ServerCount: countMap[m.ID]}
+	}
+	c.JSON(http.StatusOK, gin.H{"mods": result})
+}
+
+// AddGlobalModRequest is the body for POST /api/mods.
+type AddGlobalModRequest struct {
+	WorkshopID string `json:"workshopId" binding:"required"`
+	Name       string `json:"name"`
+}
+
+// AddGlobalMod registers a new mod in the global library without downloading it.
+// The download is triggered separately via POST /api/mods/:modId/download.
+func (r *Router) AddGlobalMod(c *gin.Context) {
+	var req AddGlobalModRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	req.WorkshopID = strings.TrimSpace(req.WorkshopID)
+	if req.WorkshopID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workshopId is required"})
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = req.WorkshopID
+	}
+
+	// Upsert: if the mod already exists, return it without error so callers
+	// (e.g. WorkshopBrowserDialog) can be idempotent.
+	var existing models.Mod
+	err := r.db.Where("workshop_id = ?", req.WorkshopID).First(&existing).Error
+	if err == nil {
+		c.JSON(http.StatusOK, existing)
+		return
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mod"})
+		return
+	}
+
+	mod := models.Mod{
+		WorkshopID: req.WorkshopID,
+		Name:       name,
+		Downloaded: false,
+	}
+	if err := r.db.Create(&mod).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create mod"})
+		return
+	}
+	c.JSON(http.StatusCreated, mod)
+}
+
+// DeleteGlobalMod removes a mod from the library. All server references
+// (server_mods rows) are deleted first, and deployed content is removed from
+// each server's Mods/Workshop directory.
+func (r *Router) DeleteGlobalMod(c *gin.Context) {
+	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mod ID"})
+		return
+	}
+
+	var mod models.Mod
+	if err := r.db.First(&mod, modID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Mod not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mod"})
+		return
+	}
+
+	// Remove deployed content from every server that references this mod.
+	var serverMods []models.ServerMod
+	r.db.Where("mod_id = ?", modID).Find(&serverMods)
+	for _, sm := range serverMods {
+		var srv models.Server
+		if err := r.db.Select("install_path").First(&srv, sm.ServerID).Error; err == nil && srv.InstallPath != "" {
+			if err := palmod.Remove(srv.InstallPath, mod.WorkshopID); err != nil {
+				fmt.Printf("warning: remove mod %s from server %d: %v\n", mod.WorkshopID, sm.ServerID, err)
+			}
+			// Rewrite PalModSettings.ini for this server.
+			if err := r.process.RewriteModSettings(sm.ServerID); err != nil {
+				fmt.Printf("warning: rewrite PalModSettings.ini for server %d: %v\n", sm.ServerID, err)
+			}
+		}
+	}
+
+	// Delete all server references, then the global mod row.
+	if err := r.db.Where("mod_id = ?", modID).Delete(&models.ServerMod{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete server references"})
+		return
+	}
+	if err := r.db.Delete(&models.Mod{}, modID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete mod"})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+// DownloadGlobalMod triggers an async SteamCMD download for the given mod.
+// Progress is streamed via GET /api/mods/logs/stream (virtual server ID 0).
+func (r *Router) DownloadGlobalMod(c *gin.Context) {
+	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mod ID"})
+		return
+	}
+
+	var mod models.Mod
+	if err := r.db.First(&mod, modID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Mod not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mod"})
+		return
+	}
+
+	if r.process.IsDownloadingGlobalMod(mod.WorkshopID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mod is already downloading"})
+		return
+	}
+
+	if err := logger.ResetLog(r.config.LogDir, globalModLogID, logger.KindSteamCMD); err != nil {
+		fmt.Printf("warning: reset global mod log: %v\n", err)
+	}
+
+	go func() {
+		capture := logger.NewCapture(globalModLogID, logger.KindSteamCMD, r.config.LogDir)
+		broadcaster := logger.NewBroadcastWriter(r.streams, globalModLogID, logger.KindSteamCMD)
+		out := io.MultiWriter(capture, broadcaster)
+		defer capture.Close()
+
+		result := "ok"
+		if err := r.process.DownloadGlobalMod(modID, out); err != nil {
+			result = "error"
+			fmt.Printf("global mod %d download failed: %v\n", modID, err)
+		}
+		r.streams.BroadcastEvent(globalModLogID, logger.KindSteamCMD, "done", result)
+	}()
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "Mod download started",
+		"modId":   modID,
+		"status":  "downloading",
+	})
+}
+
+// GlobalModLogStream streams the global mod download progress via SSE.
+// Uses virtual server ID 0 as the log namespace for global operations.
+func (r *Router) GlobalModLogStream(c *gin.Context) {
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	clientID, ch := r.streams.Subscribe(globalModLogID, logger.KindSteamCMD)
+	defer r.streams.Unsubscribe(globalModLogID, logger.KindSteamCMD, clientID)
+
+	ctx := c.Request.Context()
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case msg, ok := <-ch:
+			if !ok {
+				return false
+			}
+			c.SSEvent(msg.Event, msg.Data)
+			return true
+		case <-ctx.Done():
+			return false
+		}
+	})
+}
+
+// globalModLogID is the virtual server ID used as the log namespace for global
+// mod download operations (serverID=0). This avoids any change to the streaming
+// infrastructure while cleanly separating global from per-server log channels.
+const globalModLogID int64 = 0
+
+// ── Server mod references ─────────────────────────────────────────────────────
+
+// ServerModDetail is returned by ListServerMods. It embeds the ServerMod
+// junction row plus the associated global Mod metadata and a computed
+// VersionMismatch flag.
+type ServerModDetail struct {
+	models.ServerMod
+	// Global mod metadata (flattened for convenience).
+	WorkshopID   string   `json:"workshop_id"`
+	Name         string   `json:"name"`
+	ModName      string   `json:"mod_name"`
+	PackageName  string   `json:"package_name"`
+	Version      string   `json:"version"`
+	Tags         []string `json:"tags"`
+	Downloaded   bool     `json:"downloaded"`
+	// VersionMismatch is true when the global library has a newer version than
+	// what is currently deployed to this server.
+	VersionMismatch bool `json:"version_mismatch"`
+}
+
+// ListServerMods returns all mods linked to a server, joined with global mod
+// metadata and annotated with a version-mismatch flag.
+func (r *Router) ListServerMods(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+	if !r.serverExists(c, id) {
+		return
+	}
+
+	var serverMods []models.ServerMod
+	if err := r.db.Where("server_id = ?", id).Order("created_at ASC").Find(&serverMods).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server mods"})
+		return
+	}
+
+	if len(serverMods) == 0 {
+		c.JSON(http.StatusOK, gin.H{"mods": []ServerModDetail{}})
+		return
+	}
+
+	// Batch-load the referenced global mods.
+	modIDs := make([]int64, len(serverMods))
+	for i, sm := range serverMods {
+		modIDs[i] = sm.ModID
+	}
+	var globalMods []models.Mod
+	if err := r.db.Where("id IN ?", modIDs).Find(&globalMods).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query global mods"})
+		return
+	}
+	modMap := make(map[int64]models.Mod, len(globalMods))
+	for _, m := range globalMods {
+		modMap[m.ID] = m
+	}
+
+	result := make([]ServerModDetail, len(serverMods))
+	for i, sm := range serverMods {
+		gm := modMap[sm.ModID]
+		mismatch := gm.Downloaded && gm.Version != "" && gm.Version != sm.DeployedVersion
+		result[i] = ServerModDetail{
+			ServerMod:       sm,
+			WorkshopID:      gm.WorkshopID,
+			Name:            gm.Name,
+			ModName:         gm.ModName,
+			PackageName:     gm.PackageName,
+			Version:         gm.Version,
+			Tags:            gm.Tags,
+			Downloaded:      gm.Downloaded,
+			VersionMismatch: mismatch,
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"mods": result})
+}
+
+// LinkServerModRequest is the body for POST /api/servers/:id/mods.
+type LinkServerModRequest struct {
+	// ModID references an existing global library mod (preferred).
+	ModID int64 `json:"modId"`
+	// WorkshopID can be used instead of ModID; the mod must already be in the library.
+	WorkshopID string `json:"workshopId"`
+}
+
+// LinkServerMod links an existing global library mod to a server.
+// The mod must already be registered in the global library (AddGlobalMod first).
+func (r *Router) LinkServerMod(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+	if !r.serverExists(c, id) {
+		return
+	}
+
+	var req LinkServerModRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Resolve the global mod: by ID or by WorkshopID.
+	var mod models.Mod
+	if req.ModID != 0 {
+		if err := r.db.First(&mod, req.ModID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Mod not found in library"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mod"})
+			return
+		}
+	} else if ws := strings.TrimSpace(req.WorkshopID); ws != "" {
+		if err := r.db.Where("workshop_id = ?", ws).First(&mod).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Mod not found in library; add it first"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query mod"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "modId or workshopId is required"})
+		return
+	}
+
+	// Idempotent: if already linked, return existing entry.
+	var existing models.ServerMod
+	err = r.db.Where("server_id = ? AND mod_id = ?", id, mod.ID).First(&existing).Error
+	if err == nil {
+		c.JSON(http.StatusOK, existing)
+		return
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing link"})
+		return
+	}
+
+	sm := models.ServerMod{
+		ServerID: id,
+		ModID:    mod.ID,
+		Enabled:  true,
+	}
+	if err := r.db.Create(&sm).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link mod to server"})
+		return
+	}
+	c.JSON(http.StatusCreated, sm)
+}
+
+// UnlinkServerMod removes a mod reference from a server: deletes the
+// server_mods row, removes deployed content, and rewrites PalModSettings.ini.
+func (r *Router) UnlinkServerMod(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+	serverModID, err := strconv.ParseInt(c.Param("serverModId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server mod ID"})
+		return
+	}
+
+	var sm models.ServerMod
+	if err := r.db.First(&sm, serverModID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server mod not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server mod"})
+		return
+	}
+	if sm.ServerID != id {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Server mod not found"})
+		return
+	}
+
+	// Look up global mod to get WorkshopID for directory removal.
+	var mod models.Mod
+	if err := r.db.First(&mod, sm.ModID).Error; err == nil {
+		var srv models.Server
+		if err := r.db.Select("install_path").First(&srv, id).Error; err == nil && srv.InstallPath != "" {
+			if err := palmod.Remove(srv.InstallPath, mod.WorkshopID); err != nil {
+				fmt.Printf("warning: remove mod %s from server %d: %v\n", mod.WorkshopID, id, err)
+			}
+		}
+	}
+
+	if err := r.db.Delete(&models.ServerMod{}, serverModID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unlink mod"})
+		return
+	}
+
+	// Rewrite the load config (best-effort).
+	if err := r.process.RewriteModSettings(id); err != nil {
+		fmt.Printf("warning: rewrite PalModSettings.ini for server %d: %v\n", id, err)
+	}
+	c.Status(http.StatusNoContent)
+}
+
+// ToggleServerMod flips a server mod's enabled flag and rewrites PalModSettings.ini.
+func (r *Router) ToggleServerMod(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+	serverModID, err := strconv.ParseInt(c.Param("serverModId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server mod ID"})
+		return
+	}
+
+	var sm models.ServerMod
+	if err := r.db.First(&sm, serverModID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Server mod not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server mod"})
+		return
+	}
+	if sm.ServerID != id {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Server mod not found"})
+		return
+	}
+
+	newEnabled := !sm.Enabled
+	if err := r.db.Model(&models.ServerMod{}).Where("id = ?", serverModID).
+		Update("enabled", newEnabled).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update mod"})
+		return
+	}
+	sm.Enabled = newEnabled
+
+	// Rewrite PalModSettings.ini to reflect the toggle.
+	if err := r.process.RewriteModSettings(id); err != nil {
+		fmt.Printf("warning: rewrite PalModSettings.ini for server %d: %v\n", id, err)
+	}
+	c.JSON(http.StatusOK, sm)
+}
+
+// DeployServerMods copies all enabled global mods into the server's
+// Mods/Workshop directory, updates deployed_version on each server_mod row,
+// and rewrites PalModSettings.ini. Progress is streamed via the server's
+// existing steamcmd log stream (KindSteamCMD).
+func (r *Router) DeployServerMods(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid server ID"})
+		return
+	}
+	if !r.serverExists(c, id) {
+		return
+	}
+
+	if r.process.IsInstalling(id) || r.process.IsDeployingMods(id) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Server is installing or mods are already deploying"})
+		return
+	}
+
+	if err := logger.ResetLog(r.config.LogDir, id, logger.KindSteamCMD); err != nil {
+		fmt.Printf("warning: reset steamcmd log for server %d: %v\n", id, err)
+	}
+
+	go func() {
+		capture := logger.NewCapture(id, logger.KindSteamCMD, r.config.LogDir)
+		broadcaster := logger.NewBroadcastWriter(r.streams, id, logger.KindSteamCMD)
+		out := io.MultiWriter(capture, broadcaster)
+		defer capture.Close()
+
+		result := "ok"
+		if err := r.process.DeployServerMods(id, out); err != nil {
+			result = "error"
+			fmt.Printf("server %d mod deploy failed: %v\n", id, err)
+		}
+		r.streams.BroadcastEvent(id, logger.KindSteamCMD, "done", result)
+	}()
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":  "Mod deployment started",
+		"serverId": id,
+		"status":   "deploying",
+	})
+}

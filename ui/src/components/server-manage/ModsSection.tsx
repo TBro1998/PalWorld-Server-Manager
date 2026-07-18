@@ -1,27 +1,28 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Trash2, AlertTriangle, CheckCircle2, LogIn } from 'lucide-react'
-import { modsApi, steamApi } from '@/lib/api'
+import { Trash2, AlertTriangle, RefreshCw, Plus, CheckCircle2 } from 'lucide-react'
+import { modsApi, globalModsApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
-import type { Server, Mod } from '@/types/server'
+import type { ServerMod, Mod } from '@/types/server'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
-import { SectionShell, PasswordInput, Placeholder, useServer } from './shared'
-import { WorkshopBrowserDialog } from './WorkshopBrowserDialog'
+import { SectionShell, Placeholder, useServer } from './shared'
 
-// Mods nav item for the manage page. Manual mod-list CRUD plus the "update mods"
-// action that runs SteamCMD (download + deploy + config write). Reuses the
-// steamcmd log stream via ServerLogsDialog for progress. Mod changes only take
-// effect after a server restart, so a hint is shown while the server runs.
+// ModsSection: server-scoped mod management. Shows which global library mods
+// are linked to this server, lets the user add/remove links and toggle enabled
+// state, and deploys the staged files into the server directory.
 //
-// NOTE: this section is intentionally self-saving (its mutations persist
-// immediately); it does NOT participate in the settings draft / save bar.
+// Workshop search and global downloads live in /mods (the global library page).
+// This section intentionally has no Workshop browser.
 export function ModsSection() {
   const t = useTranslations('serverManage')
   const { data: server } = useServer()
@@ -36,233 +37,121 @@ export function ModsSection() {
 
   return (
     <SectionShell title={t('sections.mods')} desc={t('modsSection.desc')} comingSoon={false}>
-      <ModsBody server={server} />
+      <ModsBody serverId={server.id} serverStatus={server.status} />
     </SectionShell>
   )
 }
 
-function ModsBody({ server }: { server: Server }) {
+function ModsBody({ serverId, serverStatus }: { serverId: number; serverStatus: string }) {
   const t = useTranslations('serverConfig')
   const queryClient = useQueryClient()
-  const [workshopId, setWorkshopId] = useState('')
-  const [name, setName] = useState('')
   const [logsOpen, setLogsOpen] = useState(false)
-  const [browseOpen, setBrowseOpen] = useState(false)
-  // Set once any mod change is made this session; drives the restart hint.
+  const [addOpen, setAddOpen] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['mods', server.id] })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['serverMods', serverId] })
   const onError = (err: unknown) => {
     const e = err as { response?: { data?: { error?: string } } }
     setError(e.response?.data?.error ?? 'Request failed')
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ['mods', server.id],
-    queryFn: async () => (await modsApi.list(server.id)).data,
+    queryKey: ['serverMods', serverId],
+    queryFn: async () => (await modsApi.list(serverId)).data,
   })
-  const mods: Mod[] = data?.mods ?? []
-
-  // A cached Steam session is required before downloads can succeed; gate the
-  // "update mods" action on it.
-  const { data: steamStatus } = useQuery({
-    queryKey: ['steamStatus'],
-    queryFn: async () => (await steamApi.status()).data,
-  })
-  const sessionReady = steamStatus?.sessionReady ?? false
-  const webApiKeyConfigured = steamStatus?.webApiKeyConfigured ?? false
-
-  const addMutation = useMutation({
-    mutationFn: async () => {
-      await modsApi.add(server.id, { workshopId: workshopId.trim(), name: name.trim() || undefined })
-    },
-    onSuccess: () => {
-      setWorkshopId('')
-      setName('')
-      setError(null)
-      setDirty(true)
-      invalidate()
-    },
-    onError,
-  })
+  const serverMods: ServerMod[] = data?.mods ?? []
 
   const toggleMutation = useMutation({
-    mutationFn: async (modId: number) => {
-      await modsApi.toggle(server.id, modId)
-    },
-    onSuccess: () => {
-      setError(null)
-      setDirty(true)
-      invalidate()
-    },
+    mutationFn: async (serverModId: number) => modsApi.toggle(serverId, serverModId),
+    onSuccess: () => { setError(null); setDirty(true); invalidate() },
     onError,
   })
 
-  const removeMutation = useMutation({
-    mutationFn: async (modId: number) => {
-      await modsApi.remove(server.id, modId)
-    },
-    onSuccess: () => {
-      setError(null)
-      setDirty(true)
-      invalidate()
-    },
+  const unlinkMutation = useMutation({
+    mutationFn: async (serverModId: number) => modsApi.unlink(serverId, serverModId),
+    onSuccess: () => { setError(null); setDirty(true); invalidate() },
     onError,
   })
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      await modsApi.update(server.id)
-    },
+  const deployMutation = useMutation({
+    mutationFn: async () => modsApi.deploy(serverId),
     onSuccess: () => {
       setError(null)
       setDirty(true)
       setLogsOpen(true)
-      // The run is async; completion arrives via the log dialog's `done` event
-      // (see onDone below), which refreshes the list and closes on full success.
     },
     onError,
   })
 
-  const busy = addMutation.isPending || updateMutation.isPending
+  const hasVersionMismatch = serverMods.some((m) => m.version_mismatch)
+  const busy = toggleMutation.isPending || deployMutation.isPending
 
   return (
     <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{t('mods.hint')}</p>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => updateMutation.mutate()}
-          disabled={busy || mods.length === 0 || !sessionReady}
-        >
-          {updateMutation.isPending ? t('mods.updating') : t('mods.update')}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            {t('mods.addFromLibrary')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => deployMutation.mutate()}
+            disabled={busy || serverMods.length === 0}
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            {deployMutation.isPending ? t('mods.deploying') : t('mods.deploy')}
+          </Button>
+        </div>
       </div>
 
-      <SteamAccountSection />
-
-      {!sessionReady && (
-        <p className="text-sm text-warning">{t('steam.status.needLogin')}</p>
+      {hasVersionMismatch && (
+        <p className="flex items-center gap-1.5 text-sm text-warning">
+          <AlertTriangle size={14} className="shrink-0" />
+          {t('mods.versionMismatch')}
+        </p>
       )}
 
-      {server.status === 'running' && dirty && (
+      {serverStatus === 'running' && dirty && (
         <p className="text-sm text-warning">{t('mods.restartNeeded')}</p>
       )}
-
-      {/* Add form + Browse Workshop */}
-      <div className="flex flex-wrap items-end gap-2 rounded-2xl border-2 p-4 shadow-pal">
-        <div className="space-y-1">
-          <Label htmlFor="mod-workshop-id">{t('mods.workshopId')}</Label>
-          <Input
-            id="mod-workshop-id"
-            value={workshopId}
-            onChange={(e) => setWorkshopId(e.target.value)}
-            placeholder="1234567890"
-            className="max-w-[200px]"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="mod-name">{t('mods.name')}</Label>
-          <Input
-            id="mod-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t('mods.namePlaceholder')}
-            className="max-w-[200px]"
-          />
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => addMutation.mutate()}
-          disabled={busy || workshopId.trim() === ''}
-        >
-          {t('mods.add')}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setBrowseOpen(true)}
-          disabled={!webApiKeyConfigured}
-          title={webApiKeyConfigured ? undefined : t('workshop.noKey')}
-        >
-          {t('workshop.browse')}
-        </Button>
-      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Mod list */}
       {isLoading ? (
         <Placeholder className="min-h-[120px]">{t('loading')}</Placeholder>
-      ) : mods.length === 0 ? (
+      ) : serverMods.length === 0 ? (
         <Placeholder className="min-h-[120px]">{t('mods.empty')}</Placeholder>
       ) : (
         <div className="space-y-2">
-          {mods.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/60 px-4 py-2.5"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 text-sm font-medium">
-                  {/* Prefer the Info.json ModName once downloaded; fall back to
-                      the user-supplied name, then the workshop id. */}
-                  {m.mod_name || m.name || m.workshop_id}
-                  {m.package_name === '' && (
-                    <AlertTriangle
-                      size={14}
-                      className="text-warning"
-                      aria-label={t('mods.notDownloaded')}
-                    />
-                  )}
-                </div>
-                <div className="font-mono text-xs text-muted-foreground">
-                  {m.workshop_id}
-                  {m.package_name ? ` · ${m.package_name}` : ''}
-                  {m.version ? ` · v${m.version}` : ''}
-                </div>
-                {(m.tags ?? []).length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {(m.tags ?? []).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-border/60 bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <Switch
-                  checked={m.enabled}
-                  onCheckedChange={() => toggleMutation.mutate(m.id)}
-                  disabled={busy}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeMutation.mutate(m.id)}
-                  disabled={busy}
-                  className="text-muted-foreground hover:text-destructive disabled:opacity-50"
-                  aria-label={t('mods.remove')}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
+          {serverMods.map((sm) => (
+            <ServerModRow
+              key={sm.id}
+              sm={sm}
+              busy={busy}
+              onToggle={() => toggleMutation.mutate(sm.id)}
+              onUnlink={() => unlinkMutation.mutate(sm.id)}
+              t={t}
+            />
           ))}
         </div>
       )}
 
+      {/* Deploy logs dialog */}
       <ServerLogsDialog
         open={logsOpen}
         onOpenChange={setLogsOpen}
-        server={server}
+        server={{ id: serverId } as never}
         kind="steamcmd"
         onDone={(success) => {
           invalidate()
@@ -270,321 +159,179 @@ function ModsBody({ server }: { server: Server }) {
         }}
       />
 
-      <WorkshopBrowserDialog
-        open={browseOpen}
-        onOpenChange={setBrowseOpen}
-        server={server}
-        mods={mods}
+      {/* Add from library dialog */}
+      <AddFromLibraryDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        serverId={serverId}
+        linkedModIds={new Set(serverMods.map((sm) => sm.mod_id))}
+        onLinked={() => { invalidate(); setDirty(true) }}
       />
     </div>
   )
 }
 
-// SteamAccountSection shows the configured Steam account status and drives the
-// app-in login flow. Login runs `steamcmd +login` server-side; a Steam Guard
-// code is requested in a second step only if needed. The password is only sent
-// for the login request and is never stored by the tool.
-function SteamAccountSection() {
+function ServerModRow({
+  sm,
+  busy,
+  onToggle,
+  onUnlink,
+  t,
+}: {
+  sm: ServerMod
+  busy: boolean
+  onToggle: () => void
+  onUnlink: () => void
+  t: (key: string) => string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/60 px-4 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+          {sm.mod_name || sm.name || sm.workshop_id}
+          {!sm.downloaded && (
+            <span title={t('mods.notDownloaded')}>
+              <AlertTriangle size={14} className="text-warning shrink-0" />
+            </span>
+          )}
+          {sm.version_mismatch && (
+            <span title={t('mods.versionMismatch')}>
+              <RefreshCw size={14} className="text-warning shrink-0" />
+            </span>
+          )}
+        </div>
+        <div className="font-mono text-xs text-muted-foreground">
+          {sm.workshop_id}
+          {sm.package_name ? ` · ${sm.package_name}` : ''}
+          {sm.version ? ` · v${sm.version}` : ''}
+          {sm.deployed_version && sm.deployed_version !== sm.version && (
+            <span className="ml-1 text-warning">
+              ({t('mods.deployedVersion')}: v{sm.deployed_version})
+            </span>
+          )}
+        </div>
+        {(sm.tags ?? []).length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {(sm.tags ?? []).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-border/60 bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <Switch checked={sm.enabled} onCheckedChange={onToggle} disabled={busy} />
+        <button
+          type="button"
+          onClick={onUnlink}
+          disabled={busy}
+          className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+          aria-label={t('mods.remove')}
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// AddFromLibraryDialog shows all downloaded global mods not yet linked to
+// this server and lets the user pick one or more to link.
+function AddFromLibraryDialog({
+  open,
+  onOpenChange,
+  serverId,
+  linkedModIds,
+  onLinked,
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  serverId: number
+  linkedModIds: Set<number>
+  onLinked: () => void
+}) {
   const t = useTranslations('serverConfig')
   const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [guardCode, setGuardCode] = useState('')
-  const [needGuard, setNeedGuard] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [logLines, setLogLines] = useState<string[]>([])
-  const [live, setLive] = useState(false)
-  const [loggedIn, setLoggedIn] = useState(false)
-  const logScrollRef = useRef<HTMLDivElement | null>(null)
 
-  // Web API Key sub-state
-  const [keyInput, setKeyInput] = useState('')
-  const [keySaved, setKeySaved] = useState<'saved' | 'cleared' | null>(null)
-
-  const { data: status } = useQuery({
-    queryKey: ['steamStatus'],
-    queryFn: async () => (await steamApi.status()).data,
+  const { data } = useQuery({
+    queryKey: ['globalMods'],
+    queryFn: async () => (await globalModsApi.list()).data,
+    enabled: open,
   })
+  const allMods: Mod[] = (data?.mods ?? []).filter(
+    (m) => m.downloaded && !linkedModIds.has(m.id),
+  )
 
-  const configured = !!status?.username
-  const sessionReady = status?.sessionReady ?? false
-
-  // Open the live steamcmd login SSE stream while the dialog is open, before the
-  // user submits, so the first output lines are not missed. Backend emits named
-  // `log` events (one per line) on the global login stream. The dialog is not
-  // auto-closed on success, so the full run stays visible.
-  useEffect(() => {
-    if (!open) return
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset log UI state on (re)open
-    setLogLines([])
-    setLive(false)
-
-    const es = new EventSource(steamApi.loginStreamUrl())
-    es.addEventListener('log', (e) => {
-      setLogLines((prev) => [...prev, (e as MessageEvent).data])
-    })
-    es.onopen = () => setLive(true)
-    es.onerror = () => setLive(false)
-
-    return () => {
-      es.close()
-      setLive(false)
-    }
-  }, [open])
-
-  // Auto-scroll the log view to the bottom as new lines arrive.
-  useEffect(() => {
-    const el = logScrollRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [logLines])
-
-  const openDialog = () => {
-    setUsername(status?.username ?? '')
-    setPassword('')
-    setGuardCode('')
-    setNeedGuard(false)
-    setError(null)
-    setLoggedIn(false)
-    setOpen(true)
-  }
-
-  const loginMutation = useMutation({
-    mutationFn: async () =>
-      (
-        await steamApi.login({
-          username: username.trim(),
-          password,
-          guardCode: needGuard ? guardCode.trim() || undefined : undefined,
-        })
-      ).data,
-    onSuccess: (data) => {
-      switch (data.result) {
-        case 'success':
-          setPassword('')
-          setGuardCode('')
-          setError(null)
-          setLoggedIn(true)
-          queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
-          break
-        case 'needGuard':
-          setNeedGuard(true)
-          setError(null)
-          break
-        case 'badCredentials':
-          setError(t('steam.badCredentials'))
-          break
-        default:
-          setError(t('steam.error'))
-      }
+  const linkMutation = useMutation({
+    mutationFn: async (modId: number) => modsApi.link(serverId, { modId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['serverMods', serverId] })
+      onLinked()
+      setError(null)
     },
-    onError: () => setError(t('steam.error')),
-  })
-
-  const saveKeyMutation = useMutation({
-    mutationFn: async (key: string) => (await steamApi.setWebApiKey(key)).data,
-    onSuccess: (_data, key) => {
-      setKeySaved(key.trim() ? 'saved' : 'cleared')
-      setKeyInput('')
-      queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
-      setTimeout(() => setKeySaved(null), 3000)
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { error?: string } } }
+      setError(e.response?.data?.error ?? 'Failed to link mod')
     },
   })
-
-  // Steam Guard mobile-authenticator accounts block on the user approving the
-  // login in the phone app ("Waiting for confirmation..."); surface a clear hint
-  // while that is pending so the user knows to check their phone.
-  const awaitingConfirm =
-    loginMutation.isPending &&
-    !loggedIn &&
-    logLines.some((l) => /confirm the login|waiting for confirmation/i.test(l))
 
   return (
-    <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-muted-foreground">{t('steam.title')}</div>
-          {sessionReady ? (
-            <div className="flex items-center gap-1.5 text-sm">
-              <CheckCircle2 size={14} className="shrink-0 text-success" />
-              <span className="truncate">{t('steam.status.loggedIn')}: {status?.username}</span>
-            </div>
-          ) : configured ? (
-            <div className="flex items-center gap-1.5 text-sm text-warning">
-              <AlertTriangle size={14} className="shrink-0" />
-              <span className="truncate">{t('steam.status.needLogin')}</span>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">{t('steam.status.notConfigured')}</div>
-          )}
-        </div>
-        <Button type="button" size="sm" variant="outline" onClick={openDialog} className="shrink-0">
-          <LogIn size={14} className="mr-1" />
-          {sessionReady ? t('steam.relogin') : t('steam.login')}
-        </Button>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('mods.addFromLibrary')}</DialogTitle>
+        </DialogHeader>
 
-      {/* Web API Key row — for Workshop search (low-sensitivity read-only key) */}
-      <div className="mt-3 border-t border-border/40 pt-3">
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-medium text-muted-foreground shrink-0">
-            {t('steam.webApiKey.label')}
-          </div>
-          {status?.webApiKeyConfigured ? (
-            <span className="flex items-center gap-1 text-xs text-success">
-              <CheckCircle2 size={12} className="shrink-0" />
-              {t('steam.webApiKey.configured')}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">
-              {t('steam.webApiKey.notConfigured')}
-            </span>
-          )}
-          {keySaved === 'saved' && (
-            <span className="text-xs text-success">{t('steam.webApiKey.saved')}</span>
-          )}
-          {keySaved === 'cleared' && (
-            <span className="text-xs text-muted-foreground">{t('steam.webApiKey.cleared')}</span>
-          )}
-        </div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <Input
-            id="steam-webapi-key"
-            type="password"
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-            placeholder={t('steam.webApiKey.placeholder')}
-            className="h-8 text-xs"
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 shrink-0 px-2.5 text-xs"
-            disabled={saveKeyMutation.isPending || keyInput.trim() === ''}
-            onClick={() => saveKeyMutation.mutate(keyInput.trim())}
-          >
-            {saveKeyMutation.isPending ? t('steam.webApiKey.saving') : t('steam.webApiKey.save')}
-          </Button>
-          {status?.webApiKeyConfigured && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-8 shrink-0 px-2.5 text-xs text-muted-foreground"
-              disabled={saveKeyMutation.isPending}
-              onClick={() => saveKeyMutation.mutate('')}
-            >
-              {t('steam.webApiKey.clear')}
-            </Button>
-          )}
-        </div>
-        <p className="mt-1 text-[10px] text-muted-foreground">{t('steam.webApiKey.hint')}</p>
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('steam.title')}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="steam-username">{t('steam.username')}</Label>
-              <Input
-                id="steam-username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="off"
-                disabled={needGuard}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="steam-password">{t('steam.password')}</Label>
-              <PasswordInput id="steam-password" value={password} onChange={setPassword} />
-            </div>
-
-            {needGuard && (
-              <div className="space-y-1">
-                <Label htmlFor="steam-guard">{t('steam.guardCode')}</Label>
-                <Input
-                  id="steam-guard"
-                  value={guardCode}
-                  onChange={(e) => setGuardCode(e.target.value)}
-                  autoComplete="off"
-                />
-                <p className="text-xs text-muted-foreground">{t('steam.guardHint')}</p>
-              </div>
-            )}
-
-            <p className="text-xs text-muted-foreground">{t('steam.passwordNotStored')}</p>
-            {awaitingConfirm && (
-              <p className="flex items-center gap-1.5 rounded-md bg-warning/10 px-2 py-1.5 text-sm text-warning">
-                <AlertTriangle size={14} className="shrink-0" />
-                {t('steam.confirmOnPhone')}
-              </p>
-            )}
-            {loggedIn && (
-              <p className="flex items-center gap-1.5 text-sm text-success">
-                <CheckCircle2 size={14} className="shrink-0" />
-                {t('steam.success')}
-              </p>
-            )}
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Label>{t('steam.output')}</Label>
-                {live && (
-                  <span className="flex items-center gap-1 text-xs font-normal text-success">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
-                    {t('steam.live')}
-                  </span>
-                )}
-              </div>
+        {allMods.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t('mods.noDownloadedMods')}
+          </p>
+        ) : (
+          <div className="max-h-80 space-y-1.5 overflow-y-auto">
+            {allMods.map((mod) => (
               <div
-                ref={logScrollRef}
-                className="max-h-48 overflow-auto rounded-md bg-black/90 p-2 font-mono text-xs text-green-200"
+                key={mod.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border/50 px-3 py-2"
               >
-                {logLines.length === 0 ? (
-                  <div className="text-zinc-500">{t('steam.outputEmpty')}</div>
-                ) : (
-                  logLines.map((line, i) => (
-                    <div key={i} className="whitespace-pre-wrap break-all">
-                      {line}
-                    </div>
-                  ))
-                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    {mod.mod_name || mod.name || mod.workshop_id}
+                    <CheckCircle2 size={13} className="text-success shrink-0" />
+                  </div>
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {mod.workshop_id}
+                    {mod.version ? ` · v${mod.version}` : ''}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 px-2.5 text-xs"
+                  disabled={linkMutation.isPending}
+                  onClick={() => linkMutation.mutate(mod.id)}
+                >
+                  <Plus size={12} className="mr-1" />
+                  {t('mods.addFromLibrary')}
+                </Button>
               </div>
-            </div>
+            ))}
           </div>
+        )}
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loginMutation.isPending}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => loginMutation.mutate()}
-              disabled={
-                loginMutation.isPending ||
-                loggedIn ||
-                username.trim() === '' ||
-                password === '' ||
-                (needGuard && guardCode.trim() === '')
-              }
-            >
-              {loginMutation.isPending ? t('steam.loggingIn') : t('steam.login')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t('cancel')}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
