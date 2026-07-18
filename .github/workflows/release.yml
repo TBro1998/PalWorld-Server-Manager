@@ -108,12 +108,66 @@ jobs:
           cache-to: type=gha,mode=max
 
       # -----------------------------------------------------------------------
-      # GitHub Release — attach binaries and auto-generate notes
+      # Generate release notes from conventional commits between tags
+      - name: Generate release notes
+        run: |
+          PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null \
+                 || git rev-list --max-parents=0 HEAD)
+          RANGE="${PREV}..HEAD"
+          echo "Generating notes for range: ${RANGE}"
+
+          # Temp files per section
+          > /tmp/s_feat.txt; > /tmp/s_fix.txt;      > /tmp/s_perf.txt
+          > /tmp/s_refactor.txt; > /tmp/s_docs.txt; > /tmp/s_ci.txt
+          > /tmp/s_chore.txt;    > /tmp/s_other.txt
+
+          while IFS='|' read -r msg hash; do
+            # Strip scope to keep the line readable: "feat(x): desc" -> "desc"
+            body="${msg#*: }"
+            scope=""
+            if [[ "$msg" =~ \(([^)]+)\) ]]; then scope=" (\`${BASH_REMATCH[1]}\`)"; fi
+            line="- ${body}${scope} — \`${hash}\`"
+
+            if   [[ "$msg" =~ ^feat(\([^)]+\))?: ]];     then echo "$line" >> /tmp/s_feat.txt
+            elif [[ "$msg" =~ ^fix(\([^)]+\))?: ]];      then echo "$line" >> /tmp/s_fix.txt
+            elif [[ "$msg" =~ ^perf(\([^)]+\))?: ]];     then echo "$line" >> /tmp/s_perf.txt
+            elif [[ "$msg" =~ ^refactor(\([^)]+\))?: ]]; then echo "$line" >> /tmp/s_refactor.txt
+            elif [[ "$msg" =~ ^docs(\([^)]+\))?: ]];     then echo "$line" >> /tmp/s_docs.txt
+            elif [[ "$msg" =~ ^ci(\([^)]+\))?: ]];       then echo "$line" >> /tmp/s_ci.txt
+            elif [[ "$msg" =~ ^chore(\([^)]+\))?: ]];    then echo "$line" >> /tmp/s_chore.txt
+            else  echo "$line" >> /tmp/s_other.txt
+            fi
+          done < <(git log "${RANGE}" --pretty=format:"%s|%h" --no-merges)
+
+          section() {
+            local title="$1" file="$2"
+            [ -s "$file" ] && printf "## %s\n%s\n\n" "$title" "$(cat "$file")"
+          }
+
+          {
+            section "🚀 新功能 / New Features"     /tmp/s_feat.txt
+            section "🐛 问题修复 / Bug Fixes"      /tmp/s_fix.txt
+            section "⚡ 性能优化 / Performance"    /tmp/s_perf.txt
+            section "🔨 重构 / Refactoring"        /tmp/s_refactor.txt
+            section "📖 文档 / Documentation"      /tmp/s_docs.txt
+            section "⚙️ CI/CD"                     /tmp/s_ci.txt
+            section "🔧 其他改动 / Other Changes"  /tmp/s_chore.txt
+            section "📌 其他提交 / Other Commits"  /tmp/s_other.txt
+          } > /tmp/release_notes.md
+
+          [ -s /tmp/release_notes.md ] \
+            || echo "No documented changes in this release." > /tmp/release_notes.md
+
+          echo "--- Preview ---"
+          cat /tmp/release_notes.md
+
+      # -----------------------------------------------------------------------
+      # GitHub Release — attach binaries with generated notes
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             psm_windows_amd64.exe
             psm_linux_amd64
-          generate_release_notes: true
+          body_path: /tmp/release_notes.md
           make_latest: true
