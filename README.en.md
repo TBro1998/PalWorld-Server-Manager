@@ -24,10 +24,10 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 - 🔧 **Mod Management** - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
 - ⬆️ **Auto-update** - Update detection and one-click update based on GitHub Releases
+- 🔒 **Authentication** - JWT authentication and user management to protect remote access
 
 ### Planned
 
-- 🔒 **Authentication** - JWT authentication and user management to protect remote access
 - 📊 **Real-time Monitoring** - CPU, memory, and online player statistics
 
 ## Installation & Usage
@@ -104,11 +104,17 @@ The program automatically creates the `steamclient.so` symlink required by Palwo
 ### REST API Commands (Implemented)
 - broadcast / save / shutdown / kick / ban (RCON replacement)
 
+### Mod Management (Implemented)
+- Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
+
+### Authentication (Implemented)
+- Username/password login with JWT session protection
+
+### Auto-update (Implemented)
+- Update detection and one-click update based on GitHub Releases
+
 ### Planned
-- **Mod Management**: Enter a Workshop ID to auto-download and install mods, enable/disable with one click, manage the installed list
-- **Authentication**: Username/password login with JWT session protection
 - **System Monitoring**: Server CPU, memory usage, and online player count
-- **Auto-update**: Update detection and one-click update based on GitHub Releases
 
 ## Configuration
 
