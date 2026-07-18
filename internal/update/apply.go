@@ -24,6 +24,10 @@ import (
 // (0-100) and a status message.  It is also called with pct=-1 for non-progress
 // log lines (checksum verification, apply status, etc.).
 //
+// onRestarting is called right before the process exits, giving the caller a
+// chance to flush a "restarting" SSE event to connected clients before the
+// HTTP server dies.  It must not block for more than a few hundred milliseconds.
+//
 // On any failure before the binary has been replaced, Apply returns an error
 // and the original binary remains intact.  After a successful selfupdate.Apply
 // the function initiates re-exec and does not return normally.
@@ -32,7 +36,7 @@ import (
 // It is registered under the protected API group; once JWT auth is enabled it
 // will be automatically covered.  Until then, the default host binding of
 // 127.0.0.1 limits exposure.
-func Apply(ctx context.Context, result *CheckResult, mirror string, progress ProgressFunc) error {
+func Apply(ctx context.Context, result *CheckResult, mirror string, progress ProgressFunc, onRestarting func()) error {
 	if result == nil || !result.HasUpdate {
 		return fmt.Errorf("no update available")
 	}
@@ -117,9 +121,15 @@ func Apply(ctx context.Context, result *CheckResult, mirror string, progress Pro
 		log.Printf("update: restart failed (%v), exiting so supervisor can restart", err)
 	}
 
-	// Give the SSE connection a moment to flush the "restarting" event before
-	// the process exits.
-	time.Sleep(500 * time.Millisecond)
+	// Notify the caller so it can broadcast the "restarting" SSE event to all
+	// connected clients before the HTTP server dies.
+	if onRestarting != nil {
+		onRestarting()
+	}
+
+	// Give the SSE connection time to flush the "restarting" event to clients
+	// before the process exits.
+	time.Sleep(1500 * time.Millisecond)
 	os.Exit(0)
 	return nil // unreachable
 }

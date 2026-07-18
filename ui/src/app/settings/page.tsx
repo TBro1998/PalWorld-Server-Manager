@@ -61,7 +61,8 @@ export default function SettingsPage() {
     }
   }, [t])
 
-  // Poll /version after restart until new version appears
+  // Poll /version after restart until new version appears, then reload the page
+  // so the UI reflects any frontend changes bundled in the new binary.
   const pollForNewVersion = useCallback((expected: string) => {
     let attempts = 0
     const maxAttempts = 60 // 60 × 2s = 2 minutes
@@ -74,6 +75,9 @@ export default function SettingsPage() {
           setVersionInfo(r.data)
           setRestartVersion(expected)
           setRestarting(false)
+          // Reload the page after 5 s so the browser picks up the new
+          // frontend assets bundled in the updated binary.
+          setTimeout(() => window.location.reload(), 5000)
           return
         }
       } catch {
@@ -110,14 +114,27 @@ export default function SettingsPage() {
     })
     es.addEventListener('log', (e: MessageEvent) => { setApplyMsg(e.data) })
     es.addEventListener('error', (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data) as { error: string }
-        setUpdateError(data.error || t('update.applyFailed'))
-      } catch {
-        setUpdateError(t('update.applyFailed'))
+      // e.data is set only when the server explicitly sent a named "error" SSE
+      // event.  A bare connection-closed / network error has no data — that
+      // almost always means the process exited to restart, not a real failure.
+      // In that case treat it as an implicit "restarting" signal so we don't
+      // flash a spurious "update failed" banner.
+      if (e.data) {
+        try {
+          const data = JSON.parse(e.data) as { error: string }
+          setUpdateError(data.error || t('update.applyFailed'))
+        } catch {
+          setUpdateError(t('update.applyFailed'))
+        }
+        setApplying(false)
+        es.close()
+      } else {
+        // Connection dropped without an error payload — implicit restart.
+        setRestarting(true)
+        setApplying(false)
+        es.close()
+        pollForNewVersion(expectedVersion)
       }
-      setApplying(false)
-      es.close()
     })
     es.addEventListener('restarting', () => {
       setRestarting(true)

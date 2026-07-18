@@ -89,18 +89,25 @@ func (r *Router) ApplyUpdate(c *gin.Context) {
 
 	update.SetStatus(update.UpdateStatus{Phase: update.PhaseDownloading})
 
+	// onRestarting is called from within Apply() right before os.Exit, giving
+	// us a window to flush the "restarting" SSE event to clients while the
+	// HTTP server is still alive.
+	onRestarting := func() {
+		update.SetStatus(update.UpdateStatus{Phase: update.PhaseRestarting})
+		r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "restarting", `{}`)
+	}
+
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
 
-		if err := update.Apply(ctx, result, mirror, progress); err != nil {
+		// Apply never returns on success — it calls os.Exit(0) after launching
+		// the new process.  It only returns here when the download or binary
+		// replacement step fails before any file has been replaced.
+		if err := update.Apply(ctx, result, mirror, progress, onRestarting); err != nil {
 			update.SetStatus(update.UpdateStatus{Phase: update.PhaseError, Err: err.Error()})
 			r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "error",
 				fmt.Sprintf(`{"error":%q}`, err.Error()))
-		} else {
-			// Apply only returns if restart itself failed; signal the client.
-			update.SetStatus(update.UpdateStatus{Phase: update.PhaseRestarting})
-			r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "restarting", `{}`)
 		}
 	}()
 
