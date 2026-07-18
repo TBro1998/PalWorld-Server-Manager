@@ -10,29 +10,40 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 
 ## Features
 
-### Implemented
+### 🚀 Server Management (Implemented)
+- One-click Palworld dedicated server installation via SteamCMD
+- Start, stop, and restart servers
+- Multi-server support — independent configs, saves, and ports
+- Visually edit server parameters, launch arguments, and ports
 
-- 🚀 **One-click Server Management** - Start, stop, and restart servers with ease
-- 📥 **One-click Server Installation** - Download and install the Palworld dedicated server via SteamCMD
-- 🎮 **Multi-server Support** - Manage multiple servers with independent configs, saves, and ports
-- ⚙️ **Visual Configuration Editing** - Graphically edit launch arguments and `PalWorldSettings.ini`
-- 📝 **Live Logs** - View server logs in real time via SSE (including historical logs)
-- 🎛️ **REST API Commands** - broadcast / save / shutdown / kick / ban as an RCON replacement
-- 🌍 **Multi-language** - Chinese, English, and Japanese support
-- 📦 **Single Binary** - Frontend embedded in the Go binary (~15-25MB)
-- 🖥️ **Cross-platform Architecture** - Cross-platform at the code level; currently only Windows is officially supported due to mod constraints
+### 📝 Logs (Implemented)
+- View server logs in real time via SSE push
+- View historical logs
 
-- 🔧 **Mod Management** - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
-- ⬆️ **Auto-update** - Update detection and one-click update based on GitHub Releases
-- 🔒 **Authentication** - JWT authentication and user management to protect remote access
+### 🎛️ REST API Commands (Implemented)
+- broadcast / save / shutdown / kick / ban (RCON replacement)
 
-### Planned
+### 🔧 Mod Management (Implemented)
+- Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
 
-- 📊 **Real-time Monitoring** - CPU, memory, and online player statistics
-- ⏰ **Scheduled Tasks** - Configure scheduled restarts, saves, and other recurring tasks
-- 💾 **Backup Management** - Automatic save backups and one-click restore
-- 🔄 **Crash Recovery** - Auto-restart on unexpected server exit with alert notifications
-- 🌐 **Player Portal** - A dedicated login page for game players to check server status and submit requests
+### 🔒 Authentication (Implemented)
+- Username/password login with JWT session protection for remote access
+
+### ⬆️ Auto-update (Implemented)
+- Update detection and one-click update based on GitHub Releases
+
+### 🌍 Other (Implemented)
+- Multi-language support — Chinese, English, and Japanese
+- Single binary — frontend embedded in the Go binary (~15-25MB)
+- Cross-platform architecture — cross-platform at the code level; currently only Windows is officially supported due to mod constraints
+
+### 📋 Planned
+- 📊 **Real-time Monitoring**: Server CPU, memory usage, and online player count
+- ⏰ **Scheduled Tasks**: Configure scheduled restarts, saves, and other recurring tasks
+- 💾 **Backup Management**: Automatic save backups and one-click restore
+- 🔄 **Crash Recovery**: Auto-restart on unexpected server exit with alert notifications
+- 🌐 **Player Portal**: A dedicated login page for game players to check server status and submit requests
+- 🐳 **Containerized Game Server**: Run the Palworld game server inside an isolated Docker container for better isolation and resource control
 
 ## Installation & Usage
 
@@ -91,38 +102,6 @@ HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
 ```
 
 The program automatically creates the `steamclient.so` symlink required by Palworld under `~/.steam/sdk64`; once installation completes, you can start the server.
-
-## Main Features
-
-### Server Management (Implemented)
-- One-click Palworld dedicated server installation
-- Start, stop, restart servers
-- Visually edit server parameters, launch arguments, and ports
-- View server running status
-- Independent management of multiple servers
-
-### Logs (Implemented)
-- View server logs in real time (SSE push)
-- View historical logs
-
-### REST API Commands (Implemented)
-- broadcast / save / shutdown / kick / ban (RCON replacement)
-
-### Mod Management (Implemented)
-- Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
-
-### Authentication (Implemented)
-- Username/password login with JWT session protection
-
-### Auto-update (Implemented)
-- Update detection and one-click update based on GitHub Releases
-
-### Planned
-- **Real-time Monitoring**: Server CPU, memory usage, and online player count
-- **Scheduled Tasks**: Configure scheduled restarts, saves, and other recurring tasks
-- **Backup Management**: Automatic save backups and one-click restore
-- **Crash Recovery**: Auto-restart on unexpected server exit with alert notifications
-- **Player Portal**: A dedicated login page for game players to check server status and submit requests
 
 ## Configuration
 
