@@ -160,3 +160,10 @@ jwt_secret: "your-secure-secret-key"
 ## 贡献
 
 欢迎贡献代码！请随时提交 Pull Request。
+
+## 致谢
+
+本项目的开发离不开以下开源项目的启发与参考，特此致谢：
+
+- [PalworldSaveTools](https://github.com/deafdudecomputers/PalworldSaveTools) - 幻兽帕鲁存档解析与工具库
+- [palworld-save-pal](https://github.com/oMaN-Rod/palworld-save-pal) - 幻兽帕鲁存档管理工具

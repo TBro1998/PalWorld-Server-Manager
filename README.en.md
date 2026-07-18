@@ -160,3 +160,10 @@ If you want to contribute or learn about technical details, please refer to:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgements
+
+This project was inspired by the following open-source projects:
+
+- [PalworldSaveTools](https://github.com/deafdudecomputers/PalworldSaveTools) - Palworld save file parsing and tooling
+- [palworld-save-pal](https://github.com/oMaN-Rod/palworld-save-pal) - Palworld save manager

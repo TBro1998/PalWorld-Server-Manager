@@ -160,3 +160,10 @@ jwt_secret: "your-secure-secret-key"
 ## コントリビュート
 
 プルリクエストを歓迎します！お気軽にご投稿ください。
+
+## 謝辞
+
+本プロジェクトは以下のオープンソースプロジェクトにインスピレーションを受けています。感謝申し上げます：
+
+- [PalworldSaveTools](https://github.com/deafdudecomputers/PalworldSaveTools) - Palworldセーブファイルの解析とツールライブラリ
+- [palworld-save-pal](https://github.com/oMaN-Rod/palworld-save-pal) - Palworldセーブ管理ツール
