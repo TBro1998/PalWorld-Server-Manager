@@ -115,11 +115,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			steam.GET("/status", r.SteamStatus)
 			steam.POST("/login", r.SteamLogin)
 			steam.GET("/logs/stream", r.SteamLogStream)
-			// GetWebAPIKey exposes the stored key to the browser so it can call
-			// Steam API directly (bypasses server-side network restrictions).
-			steam.GET("/webapi-key", r.GetWebAPIKey)
-			// Server-side proxies (kept for environments where the server CAN
-			// reach Steam; not used by the default browser-direct flow).
+			// Workshop search (proxies Steam Web API; key stays server-side).
 			steam.GET("/workshop/search", r.WorkshopSearch)
 			steam.GET("/workshop/mods/:workshopId/dependencies", r.WorkshopDependencies)
 			steam.POST("/webapi-key", r.SetWebAPIKey)

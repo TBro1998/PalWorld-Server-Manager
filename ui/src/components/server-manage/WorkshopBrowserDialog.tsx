@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useCallback, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,127 +10,17 @@ import { modsApi, steamApi } from '@/lib/api'
 import { useTranslations } from '@/contexts/LanguageContext'
 import type { Server, Mod, WorkshopItem, WorkshopDep } from '@/types/server'
 
-// ---------------------------------------------------------------------------
-// Browser-direct Steam API helpers
+// WorkshopBrowserDialog renders a modal workshop search experience:
+//   - keyword search (debounced) + paginated results
+//   - each result: thumbnail, title, short description, subscriber count
+//   - "View page" → opens the Steam community page in a new tab
+//   - "Add" → adds to this server's mod list (DB only, not yet downloaded)
+//     and checks for missing Steam-layer dependencies, prompting to add them too.
 //
-// The backend proxy (/api/steam/workshop/*) makes outbound requests from the
-// server, which fails when the server cannot reach api.steampowered.com (e.g.
-// behind a firewall). These helpers call Steam directly from the browser,
-// which typically can reach Steam even when the server cannot.
-// ---------------------------------------------------------------------------
-
-const STEAM_API = 'https://api.steampowered.com'
-const APP_ID = '1623730'
-const MAX_RECURSE_DEPTH = 5
-
-interface SteamSearchResult {
-  items: WorkshopItem[]
-  nextCursor: string
-  total: number
-}
-
-interface SteamDetailItem {
-  workshopId: string
-  title: string
-  previewUrl: string
-  children: string[]
-}
-
-async function steamQueryFiles(
-  key: string,
-  query: string,
-  cursor: string,
-  numPerPage: number,
-): Promise<SteamSearchResult> {
-  const params = new URLSearchParams({
-    key,
-    appid: APP_ID,
-    query_type: '12', // k_PublishedFileQueryType_RankedByTextSearch
-    search_text: query,
-    cursor: cursor || '*',
-    numperpage: String(Math.min(100, Math.max(1, numPerPage))),
-    return_short_description: 'true',
-    return_previews: 'true',
-    return_tags: 'true',
-    return_metadata: 'true',
-  })
-
-  const res = await fetch(`${STEAM_API}/IPublishedFileService/QueryFiles/v1/?${params}`)
-  if (!res.ok) throw new Error(`Steam API ${res.status}`)
-  const json = await res.json()
-  const r = json?.response ?? {}
-
-  const items: WorkshopItem[] = (r.publishedfiledetails ?? []).map((d: Record<string, unknown>) => ({
-    workshop_id: String(d.publishedfileid ?? ''),
-    title: String(d.title ?? ''),
-    description: String(d.short_description ?? ''),
-    preview_url: String(d.preview_url ?? ''),
-    author: String(d.creator ?? ''),
-    subscriptions: Number(d.subscriptions ?? 0),
-    views: Number(d.views ?? 0),
-    time_updated: Number(d.time_updated ?? 0),
-    tags: ((d.tags as { tag: string }[]) ?? []).map((t) => t.tag).filter(Boolean),
-  }))
-
-  let nextCursor = String(r.next_cursor ?? '')
-  // Normalise: Steam may echo back '*' or the same cursor on the last page.
-  if (nextCursor === cursor && items.length < numPerPage) nextCursor = ''
-
-  return { items, nextCursor, total: Number(r.total ?? 0) }
-}
-
-async function steamGetDetails(key: string, ids: string[]): Promise<SteamDetailItem[]> {
-  if (!ids.length) return []
-  const params = new URLSearchParams({
-    key,
-    return_children: 'true',
-    return_short_description: 'true',
-    return_previews: 'true',
-  })
-  ids.forEach((id, i) => params.append(`publishedfileids[${i}]`, id))
-
-  const res = await fetch(`${STEAM_API}/IPublishedFileService/GetDetails/v1/?${params}`)
-  if (!res.ok) throw new Error(`Steam API ${res.status}`)
-  const json = await res.json()
-
-  return ((json?.response?.publishedfiledetails ?? []) as Record<string, unknown>[]).map((d) => ({
-    workshopId: String(d.publishedfileid ?? ''),
-    title: String(d.title ?? ''),
-    previewUrl: String(d.preview_url ?? ''),
-    children: ((d.children as { publishedfileid: string }[]) ?? [])
-      .map((c) => String(c.publishedfileid ?? '').trim())
-      .filter(Boolean),
-  }))
-}
-
-async function steamResolveDeps(key: string, rootId: string): Promise<WorkshopDep[]> {
-  const visited = new Set([rootId])
-  const result: WorkshopDep[] = []
-  let queue = [rootId]
-
-  for (let depth = 0; depth < MAX_RECURSE_DEPTH && queue.length > 0; depth++) {
-    const details = await steamGetDetails(key, queue)
-    const nextQueue: string[] = []
-
-    for (const d of details) {
-      for (const childId of d.children) {
-        if (!childId || visited.has(childId)) continue
-        visited.add(childId)
-        nextQueue.push(childId)
-      }
-      if (d.workshopId !== rootId) {
-        result.push({ workshop_id: d.workshopId, title: d.title, preview_url: d.previewUrl })
-      }
-    }
-    queue = nextQueue
-  }
-  return result
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
+// Props:
+//   open / onOpenChange  — controlled visibility
+//   server               — current server (for modsApi calls)
+//   mods                 — the server's current mod list (for already-added detection)
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -148,7 +38,6 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
   const [allItems, setAllItems] = useState<WorkshopItem[]>([])
   const [total, setTotal] = useState(0)
   const [nextCursor, setNextCursor] = useState('')
-  const [isFetching, setIsFetching] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
@@ -158,22 +47,14 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
   const [pendingDeps, setPendingDeps] = useState<WorkshopDep[]>([])
   const [addingDeps, setAddingDeps] = useState(false)
 
-  // Fetch the Web API key from the backend (browser uses it directly).
-  const { data: keyData } = useQuery({
-    queryKey: ['steamWebApiKey'],
-    queryFn: async () => (await steamApi.getWebApiKey()).data,
-    enabled: open,
-    staleTime: 60_000,
-  })
-  const apiKey = keyData?.configured ? keyData.key : ''
-
-  // Set of workshop IDs already in the mod list.
-  const existingIds = useMemo(() => new Set(mods.map((m) => m.workshop_id)), [mods])
+  // Set of workshop IDs already in the mod list on open.
+  const existingIds = new Set(mods.map((m) => m.workshop_id))
 
   // Debounce the search query.
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query)
+      // Reset pagination when query changes.
       setCursor('*')
       setAllItems([])
       setTotal(0)
@@ -182,57 +63,52 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
     return () => clearTimeout(timer)
   }, [query])
 
-  // Reset state when the dialog opens.
+  // Reset state when the dialog opens/closes.
   useEffect(() => {
     if (!open) return
-    /* eslint-disable react-hooks/set-state-in-effect -- intentional: reset all dialog state on each open */
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset all search state on (re)open
     setQuery('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDebouncedQuery('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCursor('*')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAllItems([])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTotal(0)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNextCursor('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddedIds(new Set())
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null)
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open])
 
-  // Run the search whenever query or cursor changes (browser-direct).
-  useEffect(() => {
-    if (!open || !apiKey) return
-    let cancelled = false
-
-    /* eslint-disable react-hooks/set-state-in-effect -- direct setState is intentional here: start loading/clear error before the async fetch */
-    setIsFetching(true)
-    setError(null)
-    /* eslint-enable react-hooks/set-state-in-effect */
-    steamQueryFiles(apiKey, debouncedQuery, cursor, 20)
-      .then((res) => {
-        if (cancelled) return
-        if (cursor === '*') {
-          setAllItems(res.items)
-        } else {
-          setAllItems((prev) => [...prev, ...res.items])
-        }
-        setTotal(res.total)
-        setNextCursor(res.nextCursor)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(t('workshop.errors.steamError') + ' (' + String(err) + ')')
-      })
-      .finally(() => {
-        if (!cancelled) setIsFetching(false)
-      })
-
-    return () => { cancelled = true }
-  // debouncedQuery and cursor are the only pagination triggers; apiKey changes
-  // only when the user reconfigures the key (rare), which resets state anyway.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, apiKey, debouncedQuery, cursor])
+  const { isFetching } = useQuery({
+    queryKey: ['workshop-search', debouncedQuery, cursor],
+    queryFn: async () => {
+      const res = await steamApi.workshopSearch({ q: debouncedQuery, cursor, num: 20 })
+      const data = res.data
+      if (cursor === '*') {
+        // Fresh search — replace results.
+        setAllItems(data.items ?? [])
+      } else {
+        // Pagination — append results.
+        setAllItems((prev) => [...prev, ...(data.items ?? [])])
+      }
+      setTotal(data.total ?? 0)
+      setNextCursor(data.next_cursor ?? '')
+      return data
+    },
+    enabled: open,
+    staleTime: 30_000,
+    retry: false,
+  })
 
   const loadMore = useCallback(() => {
-    if (nextCursor && nextCursor !== '*') setCursor(nextCursor)
+    if (nextCursor && nextCursor !== '*') {
+      setCursor(nextCursor)
+    }
   }, [nextCursor])
 
   const invalidateMods = useCallback(
@@ -243,7 +119,7 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
   // Add a single mod (DB only), then check its Steam-layer dependencies.
   const handleAdd = useCallback(
     async (item: WorkshopItem) => {
-      if (addingId || !apiKey) return
+      if (addingId) return
       setAddingId(item.workshop_id)
       setError(null)
       try {
@@ -251,9 +127,15 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
         setAddedIds((prev) => new Set([...prev, item.workshop_id]))
         invalidateMods()
 
-        // Resolve Steam-layer dependencies directly from the browser.
-        const allDeps = await steamResolveDeps(apiKey, item.workshop_id)
-        const currentIds = new Set([...existingIds, ...addedIds, item.workshop_id])
+        // Resolve Steam-layer dependencies.
+        const depRes = await steamApi.workshopDependencies(item.workshop_id)
+        const allDeps = depRes.data.dependencies ?? []
+        // Filter out deps already in the mod list or just added in this session.
+        const currentIds = new Set([
+          ...mods.map((m) => m.workshop_id),
+          ...addedIds,
+          item.workshop_id,
+        ])
         const missing = allDeps.filter((d) => !currentIds.has(d.workshop_id))
         if (missing.length > 0) {
           setPendingDeps(missing)
@@ -266,7 +148,7 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
         setAddingId(null)
       }
     },
-    [addingId, apiKey, addedIds, existingIds, server.id, invalidateMods, t],
+    [addingId, addedIds, mods, server.id, invalidateMods, t],
   )
 
   // Add all missing dependencies in sequence.
@@ -358,6 +240,7 @@ export function WorkshopBrowserDialog({ open, onOpenChange, server, mods }: Prop
         </DialogContent>
       </Dialog>
 
+      {/* Missing deps confirmation */}
       <MissingDepsDialog
         open={depsOpen}
         onOpenChange={setDepsOpen}
@@ -387,8 +270,8 @@ function WorkshopItemRow({ item, isAdded, isAdding, onAdd, t }: RowProps) {
 
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/60 p-3">
+      {/* Thumbnail */}
       {item.preview_url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Steam CDN URLs are external, not local assets; next/image does not support arbitrary external URLs without config
         <img
           src={item.preview_url}
           alt={item.title}
@@ -399,6 +282,7 @@ function WorkshopItemRow({ item, isAdded, isAdding, onAdd, t }: RowProps) {
         <div className="h-16 w-16 shrink-0 rounded-lg bg-muted" />
       )}
 
+      {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium leading-snug">{item.title || item.workshop_id}</div>
         {item.description && (
@@ -417,6 +301,7 @@ function WorkshopItemRow({ item, isAdded, isAdding, onAdd, t }: RowProps) {
         </div>
       </div>
 
+      {/* Actions */}
       <div className="flex shrink-0 flex-col items-end gap-1.5">
         <a
           href={workshopUrl}
@@ -477,7 +362,6 @@ function MissingDepsDialog({ open, onOpenChange, deps, adding, onAddAll, t }: De
           {deps.map((dep) => (
             <div key={dep.workshop_id} className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
               {dep.preview_url && (
-                // eslint-disable-next-line @next/next/no-img-element -- Steam CDN URL, cannot use next/image without configuring remotePatterns
                 <img src={dep.preview_url} alt={dep.title} className="h-8 w-8 shrink-0 rounded object-cover" />
               )}
               <div className="min-w-0">
@@ -489,7 +373,12 @@ function MissingDepsDialog({ open, onOpenChange, deps, adding, onAddAll, t }: De
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={adding}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={adding}
+          >
             {t('workshop.deps.skip')}
           </Button>
           <Button type="button" onClick={onAddAll} disabled={adding}>

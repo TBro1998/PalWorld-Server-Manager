@@ -47,10 +47,6 @@ function ModsBody({ server }: { server: Server }) {
   const [workshopId, setWorkshopId] = useState('')
   const [name, setName] = useState('')
   const [logsOpen, setLogsOpen] = useState(false)
-  // True while a mod-update job is running on the backend (set on 202 response,
-  // cleared when the SSE `done` event arrives). Used to reopen the log dialog
-  // instead of starting a second update when the user clicks the button again.
-  const [isUpdating, setIsUpdating] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   // Set once any mod change is made this session; drives the restart hint.
   const [dirty, setDirty] = useState(false)
@@ -60,19 +56,6 @@ function ModsBody({ server }: { server: Server }) {
   const onError = (err: unknown) => {
     const e = err as { response?: { data?: { error?: string } } }
     setError(e.response?.data?.error ?? 'Request failed')
-  }
-  // Specific error handler for the update-mods mutation. If the backend reports
-  // that an update is already running (e.g. after a page reload mid-update),
-  // reopen the log dialog instead of surfacing an error to the user.
-  const onUpdateError = (err: unknown) => {
-    const e = err as { response?: { data?: { error?: string } } }
-    const msg = e.response?.data?.error ?? 'Request failed'
-    if (msg === 'Server is installing or mods are already updating') {
-      setIsUpdating(true)
-      setLogsOpen(true)
-      return
-    }
-    setError(msg)
   }
 
   const { data, isLoading } = useQuery({
@@ -135,12 +118,11 @@ function ModsBody({ server }: { server: Server }) {
     onSuccess: () => {
       setError(null)
       setDirty(true)
-      setIsUpdating(true)
       setLogsOpen(true)
       // The run is async; completion arrives via the log dialog's `done` event
-      // (see onDone below), which refreshes the list and clears isUpdating.
+      // (see onDone below), which refreshes the list and closes on full success.
     },
-    onError: onUpdateError,
+    onError,
   })
 
   const busy = addMutation.isPending || updateMutation.isPending
@@ -152,21 +134,10 @@ function ModsBody({ server }: { server: Server }) {
         <Button
           type="button"
           size="sm"
-          onClick={() => {
-            if (isUpdating) {
-              // Update already running — just reopen the log dialog.
-              setLogsOpen(true)
-            } else {
-              updateMutation.mutate()
-            }
-          }}
-          disabled={
-            addMutation.isPending ||
-            updateMutation.isPending ||
-            (!isUpdating && (mods.length === 0 || !sessionReady))
-          }
+          onClick={() => updateMutation.mutate()}
+          disabled={busy || mods.length === 0 || !sessionReady}
         >
-          {updateMutation.isPending || isUpdating ? t('mods.updating') : t('mods.update')}
+          {updateMutation.isPending ? t('mods.updating') : t('mods.update')}
         </Button>
       </div>
 
@@ -294,7 +265,6 @@ function ModsBody({ server }: { server: Server }) {
         server={server}
         kind="steamcmd"
         onDone={(success) => {
-          setIsUpdating(false)
           invalidate()
           if (success) setLogsOpen(false)
         }}

@@ -16,35 +16,15 @@ import (
 // cannot hang requests indefinitely.
 const workshopHTTPTimeout = 15 * time.Second
 
-// GetWebAPIKey returns the stored Steam Web API key so the browser can call
-// the Steam Workshop API directly, bypassing the server's network constraints.
-//
-// SECURITY: The key is a low-sensitivity read-only personal key used only for
-// public workshop queries. This tool listens on 127.0.0.1 by default, so
-// exposing the key over the local connection is acceptable. If the listen
-// address is changed to a public interface, users should treat the key as
-// semi-public workshop-search-only data.
-func (r *Router) GetWebAPIKey(c *gin.Context) {
-	key, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read settings"})
-		return
-	}
-	key = strings.TrimSpace(key)
-	// Return an empty string when not configured; the frontend renders the
-	// "no key" state and disables the browser-direct calls.
-	c.JSON(http.StatusOK, gin.H{"key": key, "configured": key != ""})
-}
-
 // WorkshopSearch proxies IPublishedFileService/QueryFiles to the frontend.
-// NOTE: This endpoint makes an outbound HTTPS request to api.steampowered.com
-// from the server. If the server cannot reach Steam (e.g., behind a firewall),
-// use the browser-direct approach via GetWebAPIKey instead.
 //
 // Query params:
 //   - q      — free-text search string (empty = trending/popular)
 //   - cursor — pagination cursor; omit or "*" for the first page
 //   - num    — items per page [1, 100], default 20
+//
+// The Steam Web API key is read from settings and never forwarded to the
+// client. Returns 400 when the key is not configured; 502 when Steam fails.
 func (r *Router) WorkshopSearch(c *gin.Context) {
 	key, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
 	if err != nil {
@@ -77,9 +57,9 @@ func (r *Router) WorkshopSearch(c *gin.Context) {
 // including the mod itself). Returns an empty slice when the mod has no
 // declared Steam dependencies.
 //
-// NOTE: Same network caveat as WorkshopSearch — calls api.steampowered.com
-// from the server. Prefer the browser-direct approach when the server is
-// behind a firewall.
+// Dependency detection relies on mods declaring their dependencies in the Steam
+// layer (AddDependency / collection children). If a mod only lists deps in its
+// Info.json "Dependencies" field, they will not appear here.
 func (r *Router) WorkshopDependencies(c *gin.Context) {
 	key, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
 	if err != nil {
@@ -107,7 +87,7 @@ func (r *Router) WorkshopDependencies(c *gin.Context) {
 		return
 	}
 	if deps == nil {
-		deps = []steamworkshop.DepItem{}
+		deps = []steamworkshop.DepItem{} // always return array, never null
 	}
 	c.JSON(http.StatusOK, gin.H{"dependencies": deps})
 }
@@ -118,7 +98,9 @@ type SetWebAPIKeyRequest struct {
 }
 
 // SetWebAPIKey persists (or clears) the Steam Web API key used for workshop
-// search. Passing an empty key removes the configured value.
+// search. Passing an empty key removes the configured value. The key is never
+// echoed back in any response — the caller can check webApiKeyConfigured via
+// GET /api/steam/status.
 func (r *Router) SetWebAPIKey(c *gin.Context) {
 	var req SetWebAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

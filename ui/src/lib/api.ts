@@ -163,11 +163,8 @@ export const steamApi = {
     apiClient.get<{ dependencies: WorkshopDep[] }>(
       `/api/steam/workshop/mods/${workshopId}/dependencies`,
     ),
-  // getWebApiKey returns the stored key so the browser can call Steam API
-  // directly, bypassing server-side network restrictions (e.g. firewall).
-  // Returns {key, configured}. The key is empty when not configured.
-  getWebApiKey: () =>
-    apiClient.get<{ key: string; configured: boolean }>('/api/steam/webapi-key'),
+  // setWebApiKey persists (or clears, when key="") the Steam Web API key.
+  // Returns {configured: bool}. The key is never echoed back.
   setWebApiKey: (key: string) =>
     apiClient.post<{ configured: boolean }>('/api/steam/webapi-key', { key }),
 }
