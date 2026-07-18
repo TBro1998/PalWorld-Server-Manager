@@ -67,3 +67,38 @@ type ProgressFunc func(pct int, msg string)
 
 // tickDuration is used in tests to override time.Since / time.Sleep behaviour.
 var _now = time.Now
+
+// UpdatePhase describes the lifecycle state of a self-update operation.
+type UpdatePhase string
+
+const (
+	PhaseIdle        UpdatePhase = "idle"
+	PhaseDownloading UpdatePhase = "downloading"
+	PhaseRestarting  UpdatePhase = "restarting"
+	PhaseError       UpdatePhase = "error"
+)
+
+// UpdateStatus is the current in-progress update state.  It is stored
+// atomically so the frontend can poll GET /api/system/update/status on page
+// load and restore progress UI after a navigation or browser refresh.
+type UpdateStatus struct {
+	Phase UpdatePhase `json:"phase"`
+	Pct   int         `json:"pct"`
+	Msg   string      `json:"msg"`
+	Err   string      `json:"err,omitempty"`
+}
+
+var statusStore atomic.Value // *UpdateStatus
+
+func init() { statusStore.Store(&UpdateStatus{Phase: PhaseIdle}) }
+
+// SetStatus atomically replaces the current update status.
+func SetStatus(s UpdateStatus) { statusStore.Store(&s) }
+
+// Status returns the current update status.
+func Status() UpdateStatus {
+	if v := statusStore.Load(); v != nil {
+		return *v.(*UpdateStatus)
+	}
+	return UpdateStatus{Phase: PhaseIdle}
+}

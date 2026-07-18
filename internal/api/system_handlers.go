@@ -46,11 +46,18 @@ func (r *Router) CheckUpdate(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetUpdateStatus returns the current update phase so the UI can restore
+// progress after a page navigation or browser refresh.
+func (r *Router) GetUpdateStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, update.Status())
+}
+
 // ApplyUpdate downloads the new binary, verifies its checksum, replaces the
 // running executable via minio/selfupdate, and re-execs the process.
 //
 // Progress is streamed to SSE subscribers on /api/system/update/stream.
 // This endpoint returns 202 Accepted immediately; the actual work runs async.
+// Returns 409 Conflict if an update is already in progress.
 //
 // SECURITY: This endpoint triggers binary replacement and process restart.
 // Registered under the protected group; JWT auth will cover it once enabled.
@@ -61,10 +68,18 @@ func (r *Router) ApplyUpdate(c *gin.Context) {
 		return
 	}
 
+	// Guard: refuse a second download if one is already running.
+	if s := update.Status(); s.Phase == update.PhaseDownloading || s.Phase == update.PhaseRestarting {
+		c.JSON(http.StatusConflict, gin.H{"error": "update already in progress"})
+		return
+	}
+
 	mirror, _ := settings.Get(r.db, settings.KeyDownloadMirror)
 
 	progress := func(pct int, msg string) {
 		if pct >= 0 {
+			// Keep status store in sync so late-joining clients see current progress.
+			update.SetStatus(update.UpdateStatus{Phase: update.PhaseDownloading, Pct: pct, Msg: msg})
 			r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "progress",
 				fmt.Sprintf(`{"pct":%d,"msg":%q}`, pct, msg))
 		} else {
@@ -72,15 +87,19 @@ func (r *Router) ApplyUpdate(c *gin.Context) {
 		}
 	}
 
+	update.SetStatus(update.UpdateStatus{Phase: update.PhaseDownloading})
+
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
 
 		if err := update.Apply(ctx, result, mirror, progress); err != nil {
+			update.SetStatus(update.UpdateStatus{Phase: update.PhaseError, Err: err.Error()})
 			r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "error",
 				fmt.Sprintf(`{"error":%q}`, err.Error()))
 		} else {
 			// Apply only returns if restart itself failed; signal the client.
+			update.SetStatus(update.UpdateStatus{Phase: update.PhaseRestarting})
 			r.streams.BroadcastEvent(update.UpdateStreamID, logger.KindUpdate, "restarting", `{}`)
 		}
 	}()

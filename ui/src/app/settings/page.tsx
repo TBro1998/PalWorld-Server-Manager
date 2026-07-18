@@ -46,17 +46,6 @@ export default function SettingsPage() {
 
   const eventSourceRef = useRef<EventSource | null>(null)
 
-  // Load version + cached check result + settings on mount
-  useEffect(() => {
-    systemApi.version().then(r => setVersionInfo(r.data)).catch(() => {})
-    systemApi.checkUpdate(true).then(r => setCheckResult(r.data)).catch(() => {})
-    systemApi.getSettings().then(r => {
-      const v = r.data.download_mirror ?? ''
-      setMirror(v)
-      setSelectedPreset(detectPreset(v))
-    }).catch(() => {})
-  }, [])
-
   // Check for updates
   const handleCheck = useCallback(async () => {
     setChecking(true)
@@ -100,15 +89,15 @@ export default function SettingsPage() {
     setTimeout(poll, 3000) // give new process time to bind port
   }, [])
 
-  // Apply update
-  const handleApply = useCallback(async () => {
-    if (!checkResult?.hasUpdate) return
+  // Open the SSE update stream and wire all event handlers.  Call before
+  // triggering applyUpdate, or on mount to re-attach to an in-progress
+  // download without re-triggering the backend operation.
+  const connectStream = useCallback((expectedVersion: string, initialPct = 0, initialMsg = '') => {
     setApplying(true)
-    setApplyProgress(0)
-    setApplyMsg('')
+    setApplyProgress(initialPct)
+    setApplyMsg(initialMsg)
     setUpdateError('')
 
-    // 1. Open SSE stream first
     const es = new EventSource(systemApi.updateStreamUrl())
     eventSourceRef.current = es
 
@@ -119,11 +108,7 @@ export default function SettingsPage() {
         setApplyMsg(data.msg)
       } catch {}
     })
-
-    es.addEventListener('log', (e: MessageEvent) => {
-      setApplyMsg(e.data)
-    })
-
+    es.addEventListener('log', (e: MessageEvent) => { setApplyMsg(e.data) })
     es.addEventListener('error', (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data) as { error: string }
@@ -134,24 +119,62 @@ export default function SettingsPage() {
       setApplying(false)
       es.close()
     })
-
     es.addEventListener('restarting', () => {
       setRestarting(true)
       setApplying(false)
       es.close()
-      // Poll version endpoint until new version appears
-      pollForNewVersion(checkResult.latestVersion ?? '')
+      pollForNewVersion(expectedVersion)
     })
+  }, [t, pollForNewVersion])
 
-    // 2. Trigger update
+  // Apply update — open the SSE stream first, then trigger the backend.
+  const handleApply = useCallback(async () => {
+    if (!checkResult?.hasUpdate) return
+    connectStream(checkResult.latestVersion ?? '')
     try {
       await systemApi.applyUpdate()
     } catch {
       setUpdateError(t('update.applyFailed'))
       setApplying(false)
-      es.close()
+      eventSourceRef.current?.close()
     }
-  }, [checkResult, t])
+  }, [checkResult, t, connectStream])
+
+  // Load version + cached check result + update status + settings on mount.
+  // When an update is already running (page refresh / navigating away and back),
+  // recover: re-attach to the SSE stream or show the restarting spinner.
+  useEffect(() => {
+    Promise.all([
+      systemApi.version().catch(() => null),
+      systemApi.checkUpdate(true).catch(() => null),
+      systemApi.updateStatus().catch(() => null),
+      systemApi.getSettings().catch(() => null),
+    ]).then(([ver, check, status, sett]) => {
+      if (ver) setVersionInfo(ver.data)
+      if (check) setCheckResult(check.data)
+      if (sett) {
+        const v = sett.data.download_mirror ?? ''
+        setMirror(v)
+        setSelectedPreset(detectPreset(v))
+      }
+      if (!status) return
+      const s = status.data
+      const lv = check?.data.latestVersion ?? ''
+      if (s.phase === 'downloading') {
+        // An update was already in progress; re-attach to the SSE stream
+        // without re-triggering applyUpdate on the backend.
+        connectStream(lv, s.pct, s.msg)
+      } else if (s.phase === 'restarting') {
+        setRestarting(true)
+        pollForNewVersion(lv)
+      } else if (s.phase === 'error' && s.err) {
+        setUpdateError(s.err)
+      }
+    })
+    // connectStream and pollForNewVersion are stable useCallback refs.
+    // [] is intentional — this effect runs only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Select a preset mirror
   const handleSelectPreset = useCallback((preset: { id: string; value: string | null }) => {

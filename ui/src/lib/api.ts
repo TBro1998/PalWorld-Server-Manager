@@ -184,7 +184,7 @@ export const steamApi = {
     apiClient.post<{ configured: boolean }>('/api/steam/webapi-key', { key }),
 }
 
-import type { VersionInfo, CheckResult, SystemSettings } from '@/types/system'
+import type { VersionInfo, CheckResult, SystemSettings, UpdateStatus } from '@/types/system'
 
 // --- System version & self-update ---
 export const systemApi = {
@@ -199,6 +199,9 @@ export const systemApi = {
   // Triggers async download + replace + restart. Subscribe to updateStreamUrl()
   // before calling this so you don't miss early progress events.
   applyUpdate: () => apiClient.post<{ message: string }>('/api/system/update/apply'),
+  // Returns the current update phase (idle / downloading / restarting / error).
+  // Poll on page mount to restore progress UI after a navigation or refresh.
+  updateStatus: () => apiClient.get<UpdateStatus>('/api/system/update/status'),
   // Relative URL for EventSource.  Open before calling applyUpdate().
   updateStreamUrl: () => '/api/system/update/stream',
   // Returns persisted system settings (download_mirror).

@@ -148,6 +148,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 		{
 			system.GET("/version", r.GetVersion)
 			system.GET("/update/check", r.CheckUpdate)
+			system.GET("/update/status", r.GetUpdateStatus)
 			// SECURITY: /update/apply downloads and replaces the running binary,
 			// then restarts the process.  Once JWT auth is enabled this endpoint
 			// will be automatically covered by the protected middleware.  Until
