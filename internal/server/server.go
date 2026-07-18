@@ -8,6 +8,7 @@ import (
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -18,10 +19,11 @@ type Server struct {
 	db          *gorm.DB
 	router      *gin.Engine
 	staticFiles embed.FS
+	buildInfo   update.BuildInfo
 }
 
 // New creates a new server instance
-func New(cfg *config.Config, db *gorm.DB, staticFiles embed.FS) *Server {
+func New(cfg *config.Config, db *gorm.DB, staticFiles embed.FS, buildInfo update.BuildInfo) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -31,6 +33,7 @@ func New(cfg *config.Config, db *gorm.DB, staticFiles embed.FS) *Server {
 		db:          db,
 		router:      router,
 		staticFiles: staticFiles,
+		buildInfo:   buildInfo,
 	}
 
 	s.setupRoutes()
@@ -39,7 +42,7 @@ func New(cfg *config.Config, db *gorm.DB, staticFiles embed.FS) *Server {
 
 func (s *Server) setupRoutes() {
 	// API routes
-	apiRouter := api.NewRouter(s.db, s.config)
+	apiRouter := api.NewRouter(s.db, s.config, s.buildInfo)
 
 	// Reconcile any stale "running" server state left over from a previous run.
 	if err := apiRouter.ProcessManager().ReconcileOnStartup(); err != nil {
@@ -49,6 +52,9 @@ func (s *Server) setupRoutes() {
 	if err := apiRouter.ProcessManager().ReconcileInstalled(); err != nil {
 		fmt.Printf("warning: installed reconciliation failed: %v\n", err)
 	}
+
+	// Start background update check (non-blocking; result cached for UI).
+	apiRouter.Checker().StartBackgroundCheck()
 
 	apiGroup := s.router.Group("/api")
 	apiRouter.RegisterRoutes(apiGroup)

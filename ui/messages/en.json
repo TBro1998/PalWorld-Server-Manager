@@ -850,5 +850,37 @@
         "desc": "Meteorite / supply drop interval (minutes)."
       }
     }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "about": {
+      "title": "About",
+      "version": "Version",
+      "buildTime": "Build Time",
+      "gitCommit": "Git Commit"
+    },
+    "update": {
+      "title": "Software Update",
+      "devBuild": "Development build — update check skipped",
+      "checkButton": "Check for Updates",
+      "checking": "Checking…",
+      "upToDate": "You are on the latest version",
+      "newVersion": "New version available: {{version}}",
+      "releaseNotes": "Release Notes",
+      "applyButton": "Update Now",
+      "applying": "Updating…",
+      "restarting": "Restarting, please wait…",
+      "success": "Update successful! New version: {{version}}",
+      "checkFailed": "Failed to check for updates",
+      "applyFailed": "Update failed"
+    },
+    "mirror": {
+      "title": "Download Mirror",
+      "label": "GitHub download mirror prefix",
+      "placeholder": "e.g. https://ghproxy.com (leave blank to connect directly)",
+      "save": "Save",
+      "saved": "Saved",
+      "saveFailed": "Failed to save"
+    }
   }
 }

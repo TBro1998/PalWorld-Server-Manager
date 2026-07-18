@@ -208,6 +208,16 @@ jobs:
           cat /tmp/release_notes.md
 
       # -----------------------------------------------------------------------
+      # Generate SHA-256 checksums for all binary assets.
+      # The self-update mechanism performs best-effort verification against this
+      # file when it is present in the release.
+      - name: Generate checksums
+        run: |
+          sha256sum psm_windows_amd64.exe psm_linux_amd64 > checksums.txt
+          echo "--- checksums.txt ---"
+          cat checksums.txt
+
+      # -----------------------------------------------------------------------
       # GitHub Release — attach binaries with generated notes
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -215,5 +225,6 @@ jobs:
           files: |
             psm_windows_amd64.exe
             psm_linux_amd64
+            checksums.txt
           body_path: /tmp/release_notes.md
           make_latest: true

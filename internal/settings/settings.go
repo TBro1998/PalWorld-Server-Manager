@@ -27,6 +27,10 @@ const (
 	// workshop search API (IPublishedFileService/QueryFiles). It is a low-
 	// sensitivity read-only personal key; see package doc for SECURITY notes.
 	KeySteamWebAPIKey = "steam_web_api_key"
+	// KeyDownloadMirror is an optional URL prefix prepended to GitHub Release
+	// asset download URLs.  When empty the download goes directly to GitHub.
+	// Example value: "https://ghproxy.com" (user-configured via the Settings UI).
+	KeyDownloadMirror = "download_mirror"
 )
 
 // Get returns the stored value for key, or "" when it has never been set.

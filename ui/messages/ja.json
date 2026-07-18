@@ -813,5 +813,37 @@
         "desc": "隕石/補給ドロップの間隔（分）。"
       }
     }
+  },
+  "settingsPage": {
+    "title": "設定",
+    "about": {
+      "title": "について",
+      "version": "バージョン",
+      "buildTime": "ビルド時間",
+      "gitCommit": "コミットハッシュ"
+    },
+    "update": {
+      "title": "ソフトウェア更新",
+      "devBuild": "開発ビルド — 更新チェックをスキップ",
+      "checkButton": "更新を確認",
+      "checking": "確認中…",
+      "upToDate": "最新バージョンです",
+      "newVersion": "新しいバージョンが利用可能：{{version}}",
+      "releaseNotes": "リリースノート",
+      "applyButton": "今すぐ更新",
+      "applying": "更新中…",
+      "restarting": "再起動中、しばらくお待ちください…",
+      "success": "更新成功！新しいバージョン：{{version}}",
+      "checkFailed": "更新の確認に失敗しました",
+      "applyFailed": "更新に失敗しました"
+    },
+    "mirror": {
+      "title": "ダウンロードミラー",
+      "label": "GitHub ダウンロードミラープレフィックス",
+      "placeholder": "例：https://ghproxy.com（空白の場合は直接接続）",
+      "save": "保存",
+      "saved": "保存済み",
+      "saveFailed": "保存に失敗しました"
+    }
   }
 }

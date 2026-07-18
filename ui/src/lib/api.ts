@@ -184,4 +184,28 @@ export const steamApi = {
     apiClient.post<{ configured: boolean }>('/api/steam/webapi-key', { key }),
 }
 
+import type { VersionInfo, CheckResult, SystemSettings } from '@/types/system'
+
+// --- System version & self-update ---
+export const systemApi = {
+  // Returns the running binary's build metadata (version / buildTime / gitCommit).
+  version: () => apiClient.get<VersionInfo>('/api/system/version'),
+  // Queries GitHub for the latest release. Pass cached=true to read the
+  // in-memory cache without hitting GitHub.
+  checkUpdate: (cached = false) =>
+    apiClient.get<CheckResult>('/api/system/update/check', {
+      params: cached ? { cached: '1' } : undefined,
+    }),
+  // Triggers async download + replace + restart. Subscribe to updateStreamUrl()
+  // before calling this so you don't miss early progress events.
+  applyUpdate: () => apiClient.post<{ message: string }>('/api/system/update/apply'),
+  // Relative URL for EventSource.  Open before calling applyUpdate().
+  updateStreamUrl: () => '/api/system/update/stream',
+  // Returns persisted system settings (download_mirror).
+  getSettings: () => apiClient.get<SystemSettings>('/api/system/settings'),
+  // Persists system settings.
+  setSettings: (data: Partial<SystemSettings>) =>
+    apiClient.put<SystemSettings>('/api/system/settings', data),
+}
+
 export default apiClient;

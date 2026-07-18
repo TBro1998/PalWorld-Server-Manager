@@ -8,6 +8,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/database"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/server"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/steamcmd"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 )
 
 //go:embed all:ui/out
@@ -38,7 +39,12 @@ func main() {
 	}
 
 	// Create and start server
-	srv := server.New(cfg, db, staticFiles)
+	buildInfo := update.BuildInfo{
+		Version:   Version,
+		BuildTime: BuildTime,
+		GitCommit: GitCommit,
+	}
+	srv := server.New(cfg, db, staticFiles, buildInfo)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

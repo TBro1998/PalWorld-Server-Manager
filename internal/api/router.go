@@ -4,6 +4,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -15,24 +16,32 @@ type Router struct {
 	process *process.Manager
 	streams *logger.StreamManager
 	saves   *saveCache
+	checker *update.Checker
 }
 
 // NewRouter creates a new API router
-func NewRouter(db *gorm.DB, cfg *config.Config) *Router {
+func NewRouter(db *gorm.DB, cfg *config.Config, buildInfo update.BuildInfo) *Router {
 	streams := logger.NewStreamManager()
 	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath, cfg.SteamUsername)
+	checker := update.NewChecker(cfg.GitHubRepo, buildInfo)
 	return &Router{
 		db:      db,
 		config:  cfg,
 		process: pm,
 		streams: streams,
 		saves:   newSaveCache(),
+		checker: checker,
 	}
 }
 
 // ProcessManager exposes the process manager for startup reconciliation.
 func (r *Router) ProcessManager() *process.Manager {
 	return r.process
+}
+
+// Checker exposes the update checker so server.go can start the background check.
+func (r *Router) Checker() *update.Checker {
+	return r.checker
 }
 
 // RegisterRoutes registers all API routes
@@ -133,5 +142,20 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 
 		// System monitoring
 		protected.GET("/system/stats", r.GetSystemStats)
+
+		// Version info & self-update
+		system := protected.Group("/system")
+		{
+			system.GET("/version", r.GetVersion)
+			system.GET("/update/check", r.CheckUpdate)
+			// SECURITY: /update/apply downloads and replaces the running binary,
+			// then restarts the process.  Once JWT auth is enabled this endpoint
+			// will be automatically covered by the protected middleware.  Until
+			// then the default host binding of 127.0.0.1 limits exposure.
+			system.POST("/update/apply", r.ApplyUpdate)
+			system.GET("/update/stream", r.UpdateStream)
+			system.GET("/settings", r.GetSystemSettings)
+			system.PUT("/settings", r.UpdateSystemSettings)
+		}
 	}
 }

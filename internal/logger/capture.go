@@ -27,6 +27,9 @@ const (
 	KindServer = "server"
 	// KindSteamCMD is SteamCMD's install/update output for a server.
 	KindSteamCMD = "steamcmd"
+	// KindUpdate is the stream kind used for self-update progress events.
+	// It is keyed on update.UpdateStreamID (0) in the StreamManager.
+	KindUpdate = "update"
 )
 
 // Capture implements io.Writer, persisting a server's log output to a rotating
