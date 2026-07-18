@@ -362,7 +362,15 @@
     },
     "serverCount": "{{count}} 个服务器在使用",
     "noServers": "未被任何服务器引用",
-    "logs": "下载日志"
+    "log": {
+      "live": "下载中",
+      "done": "下载完成",
+      "failed": "下载失败",
+      "waiting": "等待日志输出...",
+      "close": "关闭",
+      "expand": "展开",
+      "collapse": "折叠"
+    }
   },
   "serverConfig": {
     "title": "服务器配置",

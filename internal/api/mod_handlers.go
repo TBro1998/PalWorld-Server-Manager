@@ -158,7 +158,8 @@ func (r *Router) DeleteGlobalMod(c *gin.Context) {
 }
 
 // DownloadGlobalMod triggers an async SteamCMD download for the given mod.
-// Progress is streamed via GET /api/mods/logs/stream (virtual server ID 0).
+// Progress is streamed via GET /api/mods/:modId/logs/stream, keyed by the mod's
+// own ID so that concurrent downloads have independent log channels.
 func (r *Router) DownloadGlobalMod(c *gin.Context) {
 	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
 	if err != nil {
@@ -181,13 +182,13 @@ func (r *Router) DownloadGlobalMod(c *gin.Context) {
 		return
 	}
 
-	if err := logger.ResetLog(r.config.LogDir, globalModLogID, logger.KindSteamCMD); err != nil {
-		fmt.Printf("warning: reset global mod log: %v\n", err)
+	if err := logger.ResetLog(r.config.LogDir, modID, logger.KindSteamCMD); err != nil {
+		fmt.Printf("warning: reset mod %d log: %v\n", modID, err)
 	}
 
 	go func() {
-		capture := logger.NewCapture(globalModLogID, logger.KindSteamCMD, r.config.LogDir)
-		broadcaster := logger.NewBroadcastWriter(r.streams, globalModLogID, logger.KindSteamCMD)
+		capture := logger.NewCapture(modID, logger.KindSteamCMD, r.config.LogDir)
+		broadcaster := logger.NewBroadcastWriter(r.streams, modID, logger.KindSteamCMD)
 		out := io.MultiWriter(capture, broadcaster)
 		defer capture.Close()
 
@@ -196,7 +197,7 @@ func (r *Router) DownloadGlobalMod(c *gin.Context) {
 			result = "error"
 			fmt.Printf("global mod %d download failed: %v\n", modID, err)
 		}
-		r.streams.BroadcastEvent(globalModLogID, logger.KindSteamCMD, "done", result)
+		r.streams.BroadcastEvent(modID, logger.KindSteamCMD, "done", result)
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{
@@ -206,16 +207,23 @@ func (r *Router) DownloadGlobalMod(c *gin.Context) {
 	})
 }
 
-// GlobalModLogStream streams the global mod download progress via SSE.
-// Uses virtual server ID 0 as the log namespace for global operations.
-func (r *Router) GlobalModLogStream(c *gin.Context) {
+// ModLogStream streams download progress for a single mod via SSE.
+// Each mod uses its own ID as the stream key, allowing concurrent downloads
+// to deliver logs independently without interleaving.
+func (r *Router) ModLogStream(c *gin.Context) {
+	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mod ID"})
+		return
+	}
+
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("X-Accel-Buffering", "no")
 
-	clientID, ch := r.streams.Subscribe(globalModLogID, logger.KindSteamCMD)
-	defer r.streams.Unsubscribe(globalModLogID, logger.KindSteamCMD, clientID)
+	clientID, ch := r.streams.Subscribe(modID, logger.KindSteamCMD)
+	defer r.streams.Unsubscribe(modID, logger.KindSteamCMD, clientID)
 
 	ctx := c.Request.Context()
 	c.Stream(func(w io.Writer) bool {
@@ -231,11 +239,6 @@ func (r *Router) GlobalModLogStream(c *gin.Context) {
 		}
 	})
 }
-
-// globalModLogID is the virtual server ID used as the log namespace for global
-// mod download operations (serverID=0). This avoids any change to the streaming
-// infrastructure while cleanly separating global from per-server log channels.
-const globalModLogID int64 = 0
 
 // ── Server mod references ─────────────────────────────────────────────────────
 
@@ -440,7 +443,9 @@ func (r *Router) UnlinkServerMod(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ToggleServerMod flips a server mod's enabled flag and rewrites PalModSettings.ini.
+// ToggleServerMod flips a server mod's enabled flag, syncs the mod files on
+// disk (remove when disabling, re-deploy from the global library when enabling),
+// and rewrites PalModSettings.ini.
 func (r *Router) ToggleServerMod(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -474,6 +479,41 @@ func (r *Router) ToggleServerMod(c *gin.Context) {
 		return
 	}
 	sm.Enabled = newEnabled
+
+	// Sync files on disk to match the new enabled state.
+	var mod models.Mod
+	var srv models.Server
+	hasMod := r.db.First(&mod, sm.ModID).Error == nil
+	hasSrv := hasMod &&
+		r.db.Select("install_path").First(&srv, id).Error == nil &&
+		srv.InstallPath != ""
+
+	if hasSrv {
+		if !newEnabled {
+			// Disabling: remove deployed mod files so the server directory stays clean.
+			if err := palmod.Remove(srv.InstallPath, mod.WorkshopID); err != nil {
+				fmt.Printf("warning: remove mod %s from server %d: %v\n", mod.WorkshopID, id, err)
+			}
+			// Clear deployed_version — files are no longer present.
+			if err := r.db.Model(&models.ServerMod{}).Where("id = ?", serverModID).
+				Update("deployed_version", "").Error; err != nil {
+				fmt.Printf("warning: clear deployed_version for server_mod %d: %v\n", serverModID, err)
+			}
+			sm.DeployedVersion = ""
+		} else if mod.Downloaded && mod.DownloadPath != "" {
+			// Enabling: re-deploy mod files from the global library staging area.
+			if _, err := palmod.Deploy(srv.InstallPath, mod.WorkshopID, mod.DownloadPath); err != nil {
+				fmt.Printf("warning: re-deploy mod %s to server %d: %v\n", mod.WorkshopID, id, err)
+			} else {
+				// Update deployed_version to match the current global library version.
+				if err := r.db.Model(&models.ServerMod{}).Where("id = ?", serverModID).
+					Update("deployed_version", mod.Version).Error; err != nil {
+					fmt.Printf("warning: update deployed_version for server_mod %d: %v\n", serverModID, err)
+				}
+				sm.DeployedVersion = mod.Version
+			}
+		}
+	}
 
 	// Rewrite PalModSettings.ini to reflect the toggle.
 	if err := r.process.RewriteModSettings(id); err != nil {

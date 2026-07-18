@@ -105,7 +105,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			globalMods.POST("", r.AddGlobalMod)
 			globalMods.DELETE("/:modId", r.DeleteGlobalMod)
 			globalMods.POST("/:modId/download", r.DownloadGlobalMod)
-			globalMods.GET("/logs/stream", r.GlobalModLogStream)
+			globalMods.GET("/:modId/logs/stream", r.ModLogStream)
 		}
 
 		// Per-server mod references (link/unlink/toggle/deploy from global library)

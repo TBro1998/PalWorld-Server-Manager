@@ -362,7 +362,15 @@
     },
     "serverCount": "Used by {{count}} server(s)",
     "noServers": "Not used by any server",
-    "logs": "Download logs"
+    "log": {
+      "live": "Downloading",
+      "done": "Download complete",
+      "failed": "Download failed",
+      "waiting": "Waiting for output...",
+      "close": "Close",
+      "expand": "Expand",
+      "collapse": "Collapse"
+    }
   },
   "serverConfig": {
     "title": "Server Config",
