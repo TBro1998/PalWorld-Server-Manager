@@ -2,6 +2,7 @@ package palconfig
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -84,6 +85,10 @@ func LoadSettings(installPath string) (map[string]string, error) {
 			values[k] = v
 		}
 	}
+	// REST API is always enabled; enforce unconditionally so stale INI files
+	// (seeded from game-shipped DefaultPalWorldSettings.ini with False) are
+	// treated as True without requiring a manual config save.
+	values["RESTAPIEnabled"] = "True"
 	return values, nil
 }
 
@@ -106,10 +111,19 @@ func RawLine(values map[string]string) string {
 
 // SaveSettings serializes values into the OptionSettings line and writes the
 // file back, preserving all other content.
+// RESTAPIEnabled is always forced to True before writing — the UI toggle has
+// been removed and the API is unconditionally on.
 func SaveSettings(installPath string, values map[string]string) error {
 	content, err := ensureFile(installPath)
 	if err != nil {
 		return err
+	}
+	// Enforce REST API always-on without mutating the caller's map.
+	if values["RESTAPIEnabled"] != "True" {
+		clone := make(map[string]string, len(values))
+		maps.Copy(clone, values)
+		clone["RESTAPIEnabled"] = "True"
+		values = clone
 	}
 	line := optionSettingsPrefix + "(" + serializeInner(values) + ")"
 	return writeFileAtomic(SettingsPath(installPath), replaceOrAppendOption(content, line))

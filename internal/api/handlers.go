@@ -174,6 +174,22 @@ func (r *Router) CreateServer(c *gin.Context) {
 		}
 	}
 
+	// Seed PalWorldSettings.ini with the creation-time presets immediately,
+	// before the server is installed. SteamCMD writes game binaries into
+	// installPath/ but never touches Pal/Saved/Config/*, so this file will
+	// survive installation intact. Without this step, ensureFile would later
+	// seed from the game-shipped DefaultPalWorldSettings.ini (which uses
+	// hardcoded defaults) and overwrite our RESTAPIPort/AdminPassword presets.
+	seedSettings := palconfig.Defaults()
+	seedSettings["RESTAPIEnabled"] = "True"
+	seedSettings["RESTAPIPort"] = strconv.Itoa(restAPIPort)
+	seedSettings["AdminPassword"] = adminPass
+	if err := palconfig.SaveSettings(installPath, seedSettings); err != nil {
+		// Non-fatal: log the warning but do not block server creation. The
+		// presets remain available via launch_args for the uninstalled view.
+		fmt.Printf("warning: could not seed PalWorldSettings.ini for server %d: %v\n", server.ID, err)
+	}
+
 	// Return the created server with its derived status.
 	server.Status = "stopped"
 	c.JSON(http.StatusCreated, server)
