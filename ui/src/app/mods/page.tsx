@@ -244,6 +244,7 @@ export default function ModsPage() {
         open={browseOpen}
         onOpenChange={setBrowseOpen}
         onAdded={() => invalidate()}
+        existingGlobalMods={mods}
       />
     </div>
   )

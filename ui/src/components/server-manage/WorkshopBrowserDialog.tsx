@@ -23,15 +23,18 @@ import type { Server, Mod, ServerMod, WorkshopItem, WorkshopDep } from '@/types/
 //   onAdded              — called after a mod is added to the global library
 //   server               — optional; when present, mods are also linked to server
 //   existingServerMods   — current server mods list (for already-added detection)
+//   existingGlobalMods   — current global library list (for already-added detection
+//                          when used from the /mods page without a server context)
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdded?: (mod: Mod) => void
   server?: Server
   existingServerMods?: ServerMod[]
+  existingGlobalMods?: Mod[]
 }
 
-export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, existingServerMods }: Props) {
+export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, existingServerMods, existingGlobalMods }: Props) {
   const t = useTranslations('serverConfig')
   const queryClient = useQueryClient()
 
@@ -50,9 +53,10 @@ export function WorkshopBrowserDialog({ open, onOpenChange, onAdded, server, exi
   const [pendingDeps, setPendingDeps] = useState<WorkshopDep[]>([])
   const [addingDeps, setAddingDeps] = useState(false)
 
-  // Set of workshop IDs already in the library or linked to this server.
+  // Set of workshop IDs already in the global library or linked to this server.
   const existingIds = new Set([
     ...(existingServerMods ?? []).map((m) => m.workshop_id),
+    ...(existingGlobalMods ?? []).map((m) => m.workshop_id),
   ])
 
   // Debounce the search query.
