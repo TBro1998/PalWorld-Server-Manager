@@ -1,0 +1,30 @@
+# Configures the auto-generated release notes produced by
+# `generate_release_notes: true` in the release workflow.
+# Docs: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+
+changelog:
+  categories:
+    - title: "🚀 新功能 / New Features"
+      labels:
+        - feat
+        - feature
+        - enhancement
+    - title: "🐛 问题修复 / Bug Fixes"
+      labels:
+        - fix
+        - bug
+        - bugfix
+    - title: "⚡ 性能优化 / Performance"
+      labels:
+        - perf
+        - performance
+    - title: "🔨 重构 / Refactoring"
+      labels:
+        - refactor
+    - title: "📖 文档 / Documentation"
+      labels:
+        - docs
+        - documentation
+    - title: "🔧 其他改动 / Other Changes"
+      labels:
+        - "*"

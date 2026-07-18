@@ -14,6 +14,8 @@ import (
 var staticFiles embed.FS
 
 func main() {
+	log.Printf("PalWorld Server Manager %s (commit: %s, built: %s)", Version, GitCommit, BuildTime)
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {

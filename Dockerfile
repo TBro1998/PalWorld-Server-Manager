@@ -18,6 +18,12 @@ RUN bun run build
 # Stage 2: build the Go binary with the frontend embedded (//go:embed ui/out)
 # =============================================================================
 FROM golang:1.26-bookworm AS backend
+
+# Build-time version info injected by CI via --build-arg (docker build-push-action).
+ARG VERSION=dev
+ARG BUILD_TIME=unknown
+ARG GIT_COMMIT=unknown
+
 WORKDIR /app
 
 # Module downloads cached on go.mod/go.sum.
@@ -29,7 +35,12 @@ COPY . .
 COPY --from=frontend /app/ui/out ./ui/out
 
 # Pure-Go SQLite (modernc.org/sqlite) -> CGO not needed -> static binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/psm .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
+    -ldflags "-s -w \
+      -X main.Version=${VERSION} \
+      -X main.BuildTime=${BUILD_TIME} \
+      -X main.GitCommit=${GIT_COMMIT}" \
+    -o /out/psm .
 
 # =============================================================================
 # Stage 3: runtime image (glibc; Palworld/SteamCMD need it, not musl/Alpine)
