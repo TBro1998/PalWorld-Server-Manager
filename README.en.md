@@ -69,18 +69,15 @@ Image available on Docker Hub: [`tbro98/palsm`](https://hub.docker.com/r/tbro98/
 # 1. Download docker-compose.yml
 curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. Change JWT_SECRET (required)
-#    Edit docker-compose.yml and set JWT_SECRET to a strong random value
-
-# 3. Pull and start (image pulled from Docker Hub automatically — no local build needed)
+# 2. Pull and start (image pulled from Docker Hub automatically — no local build needed)
 docker compose up -d
 
-# 4. Visit http://<host-IP>:8080, create an admin account, then install/manage servers
+# 3. Visit http://<host-IP>:8080, create an admin account, then install/manage servers
 ```
 
 Key points:
 
-- **Be sure to change `JWT_SECRET` in `docker-compose.yml`** before using it in production.
+- **JWT_SECRET requires no manual setup**: the program auto-generates a strong secret during first-time web setup and writes it to `/data/config.yaml`, which is persisted by the volume and survives container rebuilds.
 - SteamCMD and the Palworld server are **auto-downloaded on first run** by the program into the `/data` volume; no manual pre-installation needed.
 - Default port mappings: `8080/tcp` (management UI), `8211/udp` (game), `27015/udp` (query).
   If you change a server's `-port` / `-QueryPort` in the UI, update the compose port mappings accordingly.

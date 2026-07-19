@@ -69,18 +69,15 @@ Docker Hubにイメージを公開しています：[`tbro98/palsm`](https://hub
 # 1. docker-compose.yml をダウンロード
 curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. JWT_SECRET を変更（必須）
-#    docker-compose.yml を編集し、JWT_SECRET を強力なランダム値に設定
-
-# 3. イメージを取得して起動（Docker Hubから自動取得、ローカルビルド不要）
+# 2. イメージを取得して起動（Docker Hubから自動取得、ローカルビルド不要）
 docker compose up -d
 
-# 4. ブラウザで http://<ホストIP>:8080 にアクセスし、管理者アカウントを作成後、サーバーをインストール・管理
+# 3. ブラウザで http://<ホストIP>:8080 にアクセスし、管理者アカウントを作成後、サーバーをインストール・管理
 ```
 
 要点：
 
-- 本番環境で使用する前に、**必ず `docker-compose.yml` の `JWT_SECRET` を変更してください**。
+- **JWT_SECRET の手動設定は不要**：初回Web設定時にプログラムが強力なシークレットを自動生成し `/data/config.yaml` に書き込みます。ボリュームで永続化されるため、コンテナを再構築しても失われません。
 - SteamCMDとPalworldサーバーは、プログラムがコンテナ内で**初回実行時に自動的に** `/data` ボリュームへダウンロードします。手動での事前インストールは不要です。
 - デフォルトのポートマッピング：`8080/tcp`（管理画面）、`8211/udp`（ゲーム）、`27015/udp`（クエリ）。
   UIでサーバーの `-port` / `-QueryPort` を変更した場合は、composeのポートマッピングも合わせて調整してください。
@@ -105,9 +102,9 @@ HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
 
 ## 設定
 
-プログラムは2つの設定方法をサポートしており、優先順位は：**設定ファイル > 環境変数 > デフォルト値**
+プログラムは2つの設定方法をサポートしており、優先順位は：**環境変数 > 設定ファイル > デフォルト値**
 
-> **注意**：プログラムディレクトリに `config.yaml` が存在する場合、環境変数は**完全に無視**されます。2つの方法を混在させることはできません。
+> **注意**：環境変数は常に `config.yaml` より優先されます。DockerでファイルをマウントしつつHOST等だけ環境変数で上書きするといった混在も可能です。
 
 ### 初回起動の流れ
 

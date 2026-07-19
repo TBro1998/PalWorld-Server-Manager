@@ -69,18 +69,15 @@
 # 1. 下载 docker-compose.yml
 curl -O https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/docker-compose.yml
 
-# 2. 修改 JWT_SECRET（必须）
-#    编辑 docker-compose.yml，将 JWT_SECRET 改为随机强密码
-
-# 3. 拉取镜像并启动（自动从 Docker Hub 拉取，无需本地构建）
+# 2. 拉取镜像并启动（自动从 Docker Hub 拉取，无需本地构建）
 docker compose up -d
 
-# 4. 浏览器访问 http://<主机IP>:8080，创建管理员账号后即可安装/管理服务器
+# 3. 浏览器访问 http://<主机IP>:8080，创建管理员账号后即可安装/管理服务器
 ```
 
 要点：
 
-- **务必修改 `docker-compose.yml` 中的 `JWT_SECRET`** 再用于生产。
+- **JWT_SECRET 无需手动设置**：程序在首次 Web 设置时自动生成强密钥并写入 `/data/config.yaml`，由 volume 持久化，容器重建后不变。
 - SteamCMD 与 Palworld 服务端由程序在容器内**首次运行时自动下载**到 `/data` 卷；无需手动预装。
 - 端口映射默认：`8080/tcp`（管理界面）、`8211/udp`（游戏）、`27015/udp`（查询）。
   若在界面里修改了服务器的 `-port` / `-QueryPort`，需同步调整 compose 的端口映射。
