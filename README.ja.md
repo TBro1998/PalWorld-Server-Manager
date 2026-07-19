@@ -77,7 +77,6 @@ docker compose up -d
 
 要点：
 
-- **JWT_SECRET の手動設定は不要**：初回Web設定時にプログラムが強力なシークレットを自動生成し `/data/config.yaml` に書き込みます。ボリュームで永続化されるため、コンテナを再構築しても失われません。
 - SteamCMDとPalworldサーバーは、プログラムがコンテナ内で**初回実行時に自動的に** `/data` ボリュームへダウンロードします。手動での事前インストールは不要です。
 - デフォルトのポートマッピング：`8080/tcp`（管理画面）、`8211/udp`（ゲーム）、`27015/udp`（クエリ）。
   UIでサーバーの `-port` / `-QueryPort` を変更した場合は、composeのポートマッピングも合わせて調整してください。
@@ -95,7 +94,7 @@ sudo dpkg --add-architecture i386 && sudo apt-get update
 sudo apt-get install -y ca-certificates lib32gcc-s1 libstdc++6 libstdc++6:i386
 
 # 実行（外部アクセス用に HOST=0.0.0.0 を設定）
-HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
+HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 ```
 
 プログラムはPalworldに必要な `steamclient.so` のシンボリックリンクを `~/.steam/sdk64` に自動作成します。インストール完了後、サーバーを起動できます。

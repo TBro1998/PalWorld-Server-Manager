@@ -77,7 +77,6 @@ docker compose up -d
 
 要点：
 
-- **JWT_SECRET 无需手动设置**：程序在首次 Web 设置时自动生成强密钥并写入 `/data/config.yaml`，由 volume 持久化，容器重建后不变。
 - SteamCMD 与 Palworld 服务端由程序在容器内**首次运行时自动下载**到 `/data` 卷；无需手动预装。
 - 端口映射默认：`8080/tcp`（管理界面）、`8211/udp`（游戏）、`27015/udp`（查询）。
   若在界面里修改了服务器的 `-port` / `-QueryPort`，需同步调整 compose 的端口映射。
@@ -95,7 +94,7 @@ sudo dpkg --add-architecture i386 && sudo apt-get update
 sudo apt-get install -y ca-certificates lib32gcc-s1 libstdc++6 libstdc++6:i386
 
 # 运行（对外访问设置 HOST=0.0.0.0）
-HOST=0.0.0.0 PORT=8080 JWT_SECRET=your-secret ./palworld-server-manager
+HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 ```
 
 程序会在 `~/.steam/sdk64` 自动建立 Palworld 所需的 `steamclient.so` 软链接，安装完成后即可启动服务器。
