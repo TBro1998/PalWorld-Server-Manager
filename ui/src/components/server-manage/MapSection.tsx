@@ -86,30 +86,19 @@ function MapView({ serverId }: { serverId: number }) {
         </Button>
       </div>
 
-      {/* Map container — square aspect ratio with a subtle grid background */}
+      {/* Map container — square aspect ratio with world map background */}
       <div
         className="relative overflow-hidden rounded-xl border-2 border-border/60 bg-[#1b2a3b]"
         style={{ aspectRatio: '1 / 1' }}
       >
-        {/* Grid SVG overlay */}
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12]"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern id="pal-grid" width="10%" height="10%" patternUnits="objectBoundingBox">
-              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#4a90c4" strokeWidth="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#pal-grid)" />
-        </svg>
-
-        {/* Map label watermark */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="select-none text-[11px] font-bold uppercase tracking-[0.35em] text-white/[0.08]">
-            Palpagos Island
-          </span>
-        </div>
+        {/* World map image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/World_Map.webp"
+          alt="Palpagos Island"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+          draggable={false}
+        />
 
         {/* Player markers */}
         {players.map((p) => {
