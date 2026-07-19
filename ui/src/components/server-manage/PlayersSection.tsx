@@ -191,14 +191,7 @@ export function PlayersSection() {
             <Placeholder className="min-h-[160px]">{t('overview.noPlayers')}</Placeholder>
           ) : (
             <div className="space-y-4">
-              {/* World map with player positions - full width on top */}
-              <InlinePlayerMap
-                players={players}
-                hovered={hovered}
-                onHover={setHovered}
-              />
-
-              {/* Player table - full width below */}
+              {/* Player table - full width on top */}
               <div className="overflow-x-auto rounded-2xl border-2 shadow-pal">
                 <table className="w-full text-sm">
                   <thead>
@@ -230,6 +223,13 @@ export function PlayersSection() {
                   </tbody>
                 </table>
               </div>
+
+              {/* World map with player positions - full width below */}
+              <InlinePlayerMap
+                players={players}
+                hovered={hovered}
+                onHover={setHovered}
+              />
             </div>
           )}
         </div>
