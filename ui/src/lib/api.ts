@@ -135,6 +135,17 @@ export const serversApi = {
     apiClient.get<SavePals>(`/api/servers/${id}/save/players/${uid}/pals`),
   saveInventory: (id: number, uid: string) =>
     apiClient.get<SaveInventory>(`/api/servers/${id}/save/players/${uid}/inventory`),
+
+  // --- Whitelist management ---
+  // Reads and writes the server's whitelist.txt. The file is managed by the
+  // backend (inside the server's install path) and does not require the server
+  // to be running.
+  getWhitelist: (id: number) =>
+    apiClient.get<{ entries: string[] }>(`/api/servers/${id}/whitelist`),
+  addWhitelist: (id: number, uid: string) =>
+    apiClient.post<{ entries: string[] }>(`/api/servers/${id}/whitelist`, { uid }),
+  removeWhitelist: (id: number, uid: string) =>
+    apiClient.delete<{ entries: string[] }>(`/api/servers/${id}/whitelist`, { data: { uid } }),
 }
 
 // --- Global mod library ---

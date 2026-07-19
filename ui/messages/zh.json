@@ -260,7 +260,20 @@
       "title": "地图与白名单",
       "desc": "可视化地图与白名单管理",
       "mapView": "可视化地图",
-      "whitelist": "白名单管理"
+      "whitelist": "白名单管理",
+      "refresh": "刷新",
+      "noPlayers": "当前没有在线玩家",
+      "wl": {
+        "hint": "在此管理服务器白名单。每行一个 Steam UID（需在 INI 中开启 UseAuthPassword=True）。",
+        "placeholder": "Steam UID（如 76561198…）",
+        "loading": "加载中…",
+        "empty": "白名单为空",
+        "remove": "移除",
+        "addOk": "已添加到白名单",
+        "addFail": "添加失败",
+        "removeOk": "已从白名单移除",
+        "removeFail": "移除失败"
+      }
     },
     "rest": {
       "checking": "正在检测 REST API 可用性…",

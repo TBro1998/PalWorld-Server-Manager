@@ -260,7 +260,20 @@
       "title": "マップとホワイトリスト",
       "desc": "ビジュアルマップとホワイトリスト管理",
       "mapView": "ビジュアルマップ",
-      "whitelist": "ホワイトリスト"
+      "whitelist": "ホワイトリスト",
+      "refresh": "更新",
+      "noPlayers": "オンラインのプレイヤーはいません",
+      "wl": {
+        "hint": "サーバーのホワイトリストを管理します。Steam UID を1件ずつ追加（INI に UseAuthPassword=True が必要）。",
+        "placeholder": "Steam UID（例：76561198…）",
+        "loading": "読み込み中…",
+        "empty": "ホワイトリストは空です",
+        "remove": "削除",
+        "addOk": "ホワイトリストに追加しました",
+        "addFail": "追加に失敗しました",
+        "removeOk": "ホワイトリストから削除しました",
+        "removeFail": "削除に失敗しました"
+      }
     },
     "rest": {
       "checking": "REST API の可用性を確認しています…",

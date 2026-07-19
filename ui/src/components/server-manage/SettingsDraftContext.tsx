@@ -36,6 +36,7 @@ interface SettingsDraft {
 
   // Derived state.
   installed: boolean
+  isRunning: boolean
   loading: boolean
   isDirty: boolean
   dirtyCount: number

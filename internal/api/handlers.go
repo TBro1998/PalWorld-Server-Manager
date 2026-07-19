@@ -617,7 +617,8 @@ func (r *Router) GetServerConfig(c *gin.Context) {
 }
 
 // UpdateServerConfig writes PalWorldSettings.ini (structured or raw) and
-// optionally updates launch args. Only allowed while the server is stopped.
+// optionally updates launch args. Allowed at any time; changes take effect on
+// the next server start because Palworld reads the INI only at startup.
 func (r *Router) UpdateServerConfig(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -631,7 +632,7 @@ func (r *Router) UpdateServerConfig(c *gin.Context) {
 		return
 	}
 
-	installPath, lastError, _, _, err := r.loadServerPathState(id)
+	installPath, _, _, _, err := r.loadServerPathState(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Server not found"})
@@ -640,12 +641,7 @@ func (r *Router) UpdateServerConfig(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query server"})
 		return
 	}
-	status := r.process.DeriveStatus(id, lastError)
 
-	if status != "stopped" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot edit config while server is " + status})
-		return
-	}
 	if installPath == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Set an install directory before editing config"})
 		return

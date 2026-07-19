@@ -104,6 +104,14 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 				save.GET("/players/:uid/pals", r.SavePlayerPals)
 				save.GET("/players/:uid/inventory", r.SavePlayerInventory)
 			}
+
+			// Whitelist management: reads and writes the server's whitelist.txt.
+			whitelist := servers.Group("/:id/whitelist")
+			{
+				whitelist.GET("", r.GetWhitelist)
+				whitelist.POST("", r.AddWhitelistEntry)
+				whitelist.DELETE("", r.RemoveWhitelistEntry)
+			}
 		}
 
 		// Config schema (drives the structured config form)

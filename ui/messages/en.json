@@ -260,7 +260,20 @@
       "title": "Map & whitelist",
       "desc": "Visual map and whitelist management",
       "mapView": "Visual map",
-      "whitelist": "Whitelist"
+      "whitelist": "Whitelist",
+      "refresh": "Refresh",
+      "noPlayers": "No players online",
+      "wl": {
+        "hint": "Manage the server whitelist. One Steam UID per entry (requires UseAuthPassword=True in INI).",
+        "placeholder": "Steam UID (e.g. 76561198…)",
+        "loading": "Loading…",
+        "empty": "Whitelist is empty",
+        "remove": "Remove",
+        "addOk": "Added to whitelist",
+        "addFail": "Failed to add",
+        "removeOk": "Removed from whitelist",
+        "removeFail": "Failed to remove"
+      }
     },
     "rest": {
       "checking": "Checking REST API availability…",
