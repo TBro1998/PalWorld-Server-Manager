@@ -15,10 +15,12 @@ const (
 	// createNewProcessGroup isolates the child's signal handling so a
 	// Ctrl+C / Ctrl+Break aimed at the parent does not propagate.
 	createNewProcessGroup = 0x00000200
-	// detachedProcess creates the child without any attached console.  The
-	// child will allocate its own console on first I/O if needed.  This
-	// prevents the child from being killed when the parent's console closes.
-	detachedProcess = 0x00000008
+	// createNewConsole allocates a new console window for the child process.
+	// This replaces the previous DETACHED_PROCESS approach: detached processes
+	// have no console at all, whereas CREATE_NEW_CONSOLE gives the restarted
+	// binary its own visible window — matching the behaviour of the original
+	// process that was launched by the user.
+	createNewConsole = 0x00000010
 )
 
 // restart launches a new instance of the current binary with the same
@@ -42,7 +44,7 @@ func restart() error {
 		Files: []*os.File{nil, nil, nil},
 		Env:   os.Environ(),
 		Sys: &syscall.SysProcAttr{
-			CreationFlags: detachedProcess | createNewProcessGroup,
+			CreationFlags: createNewConsole | createNewProcessGroup,
 		},
 	}
 

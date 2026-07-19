@@ -115,21 +115,26 @@ func Apply(ctx context.Context, result *CheckResult, mirror string, progress Pro
 	// ------------------------------------------------------------------
 	// 4. Re-exec: launch the new binary with the same args/env, then exit.
 	// ------------------------------------------------------------------
+	// Notify clients BEFORE spawning the child process.  The parent must keep
+	// its HTTP server (and port binding) alive long enough for the SSE event to
+	// reach the browser; if we launched the child first it would race to bind
+	// the same port and fail with "address already in use".
+	if onRestarting != nil {
+		onRestarting()
+	}
+
+	// Give the SSE connection time to flush the "restarting" event to clients
+	// before the process exits and the port is released.
+	time.Sleep(1500 * time.Millisecond)
+
+	// Port is now effectively "claimed" only by the exiting parent; spawn the
+	// child immediately before calling os.Exit so it can bind right away.
 	if err := restart(); err != nil {
 		// The new binary is already on disk; just log and exit so the OS or
 		// supervisor can restart the process.
 		log.Printf("update: restart failed (%v), exiting so supervisor can restart", err)
 	}
 
-	// Notify the caller so it can broadcast the "restarting" SSE event to all
-	// connected clients before the HTTP server dies.
-	if onRestarting != nil {
-		onRestarting()
-	}
-
-	// Give the SSE connection time to flush the "restarting" event to clients
-	// before the process exits.
-	time.Sleep(1500 * time.Millisecond)
 	os.Exit(0)
 	return nil // unreachable
 }
