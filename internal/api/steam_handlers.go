@@ -29,6 +29,13 @@ const steamLogStreamID int64 = 0
 // SteamStatus reports the configured Steam username and whether a cached login
 // session is believed ready. This drives the Mods-tab account UI (not
 // configured / logged in / needs login).
+// @Summary Get Steam account status
+// @Tags steam
+// @Produce json
+// @Success 200 {object} map[string]interface{} "username, sessionReady, webApiKeyConfigured"
+// @Failure 500 {object} map[string]interface{} "failed to read settings"
+// @Security BearerAuth
+// @Router /steam/status [get]
 func (r *Router) SteamStatus(c *gin.Context) {
 	username, err := settings.Get(r.db, settings.KeySteamUsername)
 	if err != nil {
@@ -82,6 +89,16 @@ type SteamLoginRequest struct {
 // shared StreamManager on the sentinel steamLogStreamID / KindSteamCMD channel;
 // it is broadcast only (never written to disk). The HTTP response carries only
 // the classified {result, message} signal, not the log.
+// @Summary Login to Steam via SteamCMD
+// @Tags steam
+// @Accept json
+// @Produce json
+// @Param body body SteamLoginRequest true "username, password, guardCode (optional)"
+// @Success 200 {object} map[string]interface{} "result (success/needGuard/badCredentials/error), message"
+// @Failure 400 {object} map[string]interface{} "invalid request"
+// @Failure 500 {object} map[string]interface{} "failed to save settings"
+// @Security BearerAuth
+// @Router /steam/login [post]
 func (r *Router) SteamLogin(c *gin.Context) {
 	var req SteamLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,6 +148,12 @@ func (r *Router) SteamLogin(c *gin.Context) {
 // It mirrors StreamLogs but targets the global sentinel login stream instead of
 // a per-server log, so it takes no server ID. Clients should open this stream
 // before POSTing to /steam/login to avoid missing the first lines.
+// @Summary Stream SteamCMD login output (SSE)
+// @Tags steam
+// @Produce text/event-stream
+// @Success 200 {string} string "SSE stream of steamcmd login output"
+// @Security BearerAuth
+// @Router /steam/logs/stream [get]
 func (r *Router) SteamLogStream(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")

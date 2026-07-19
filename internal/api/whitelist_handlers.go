@@ -91,6 +91,18 @@ func (r *Router) resolveWhitelistServer(c *gin.Context) (wlPath string, ok bool)
 //
 // GET /api/servers/:id/whitelist
 // Response: { "entries": ["76561198...", ...] }
+// GetWhitelist godoc
+// @Summary      Get server whitelist
+// @Description  Returns all whitelisted Steam IDs for the server
+// @Tags         whitelist
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/whitelist [get]
 func (r *Router) GetWhitelist(c *gin.Context) {
 	path, ok := r.resolveWhitelistServer(c)
 	if !ok {
@@ -114,6 +126,20 @@ type whitelistAddRequest struct {
 // POST /api/servers/:id/whitelist
 // Body: { "uid": "76561198..." }
 // Response: { "entries": [...updated list...] }
+// AddWhitelistEntry godoc
+// @Summary      Add to whitelist
+// @Description  Adds a Steam ID to the server whitelist
+// @Tags         whitelist
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "steamid"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/whitelist [post]
 func (r *Router) AddWhitelistEntry(c *gin.Context) {
 	path, ok := r.resolveWhitelistServer(c)
 	if !ok {
@@ -159,6 +185,19 @@ type whitelistRemoveRequest struct {
 // DELETE /api/servers/:id/whitelist
 // Body: { "uid": "76561198..." }
 // Response: { "entries": [...updated list...] }
+// RemoveWhitelistEntry godoc
+// @Summary      Remove from whitelist
+// @Description  Removes a Steam ID from the server whitelist
+// @Tags         whitelist
+// @Produce      json
+// @Param        id       path      int     true  "Server ID"
+// @Param        steamid  query     string  true  "Steam ID to remove"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      404      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/whitelist [delete]
 func (r *Router) RemoveWhitelistEntry(c *gin.Context) {
 	path, ok := r.resolveWhitelistServer(c)
 	if !ok {

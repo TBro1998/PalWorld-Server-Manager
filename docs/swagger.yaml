@@ -1,0 +1,2176 @@
+basePath: /api
+definitions:
+  api.AddGlobalModRequest:
+    properties:
+      name:
+        type: string
+      workshopId:
+        type: string
+    required:
+    - workshopId
+    type: object
+  api.CreateServerRequest:
+    properties:
+      installPath:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  api.LoginRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  api.SetWebAPIKeyRequest:
+    properties:
+      key:
+        type: string
+    type: object
+  api.SetupRequest:
+    properties:
+      password:
+        minLength: 6
+        type: string
+    required:
+    - password
+    type: object
+  api.SteamLoginRequest:
+    properties:
+      guardCode:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  api.UpdateServerRequest:
+    properties:
+      installPath:
+        type: string
+      launchArgs:
+        items:
+          type: integer
+        type: array
+      name:
+        type: string
+    type: object
+  models.Server:
+    properties:
+      created_at:
+        description: auto-managed by GORM
+        type: string
+      id:
+        type: integer
+      install_path:
+        type: string
+      installed:
+        description: server files present at install_path
+        type: boolean
+      last_error:
+        description: last install/start failure; cleared on success
+        type: string
+      launch_args:
+        description: JSON-encoded palconfig.LaunchArgs
+        type: string
+      name:
+        type: string
+      pid:
+        type: integer
+      status:
+        description: derived value (running/stopped/installing/error); NOT persisted
+        type: string
+      updated_at:
+        description: auto-managed by GORM
+        type: string
+    type: object
+info:
+  contact: {}
+  description: REST API for managing Palworld dedicated servers
+  title: PalWorld Server Manager API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Validates the admin password and returns a JWT token (valid for
+        7 days)
+      parameters:
+      - description: Admin password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'token: jwt-string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Incorrect password
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Admin login
+      tags:
+      - auth
+  /auth/setup:
+    post:
+      consumes:
+      - application/json
+      description: Sets the initial admin password. Only available when not yet configured.
+        Returns a JWT token.
+      parameters:
+      - description: Password (min 6 chars)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.SetupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'token: jwt-string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Already configured
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: First-time admin password setup
+      tags:
+      - auth
+  /auth/status:
+    get:
+      description: Returns whether the admin password has been configured. Public
+        endpoint.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'configured: true/false'
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check authentication status
+      tags:
+      - auth
+  /config/schema:
+    get:
+      description: Returns metadata for all PalWorldSettings.ini fields (types, defaults,
+        descriptions)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get configuration schema
+      tags:
+      - config
+  /mods:
+    get:
+      description: Returns all mods in the global library with server reference counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List global mods
+      tags:
+      - mods
+    post:
+      consumes:
+      - application/json
+      description: Registers a Steam Workshop mod in the global library (does not
+        download)
+      parameters:
+      - description: workshopId and optional name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.AddGlobalModRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add mod to global library
+      tags:
+      - mods
+  /mods/{modId}:
+    delete:
+      parameters:
+      - description: Mod ID
+        in: path
+        name: modId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete mod from global library
+      tags:
+      - mods
+  /mods/{modId}/download:
+    post:
+      parameters:
+      - description: Mod ID
+        in: path
+        name: modId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Download mod files via SteamCMD
+      tags:
+      - mods
+  /mods/{modId}/logs/stream:
+    get:
+      parameters:
+      - description: Mod ID
+        in: path
+        name: modId
+        required: true
+        type: integer
+      - description: JWT token
+        in: query
+        name: token
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Stream mod download logs (SSE)
+      tags:
+      - mods
+  /servers:
+    get:
+      description: Returns all server records with derived status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Server'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all servers
+      tags:
+      - servers
+    post:
+      consumes:
+      - application/json
+      description: Creates a server record with auto-incremented ports and random
+        admin password
+      parameters:
+      - description: Server name and optional install path
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateServerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Server'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new server
+      tags:
+      - servers
+  /servers/{id}:
+    delete:
+      description: Deletes a server record. Does not remove game files from disk.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Server is running
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a server
+      tags:
+      - servers
+    get:
+      description: Returns a single server record with derived status
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Server'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get server by ID
+      tags:
+      - servers
+    put:
+      consumes:
+      - application/json
+      description: Updates server name, install path, and/or launch arguments
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateServerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Server'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update server metadata
+      tags:
+      - servers
+  /servers/{id}/config:
+    get:
+      description: Returns PalWorldSettings.ini and launch arguments for editing
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: settings and launchArgs
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get server configuration
+      tags:
+      - config
+    put:
+      consumes:
+      - application/json
+      description: Writes PalWorldSettings.ini and/or launch arguments. Server must
+        be stopped.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: settings and/or launchArgs
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Server is running
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update server configuration
+      tags:
+      - config
+  /servers/{id}/install:
+    post:
+      description: Downloads Palworld dedicated server files to the install path.
+        May take several minutes.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Installation started
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Already installed or running
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Install server files via SteamCMD
+      tags:
+      - servers
+  /servers/{id}/logs:
+    get:
+      description: Returns recent log lines. Use query param ?limit=N to control count
+        (default 100).
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Number of recent lines (default 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'lines: array of strings'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get server logs
+      tags:
+      - servers
+  /servers/{id}/logs/stream:
+    get:
+      description: Server-Sent Events stream of live log lines. Auth via ?token=<jwt>
+        query param.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: JWT token (for SSE auth)
+        in: query
+        name: token
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Stream server logs (SSE)
+      tags:
+      - servers
+  /servers/{id}/mods:
+    get:
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List server mods
+      tags:
+      - mods
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: modId
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Link mod to server
+      tags:
+      - mods
+  /servers/{id}/mods/{serverModId}:
+    delete:
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Server Mod ID
+        in: path
+        name: serverModId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Unlink mod from server
+      tags:
+      - mods
+  /servers/{id}/mods/{serverModId}/toggle:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Server Mod ID
+        in: path
+        name: serverModId
+        required: true
+        type: integer
+      - description: 'enabled: true/false'
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable/disable server mod
+      tags:
+      - mods
+  /servers/{id}/mods/deploy:
+    post:
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Deploy mods to game directory
+      tags:
+      - mods
+  /servers/{id}/rest/announce:
+    post:
+      consumes:
+      - application/json
+      description: Forwards POST /v1/api/announce to the Palworld REST API
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: message
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Broadcast announcement
+      tags:
+      - rest
+  /servers/{id}/rest/ban:
+    post:
+      consumes:
+      - application/json
+      description: Forwards POST /v1/api/ban to the Palworld REST API. Bans the specified
+        player.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: steamid or userid
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ban player
+      tags:
+      - rest
+  /servers/{id}/rest/info:
+    get:
+      description: Forwards GET /v1/api/info to the Palworld REST API
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Game server info
+      tags:
+      - rest
+  /servers/{id}/rest/kick:
+    post:
+      consumes:
+      - application/json
+      description: Forwards POST /v1/api/kick to the Palworld REST API. Disconnects
+        the specified player.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: steamid or userid
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Kick player
+      tags:
+      - rest
+  /servers/{id}/rest/metrics:
+    get:
+      description: Forwards GET /v1/api/metrics to the Palworld REST API
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Game metrics
+      tags:
+      - rest
+  /servers/{id}/rest/players:
+    get:
+      description: Forwards GET /v1/api/players to the Palworld REST API
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Online players
+      tags:
+      - rest
+  /servers/{id}/rest/save:
+    post:
+      description: Forwards POST /v1/api/save to the Palworld REST API. Triggers a
+        manual save.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Save game
+      tags:
+      - rest
+  /servers/{id}/rest/settings:
+    get:
+      description: Forwards GET /v1/api/settings to the Palworld REST API
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Server settings
+      tags:
+      - rest
+  /servers/{id}/rest/shutdown:
+    post:
+      consumes:
+      - application/json
+      description: Forwards POST /v1/api/shutdown to the Palworld REST API. Gracefully
+        shuts down the game server.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: waittime (seconds) and message
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Shutdown server (graceful)
+      tags:
+      - rest
+  /servers/{id}/rest/status:
+    get:
+      description: Checks if the game server's REST API is enabled and reachable
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Palworld REST API status
+      tags:
+      - rest
+  /servers/{id}/rest/stop:
+    post:
+      description: Forwards POST /v1/api/stop to the Palworld REST API. Immediately
+        stops the game server.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Stop server (immediate)
+      tags:
+      - rest
+  /servers/{id}/rest/unban:
+    post:
+      consumes:
+      - application/json
+      description: Forwards POST /v1/api/unban to the Palworld REST API. Removes ban
+        for the specified player.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: steamid or userid
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Unban player
+      tags:
+      - rest
+  /servers/{id}/restart:
+    post:
+      description: Stops and restarts the server process. Disconnects all online players.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Not running or not installed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Restart server
+      tags:
+      - servers
+  /servers/{id}/save/guilds:
+    get:
+      description: Reads and parses guild data from the save file
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Parse save file guilds
+      tags:
+      - save
+  /servers/{id}/save/players:
+    get:
+      description: Reads and parses player data from the save file
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Parse save file players
+      tags:
+      - save
+  /servers/{id}/save/players/inventory:
+    get:
+      description: Reads and parses inventory data for a specific player from the
+        save file
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Player UID
+        in: query
+        name: playerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Parse player inventory
+      tags:
+      - save
+  /servers/{id}/save/players/pals:
+    get:
+      description: Reads and parses Pal data for a specific player from the save file
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Player UID
+        in: query
+        name: playerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Parse player's Pals
+      tags:
+      - save
+  /servers/{id}/start:
+    post:
+      description: Starts the Palworld dedicated server process
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Already running or not installed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start server
+      tags:
+      - servers
+  /servers/{id}/stop:
+    post:
+      description: Gracefully stops the running server process. Disconnects all online
+        players.
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Not running
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Stop server
+      tags:
+      - servers
+  /servers/{id}/whitelist:
+    delete:
+      description: Removes a Steam ID from the server whitelist
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Steam ID to remove
+        in: query
+        name: steamid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove from whitelist
+      tags:
+      - whitelist
+    get:
+      description: Returns all whitelisted Steam IDs for the server
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get server whitelist
+      tags:
+      - whitelist
+    post:
+      consumes:
+      - application/json
+      description: Adds a Steam ID to the server whitelist
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: steamid
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add to whitelist
+      tags:
+      - whitelist
+  /steam/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: username, password, guardCode (optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.SteamLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: result (success/needGuard/badCredentials/error), message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to save settings
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Login to Steam via SteamCMD
+      tags:
+      - steam
+  /steam/logs/stream:
+    get:
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream of steamcmd login output
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Stream SteamCMD login output (SSE)
+      tags:
+      - steam
+  /steam/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: username, sessionReady, webApiKeyConfigured
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to read settings
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Steam account status
+      tags:
+      - steam
+  /steam/webapi-key:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: key (empty to clear)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.SetWebAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: configured (boolean)
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to save key
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set Steam Web API key
+      tags:
+      - workshop
+  /system/settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: download_mirror
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to read settings
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get system settings
+      tags:
+      - system
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: download_mirror
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: download_mirror
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to save settings
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update system settings
+      tags:
+      - system
+  /system/stats:
+    get:
+      description: Returns CPU, memory, and disk usage
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get system monitoring stats
+      tags:
+      - system
+  /system/update/apply:
+    post:
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: update started
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: no update available
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: update already in progress
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Apply system update
+      tags:
+      - system
+  /system/update/check:
+    get:
+      parameters:
+      - description: Return cached result (1 for cached)
+        in: query
+        name: cached
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: update check result
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check for updates
+      tags:
+      - system
+  /system/update/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: phase, pct, msg, err
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current update status
+      tags:
+      - system
+  /system/update/stream:
+    get:
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream of update events
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Stream update progress (SSE)
+      tags:
+      - system
+  /system/version:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: version, buildTime, gitCommit
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get version info
+      tags:
+      - system
+  /workshop/dependencies/{workshopId}:
+    get:
+      parameters:
+      - description: Workshop item ID
+        in: path
+        name: workshopId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: dependencies array
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: web_api_key_missing or invalid workshopId
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to read settings
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: steam_api_error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get mod dependencies
+      tags:
+      - workshop
+  /workshop/search:
+    get:
+      parameters:
+      - description: Search query (empty for trending)
+        in: query
+        name: q
+        type: string
+      - description: Pagination cursor (* for first page)
+        in: query
+        name: cursor
+        type: string
+      - description: Items per page (1-100, default 20)
+        in: query
+        name: num
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: search results with items and next_cursor
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: web_api_key_missing
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to read settings
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: steam_api_error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search Steam Workshop
+      tags:
+      - workshop
+securityDefinitions:
+  BearerAuth:
+    description: Bearer token authentication. Use the token returned from POST /api/auth/login
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

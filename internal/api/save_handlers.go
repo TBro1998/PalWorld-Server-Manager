@@ -126,6 +126,18 @@ func guildNames(level *palsave.Level) map[string]string {
 }
 
 // SavePlayers returns every player recorded in the level save (online or not).
+// SavePlayers godoc
+// @Summary      Parse save file players
+// @Description  Reads and parses player data from the save file
+// @Tags         save
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/save/players [get]
 func (r *Router) SavePlayers(c *gin.Context) {
 	ctx, ok := r.saveResolve(c)
 	if !ok {
@@ -148,6 +160,18 @@ func (r *Router) SavePlayers(c *gin.Context) {
 }
 
 // SaveGuilds returns all guilds with their rosters.
+// SaveGuilds godoc
+// @Summary      Parse save file guilds
+// @Description  Reads and parses guild data from the save file
+// @Tags         save
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/save/guilds [get]
 func (r *Router) SaveGuilds(c *gin.Context) {
 	ctx, ok := r.saveResolve(c)
 	if !ok {
@@ -177,6 +201,19 @@ func (r *Router) SaveGuilds(c *gin.Context) {
 
 // SavePlayerPals returns the pals owned by a specific player. All pals live in
 // the Level.sav, so this needs no per-player file read.
+// SavePlayerPals godoc
+// @Summary      Parse player's Pals
+// @Description  Reads and parses Pal data for a specific player from the save file
+// @Tags         save
+// @Produce      json
+// @Param        id        path      int     true  "Server ID"
+// @Param        playerId  query     string  true  "Player UID"
+// @Success      200       {object}  map[string]interface{}
+// @Failure      400       {object}  map[string]interface{}
+// @Failure      404       {object}  map[string]interface{}
+// @Failure      500       {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/save/players/pals [get]
 func (r *Router) SavePlayerPals(c *gin.Context) {
 	ctx, ok := r.saveResolve(c)
 	if !ok {
@@ -212,6 +249,19 @@ func (r *Router) SavePlayerPals(c *gin.Context) {
 // SavePlayerInventory returns a player's inventory grouped by container role.
 // It reads the player's own .sav for container ids, then cross-references the
 // level's item containers and dynamic items to resolve item contents.
+// SavePlayerInventory godoc
+// @Summary      Parse player inventory
+// @Description  Reads and parses inventory data for a specific player from the save file
+// @Tags         save
+// @Produce      json
+// @Param        id        path      int     true  "Server ID"
+// @Param        playerId  query     string  true  "Player UID"
+// @Success      200       {object}  map[string]interface{}
+// @Failure      400       {object}  map[string]interface{}
+// @Failure      404       {object}  map[string]interface{}
+// @Failure      500       {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/save/players/inventory [get]
 func (r *Router) SavePlayerInventory(c *gin.Context) {
 	ctx, ok := r.saveResolve(c)
 	if !ok {

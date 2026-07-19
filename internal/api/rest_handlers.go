@@ -187,7 +187,17 @@ type RestStatusResponse struct {
 
 // RestStatus reports whether the REST API is usable. Unlike the forwarding
 // handlers it always returns 200 with a structured body (except for lookup
-// failures), so the frontend can render guidance.
+// RestStatus godoc
+// @Summary      Palworld REST API status
+// @Description  Checks if the game server's REST API is enabled and reachable
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/status [get]
 func (r *Router) RestStatus(c *gin.Context) {
 	res, ok := r.restIDAndResolve(c)
 	if !ok {
@@ -224,7 +234,18 @@ func (r *Router) RestStatus(c *gin.Context) {
 
 // --- GET forwarders ---
 
-// RestInfo forwards GET /info.
+// RestInfo godoc
+// @Summary      Game server info
+// @Description  Forwards GET /v1/api/info to the Palworld REST API
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/info [get]
 func (r *Router) RestInfo(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -239,6 +260,18 @@ func (r *Router) RestInfo(c *gin.Context) {
 }
 
 // RestMetrics forwards GET /metrics.
+// RestMetrics godoc
+// @Summary      Game metrics
+// @Description  Forwards GET /v1/api/metrics to the Palworld REST API
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/metrics [get]
 func (r *Router) RestMetrics(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -253,6 +286,18 @@ func (r *Router) RestMetrics(c *gin.Context) {
 }
 
 // RestPlayers forwards GET /players.
+// RestPlayers godoc
+// @Summary      Online players
+// @Description  Forwards GET /v1/api/players to the Palworld REST API
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/players [get]
 func (r *Router) RestPlayers(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -267,6 +312,18 @@ func (r *Router) RestPlayers(c *gin.Context) {
 }
 
 // RestSettings forwards GET /settings.
+// RestSettings godoc
+// @Summary      Server settings
+// @Description  Forwards GET /v1/api/settings to the Palworld REST API
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/settings [get]
 func (r *Router) RestSettings(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -287,6 +344,20 @@ type announceRequest struct {
 }
 
 // RestAnnounce forwards POST /announce.
+// RestAnnounce godoc
+// @Summary      Broadcast announcement
+// @Description  Forwards POST /v1/api/announce to the Palworld REST API
+// @Tags         rest
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "message"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      502   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/announce [post]
 func (r *Router) RestAnnounce(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -310,6 +381,20 @@ type kickBanRequest struct {
 }
 
 // RestKick forwards POST /kick.
+// RestKick godoc
+// @Summary      Kick player
+// @Description  Forwards POST /v1/api/kick to the Palworld REST API. Disconnects the specified player.
+// @Tags         rest
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "steamid or userid"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      502   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/kick [post]
 func (r *Router) RestKick(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -328,6 +413,20 @@ func (r *Router) RestKick(c *gin.Context) {
 }
 
 // RestBan forwards POST /ban.
+// RestBan godoc
+// @Summary      Ban player
+// @Description  Forwards POST /v1/api/ban to the Palworld REST API. Bans the specified player.
+// @Tags         rest
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "steamid or userid"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      502   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/ban [post]
 func (r *Router) RestBan(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -350,6 +449,20 @@ type unbanRequest struct {
 }
 
 // RestUnban forwards POST /unban.
+// RestUnban godoc
+// @Summary      Unban player
+// @Description  Forwards POST /v1/api/unban to the Palworld REST API. Removes ban for the specified player.
+// @Tags         rest
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "steamid or userid"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      502   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/unban [post]
 func (r *Router) RestUnban(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -368,6 +481,18 @@ func (r *Router) RestUnban(c *gin.Context) {
 }
 
 // RestSave forwards POST /save.
+// RestSave godoc
+// @Summary      Save game
+// @Description  Forwards POST /v1/api/save to the Palworld REST API. Triggers a manual save.
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/save [post]
 func (r *Router) RestSave(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -388,6 +513,20 @@ type shutdownRequest struct {
 }
 
 // RestShutdown forwards POST /shutdown.
+// RestShutdown godoc
+// @Summary      Shutdown server (graceful)
+// @Description  Forwards POST /v1/api/shutdown to the Palworld REST API. Gracefully shuts down the game server.
+// @Tags         rest
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "waittime (seconds) and message"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      502   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/shutdown [post]
 func (r *Router) RestShutdown(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {
@@ -406,6 +545,18 @@ func (r *Router) RestShutdown(c *gin.Context) {
 }
 
 // RestStop forwards POST /stop.
+// RestStop godoc
+// @Summary      Stop server (immediate)
+// @Description  Forwards POST /v1/api/stop to the Palworld REST API. Immediately stops the game server.
+// @Tags         rest
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      502  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/rest/stop [post]
 func (r *Router) RestStop(c *gin.Context) {
 	res, ok := r.requireReady(c)
 	if !ok {

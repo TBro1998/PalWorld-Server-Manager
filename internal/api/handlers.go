@@ -90,7 +90,15 @@ func (r *Router) hydrateStatus(s *models.Server) {
 	s.Status = r.process.DeriveStatus(s.ID, s.LastError)
 }
 
-// ListServers returns all servers
+// ListServers godoc
+// @Summary      List all servers
+// @Description  Returns all server records with derived status
+// @Tags         servers
+// @Produce      json
+// @Success      200  {array}   models.Server
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers [get]
 func (r *Router) ListServers(c *gin.Context) {
 	var servers []models.Server
 	if err := r.db.Order("created_at DESC").Find(&servers).Error; err != nil {
@@ -115,7 +123,18 @@ type CreateServerRequest struct {
 	InstallPath string `json:"installPath"`
 }
 
-// CreateServer creates a new server
+// CreateServer godoc
+// @Summary      Create a new server
+// @Description  Creates a server record with auto-incremented ports and random admin password
+// @Tags         servers
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateServerRequest  true  "Server name and optional install path"
+// @Success      201   {object}  models.Server
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers [post]
 func (r *Router) CreateServer(c *gin.Context) {
 	var req CreateServerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -186,6 +205,16 @@ func (r *Router) CreateServer(c *gin.Context) {
 }
 
 // GetServer returns a specific server
+// GetServer godoc
+// @Summary      Get server by ID
+// @Description  Returns a single server record with derived status
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  models.Server
+// @Failure      404  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id} [get]
 func (r *Router) GetServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -215,8 +244,20 @@ type UpdateServerRequest struct {
 	LaunchArgs  *json.RawMessage `json:"launchArgs,omitempty"`
 }
 
-// UpdateServer updates a server's metadata and, optionally, its install
-// directory and launch arguments.
+// UpdateServer godoc
+// @Summary      Update server metadata
+// @Description  Updates server name, install path, and/or launch arguments
+// @Tags         servers
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                  true  "Server ID"
+// @Param        body  body      UpdateServerRequest  true  "Fields to update"
+// @Success      200   {object}  models.Server
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id} [put]
 func (r *Router) UpdateServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -293,6 +334,19 @@ func (r *Router) UpdateServer(c *gin.Context) {
 }
 
 // DeleteServer deletes a server
+// DeleteServer godoc
+// @Summary      Delete a server
+// @Description  Deletes a server record. Does not remove game files from disk.
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      409  {object}  map[string]interface{}  "Server is running"
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id} [delete]
 func (r *Router) DeleteServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -328,6 +382,19 @@ func (r *Router) DeleteServer(c *gin.Context) {
 }
 
 // InstallServer installs Palworld server files using SteamCMD
+// InstallServer godoc
+// @Summary      Install server files via SteamCMD
+// @Description  Downloads Palworld dedicated server files to the install path. May take several minutes.
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}  "Installation started"
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      409  {object}  map[string]interface{}  "Already installed or running"
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/install [post]
 func (r *Router) InstallServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -384,6 +451,19 @@ func (r *Router) InstallServer(c *gin.Context) {
 }
 
 // StartServer starts a server
+// StartServer godoc
+// @Summary      Start server
+// @Description  Starts the Palworld dedicated server process
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      409  {object}  map[string]interface{}  "Already running or not installed"
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/start [post]
 func (r *Router) StartServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -404,6 +484,19 @@ func (r *Router) StartServer(c *gin.Context) {
 }
 
 // StopServer stops a server
+// StopServer godoc
+// @Summary      Stop server
+// @Description  Gracefully stops the running server process. Disconnects all online players.
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      409  {object}  map[string]interface{}  "Not running"
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/stop [post]
 func (r *Router) StopServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -424,6 +517,19 @@ func (r *Router) StopServer(c *gin.Context) {
 }
 
 // RestartServer restarts a server
+// RestartServer godoc
+// @Summary      Restart server
+// @Description  Stops and restarts the server process. Disconnects all online players.
+// @Tags         servers
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      409  {object}  map[string]interface{}  "Not running or not installed"
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/restart [post]
 func (r *Router) RestartServer(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -458,6 +564,18 @@ func logKind(c *gin.Context) (string, bool) {
 
 // GetLogs returns the most recent server logs.
 // Optional query params: kind (server|steamcmd, default server), lines (default 200).
+// GetLogs godoc
+// @Summary      Get server logs
+// @Description  Returns recent log lines. Use query param ?limit=N to control count (default 100).
+// @Tags         servers
+// @Produce      json
+// @Param        id     path      int     true   "Server ID"
+// @Param        limit  query     int     false  "Number of recent lines (default 100)"
+// @Success      200    {object}  map[string]interface{}  "lines: array of strings"
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      404    {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/logs [get]
 func (r *Router) GetLogs(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -493,6 +611,18 @@ func (r *Router) GetLogs(c *gin.Context) {
 
 // StreamLogs streams live server logs via Server-Sent Events.
 // Optional query param: kind (server|steamcmd, default server).
+// StreamLogs godoc
+// @Summary      Stream server logs (SSE)
+// @Description  Server-Sent Events stream of live log lines. Auth via ?token=<jwt> query param.
+// @Tags         servers
+// @Produce      text/event-stream
+// @Param        id     path      int     true   "Server ID"
+// @Param        token  query     string  false  "JWT token (for SSE auth)"
+// @Success      200    {string}  string  "SSE stream"
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      404    {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/logs/stream [get]
 func (r *Router) StreamLogs(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -557,6 +687,18 @@ func (r *Router) loadServerPathState(id int64) (installPath, lastError, launchAr
 
 // GetServerConfig returns the effective PalWorldSettings values, launch args,
 // and the raw OptionSettings line. Seeds the INI from defaults when needed.
+// GetServerConfig godoc
+// @Summary      Get server configuration
+// @Description  Returns PalWorldSettings.ini and launch arguments for editing
+// @Tags         config
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}  "settings and launchArgs"
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/config [get]
 func (r *Router) GetServerConfig(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -619,6 +761,21 @@ func (r *Router) GetServerConfig(c *gin.Context) {
 // UpdateServerConfig writes PalWorldSettings.ini (structured or raw) and
 // optionally updates launch args. Allowed at any time; changes take effect on
 // the next server start because Palworld reads the INI only at startup.
+// UpdateServerConfig godoc
+// @Summary      Update server configuration
+// @Description  Writes PalWorldSettings.ini and/or launch arguments. Server must be stopped.
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "settings and/or launchArgs"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      409   {object}  map[string]interface{}  "Server is running"
+// @Failure      500   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/config [put]
 func (r *Router) UpdateServerConfig(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -675,6 +832,14 @@ func (r *Router) UpdateServerConfig(c *gin.Context) {
 
 // GetConfigSchema returns the OptionSettings parameter registry that drives the
 // structured config form (keys, types, defaults, categories, enum options).
+// GetConfigSchema godoc
+// @Summary      Get configuration schema
+// @Description  Returns metadata for all PalWorldSettings.ini fields (types, defaults, descriptions)
+// @Tags         config
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /config/schema [get]
 func (r *Router) GetConfigSchema(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"params": palconfig.Params})
 }
@@ -695,6 +860,15 @@ func (r *Router) serverExists(c *gin.Context, id int64) bool {
 }
 
 // GetSystemStats returns system statistics
+// GetSystemStats godoc
+// @Summary      Get system monitoring stats
+// @Description  Returns CPU, memory, and disk usage
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /system/stats [get]
 func (r *Router) GetSystemStats(c *gin.Context) {
 	// TODO: Implement system stats logic
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "System stats - to be implemented"})

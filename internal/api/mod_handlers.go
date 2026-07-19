@@ -27,6 +27,15 @@ type ModWithStatus struct {
 // ListGlobalMods returns all mods in the global library, ordered by creation
 // time. Each entry includes a server_count so the UI can indicate if a mod is
 // in use before deletion.
+// ListGlobalMods godoc
+// @Summary      List global mods
+// @Description  Returns all mods in the global library with server reference counts
+// @Tags         mods
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /mods [get]
 func (r *Router) ListGlobalMods(c *gin.Context) {
 	var mods []models.Mod
 	if err := r.db.Order("created_at DESC").Find(&mods).Error; err != nil {
@@ -65,8 +74,19 @@ type AddGlobalModRequest struct {
 	Name       string `json:"name"`
 }
 
-// AddGlobalMod registers a new mod in the global library without downloading it.
-// The download is triggered separately via POST /api/mods/:modId/download.
+// AddGlobalMod godoc
+// @Summary      Add mod to global library
+// @Description  Registers a Steam Workshop mod in the global library (does not download)
+// @Tags         mods
+// @Accept       json
+// @Produce      json
+// @Param        body  body      AddGlobalModRequest  true  "workshopId and optional name"
+// @Success      201   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      409   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /mods [post]
 func (r *Router) AddGlobalMod(c *gin.Context) {
 	var req AddGlobalModRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -112,6 +132,17 @@ func (r *Router) AddGlobalMod(c *gin.Context) {
 // DeleteGlobalMod removes a mod from the library. All server references
 // (server_mods rows) are deleted first, and deployed content is removed from
 // each server's Mods/Workshop directory.
+// DeleteGlobalMod godoc
+// @Summary      Delete mod from global library
+// @Tags         mods
+// @Produce      json
+// @Param        modId  path      int  true  "Mod ID"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      404    {object}  map[string]interface{}
+// @Failure      409    {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /mods/{modId} [delete]
 func (r *Router) DeleteGlobalMod(c *gin.Context) {
 	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
 	if err != nil {
@@ -160,6 +191,17 @@ func (r *Router) DeleteGlobalMod(c *gin.Context) {
 // DownloadGlobalMod triggers an async SteamCMD download for the given mod.
 // Progress is streamed via GET /api/mods/:modId/logs/stream, keyed by the mod's
 // own ID so that concurrent downloads have independent log channels.
+// DownloadGlobalMod godoc
+// @Summary      Download mod files via SteamCMD
+// @Tags         mods
+// @Produce      json
+// @Param        modId  path      int  true  "Mod ID"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      404    {object}  map[string]interface{}
+// @Failure      409    {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /mods/{modId}/download [post]
 func (r *Router) DownloadGlobalMod(c *gin.Context) {
 	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
 	if err != nil {
@@ -210,6 +252,15 @@ func (r *Router) DownloadGlobalMod(c *gin.Context) {
 // ModLogStream streams download progress for a single mod via SSE.
 // Each mod uses its own ID as the stream key, allowing concurrent downloads
 // to deliver logs independently without interleaving.
+// ModLogStream godoc
+// @Summary      Stream mod download logs (SSE)
+// @Tags         mods
+// @Produce      text/event-stream
+// @Param        modId  path      int     true  "Mod ID"
+// @Param        token  query     string  false "JWT token"
+// @Success      200    {string}  string  "SSE stream"
+// @Security     BearerAuth
+// @Router       /mods/{modId}/logs/stream [get]
 func (r *Router) ModLogStream(c *gin.Context) {
 	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
 	if err != nil {
@@ -262,6 +313,16 @@ type ServerModDetail struct {
 
 // ListServerMods returns all mods linked to a server, joined with global mod
 // metadata and annotated with a version-mismatch flag.
+// ListServerMods godoc
+// @Summary      List server mods
+// @Tags         mods
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/mods [get]
 func (r *Router) ListServerMods(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -327,6 +388,19 @@ type LinkServerModRequest struct {
 
 // LinkServerMod links an existing global library mod to a server.
 // The mod must already be registered in the global library (AddGlobalMod first).
+// LinkServerMod godoc
+// @Summary      Link mod to server
+// @Tags         mods
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Server ID"
+// @Param        body  body      map[string]interface{}  true  "modId"
+// @Success      201   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      409   {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/mods [post]
 func (r *Router) LinkServerMod(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -394,6 +468,17 @@ func (r *Router) LinkServerMod(c *gin.Context) {
 
 // UnlinkServerMod removes a mod reference from a server: deletes the
 // server_mods row, removes deployed content, and rewrites PalModSettings.ini.
+// UnlinkServerMod godoc
+// @Summary      Unlink mod from server
+// @Tags         mods
+// @Produce      json
+// @Param        id           path      int  true  "Server ID"
+// @Param        serverModId  path      int  true  "Server Mod ID"
+// @Success      200          {object}  map[string]interface{}
+// @Failure      400          {object}  map[string]interface{}
+// @Failure      404          {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/mods/{serverModId} [delete]
 func (r *Router) UnlinkServerMod(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -446,6 +531,19 @@ func (r *Router) UnlinkServerMod(c *gin.Context) {
 // ToggleServerMod flips a server mod's enabled flag, syncs the mod files on
 // disk (remove when disabling, re-deploy from the global library when enabling),
 // and rewrites PalModSettings.ini.
+// ToggleServerMod godoc
+// @Summary      Enable/disable server mod
+// @Tags         mods
+// @Accept       json
+// @Produce      json
+// @Param        id           path      int                   true  "Server ID"
+// @Param        serverModId  path      int                   true  "Server Mod ID"
+// @Param        body         body      map[string]interface{}  true  "enabled: true/false"
+// @Success      200          {object}  map[string]interface{}
+// @Failure      400          {object}  map[string]interface{}
+// @Failure      404          {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/mods/{serverModId}/toggle [put]
 func (r *Router) ToggleServerMod(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -526,6 +624,17 @@ func (r *Router) ToggleServerMod(c *gin.Context) {
 // Mods/Workshop directory, updates deployed_version on each server_mod row,
 // and rewrites PalModSettings.ini. Progress is streamed via the server's
 // existing steamcmd log stream (KindSteamCMD).
+// DeployServerMods godoc
+// @Summary      Deploy mods to game directory
+// @Tags         mods
+// @Produce      json
+// @Param        id   path      int  true  "Server ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /servers/{id}/mods/deploy [post]
 func (r *Router) DeployServerMods(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

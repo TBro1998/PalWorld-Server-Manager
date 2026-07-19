@@ -11,6 +11,10 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	_ "github.com/TBro1998/PalWorld-Server-Manager/docs" // swagger docs
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
 )
 
 // Server represents the HTTP server
@@ -58,6 +62,9 @@ func (s *Server) setupRoutes() {
 
 	apiGroup := s.router.Group("/api")
 	apiRouter.RegisterRoutes(apiGroup)
+
+	// Swagger UI and OpenAPI spec (public, no auth required)
+	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Serve static files (Next.js build output)
 	staticFS, err := fs.Sub(s.staticFiles, "ui/out")

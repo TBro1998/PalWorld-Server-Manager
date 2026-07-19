@@ -14,6 +14,11 @@ import (
 )
 
 // GetVersion returns the running binary's build metadata.
+// @Summary Get version info
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "version, buildTime, gitCommit"
+// @Router /system/version [get]
 func (r *Router) GetVersion(c *gin.Context) {
 	info := r.checker.BuildInfo()
 	c.JSON(http.StatusOK, gin.H{
@@ -26,6 +31,13 @@ func (r *Router) GetVersion(c *gin.Context) {
 // CheckUpdate queries GitHub for the latest release and compares it with the
 // current version.  Pass ?cached=1 to return the in-memory cached result
 // without hitting GitHub again.
+// @Summary Check for updates
+// @Tags system
+// @Produce json
+// @Param cached query string false "Return cached result (1 for cached)"
+// @Success 200 {object} map[string]interface{} "update check result"
+// @Security BearerAuth
+// @Router /system/update/check [get]
 func (r *Router) CheckUpdate(c *gin.Context) {
 	if c.Query("cached") == "1" {
 		if cached := update.Cached(); cached != nil {
@@ -48,6 +60,12 @@ func (r *Router) CheckUpdate(c *gin.Context) {
 
 // GetUpdateStatus returns the current update phase so the UI can restore
 // progress after a page navigation or browser refresh.
+// @Summary Get current update status
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "phase, pct, msg, err"
+// @Security BearerAuth
+// @Router /system/update/status [get]
 func (r *Router) GetUpdateStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, update.Status())
 }
@@ -61,6 +79,14 @@ func (r *Router) GetUpdateStatus(c *gin.Context) {
 //
 // SECURITY: This endpoint triggers binary replacement and process restart.
 // Registered under the protected group; JWT auth will cover it once enabled.
+// @Summary Apply system update
+// @Tags system
+// @Produce json
+// @Success 202 {object} map[string]interface{} "update started"
+// @Failure 400 {object} map[string]interface{} "no update available"
+// @Failure 409 {object} map[string]interface{} "update already in progress"
+// @Security BearerAuth
+// @Router /system/update/apply [post]
 func (r *Router) ApplyUpdate(c *gin.Context) {
 	result := update.Cached()
 	if result == nil || !result.HasUpdate {
@@ -117,6 +143,12 @@ func (r *Router) ApplyUpdate(c *gin.Context) {
 // UpdateStream is an SSE endpoint that streams update progress events to the
 // browser.  Open this EventSource before calling ApplyUpdate to catch all
 // progress lines from the beginning.
+// @Summary Stream update progress (SSE)
+// @Tags system
+// @Produce text/event-stream
+// @Success 200 {string} string "SSE stream of update events"
+// @Security BearerAuth
+// @Router /system/update/stream [get]
 func (r *Router) UpdateStream(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -143,6 +175,13 @@ func (r *Router) UpdateStream(c *gin.Context) {
 
 // GetSystemSettings returns runtime-adjustable settings exposed to the UI.
 // Currently exposes download_mirror only.
+// @Summary Get system settings
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "download_mirror"
+// @Failure 500 {object} map[string]interface{} "failed to read settings"
+// @Security BearerAuth
+// @Router /system/settings [get]
 func (r *Router) GetSystemSettings(c *gin.Context) {
 	mirror, err := settings.Get(r.db, settings.KeyDownloadMirror)
 	if err != nil {
@@ -155,6 +194,16 @@ func (r *Router) GetSystemSettings(c *gin.Context) {
 }
 
 // UpdateSystemSettings persists UI-configurable system settings.
+// @Summary Update system settings
+// @Tags system
+// @Accept json
+// @Produce json
+// @Param body body map[string]interface{} true "download_mirror"
+// @Success 200 {object} map[string]interface{} "download_mirror"
+// @Failure 400 {object} map[string]interface{} "invalid request"
+// @Failure 500 {object} map[string]interface{} "failed to save settings"
+// @Security BearerAuth
+// @Router /system/settings [put]
 func (r *Router) UpdateSystemSettings(c *gin.Context) {
 	var body struct {
 		DownloadMirror string `json:"download_mirror"`

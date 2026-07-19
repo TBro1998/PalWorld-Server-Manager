@@ -25,6 +25,18 @@ const workshopHTTPTimeout = 15 * time.Second
 //
 // The Steam Web API key is read from settings and never forwarded to the
 // client. Returns 400 when the key is not configured; 502 when Steam fails.
+// @Summary Search Steam Workshop
+// @Tags workshop
+// @Produce json
+// @Param q query string false "Search query (empty for trending)"
+// @Param cursor query string false "Pagination cursor (* for first page)"
+// @Param num query int false "Items per page (1-100, default 20)"
+// @Success 200 {object} map[string]interface{} "search results with items and next_cursor"
+// @Failure 400 {object} map[string]interface{} "web_api_key_missing"
+// @Failure 500 {object} map[string]interface{} "failed to read settings"
+// @Failure 502 {object} map[string]interface{} "steam_api_error"
+// @Security BearerAuth
+// @Router /workshop/search [get]
 func (r *Router) WorkshopSearch(c *gin.Context) {
 	key, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
 	if err != nil {
@@ -60,6 +72,16 @@ func (r *Router) WorkshopSearch(c *gin.Context) {
 // Dependency detection relies on mods declaring their dependencies in the Steam
 // layer (AddDependency / collection children). If a mod only lists deps in its
 // Info.json "Dependencies" field, they will not appear here.
+// @Summary Get mod dependencies
+// @Tags workshop
+// @Produce json
+// @Param workshopId path string true "Workshop item ID"
+// @Success 200 {object} map[string]interface{} "dependencies array"
+// @Failure 400 {object} map[string]interface{} "web_api_key_missing or invalid workshopId"
+// @Failure 500 {object} map[string]interface{} "failed to read settings"
+// @Failure 502 {object} map[string]interface{} "steam_api_error"
+// @Security BearerAuth
+// @Router /workshop/dependencies/{workshopId} [get]
 func (r *Router) WorkshopDependencies(c *gin.Context) {
 	key, err := settings.Get(r.db, settings.KeySteamWebAPIKey)
 	if err != nil {
@@ -101,6 +123,16 @@ type SetWebAPIKeyRequest struct {
 // search. Passing an empty key removes the configured value. The key is never
 // echoed back in any response — the caller can check webApiKeyConfigured via
 // GET /api/steam/status.
+// @Summary Set Steam Web API key
+// @Tags workshop
+// @Accept json
+// @Produce json
+// @Param body body SetWebAPIKeyRequest true "key (empty to clear)"
+// @Success 200 {object} map[string]interface{} "configured (boolean)"
+// @Failure 400 {object} map[string]interface{} "invalid request"
+// @Failure 500 {object} map[string]interface{} "failed to save key"
+// @Security BearerAuth
+// @Router /steam/webapi-key [post]
 func (r *Router) SetWebAPIKey(c *gin.Context) {
 	var req SetWebAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

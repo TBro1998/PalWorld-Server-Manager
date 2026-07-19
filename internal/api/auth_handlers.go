@@ -7,11 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthStatus returns whether the admin password has been configured yet.
-// This is a public endpoint used by the frontend to decide whether to show
-// the first-time setup screen or the login screen.
-//
-// GET /api/auth/status
+// AuthStatus godoc
+// @Summary      Check authentication status
+// @Description  Returns whether the admin password has been configured. Public endpoint.
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "configured: true/false"
+// @Router       /auth/status [get]
 func (r *Router) AuthStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"configured": r.config.Configured(),
@@ -23,13 +25,18 @@ type SetupRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 }
 
-// Setup sets the initial admin password. Only available when no password has
-// been configured yet (i.e. config.yaml does not exist or has an empty
-// password_hash). On success it creates / overwrites config.yaml with the
-// bcrypt hash and a freshly generated jwt_secret, then returns a JWT so the
-// user is immediately logged in without a second round-trip.
-//
-// POST /api/auth/setup
+// Setup godoc
+// @Summary      First-time admin password setup
+// @Description  Sets the initial admin password. Only available when not yet configured. Returns a JWT token.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      SetupRequest  true  "Password (min 6 chars)"
+// @Success      200   {object}  map[string]interface{}  "token: jwt-string"
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      409   {object}  map[string]interface{}  "Already configured"
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /auth/setup [post]
 func (r *Router) Setup(c *gin.Context) {
 	if r.config.Configured() {
 		c.JSON(http.StatusConflict, gin.H{"error": "password already configured; use /api/auth/login"})
@@ -79,9 +86,18 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Login validates the admin password and returns a JWT.
-//
-// POST /api/auth/login
+// Login godoc
+// @Summary      Admin login
+// @Description  Validates the admin password and returns a JWT token (valid for 7 days)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LoginRequest  true  "Admin password"
+// @Success      200   {object}  map[string]interface{}  "token: jwt-string"
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      401   {object}  map[string]interface{}  "Incorrect password"
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /auth/login [post]
 func (r *Router) Login(c *gin.Context) {
 	if !r.config.Configured() {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "not configured; use /api/auth/setup"})

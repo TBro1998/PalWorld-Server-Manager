@@ -24,6 +24,25 @@ go mod download
 go build .
 ```
 
+### OpenAPI/Swagger Documentation
+
+The API is documented with Swagger annotations. The generated docs are committed to the repository, so building does not require `swag` unless you modify API handlers.
+
+**Regenerate Swagger spec after API changes:**
+```bash
+# Install swag CLI (one-time setup)
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# Regenerate OpenAPI spec (commit the generated docs/ directory)
+swag init -g internal/api/docs.go --parseInternal --parseDependency
+```
+
+**Access the API documentation:**
+- Swagger UI: `http://127.0.0.1:8080/swagger/index.html`
+- JSON spec: `http://127.0.0.1:8080/swagger/doc.json`
+
+Both endpoints are public (no authentication required).
+
 ### Development Workflow
 
 **Frontend Development:**
