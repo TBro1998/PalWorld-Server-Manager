@@ -19,7 +19,7 @@ services:
     environment:
       HOST: "0.0.0.0"                       # 容器内必须监听 0.0.0.0 才能对外访问
       PORT: "8080"
-      JWT_SECRET: "change-me-in-production"  # ⚠ 请务必修改
+      # JWT_SECRET 未设置 → 程序首次配置时自动生成并保存至 /data/config.yaml（由 volume 持久化）
       DATABASE_PATH: "/data/palworld.db"
       STEAMCMD_PATH: "/data/steamcmd"
       PALWORLD_BASE_PATH: "/data/palworld"
