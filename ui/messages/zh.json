@@ -305,6 +305,7 @@
     "save": {
       "unsaved": "有未保存的改动",
       "metaOnly": "服务器未安装，仅保存基础信息",
+      "runningHint": "服务器运行中 · 重启后生效",
       "discard": "放弃",
       "saving": "保存中…",
       "save": "保存"

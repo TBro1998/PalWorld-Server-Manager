@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Save } from 'lucide-react'
+import { AlertTriangle, Save, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { useSettingsDraft } from './SettingsDraftContext'
@@ -10,7 +10,7 @@ import { useSettingsDraft } from './SettingsDraftContext'
 // keeps unsaved edits and the bar visible. Save commits everything atomically.
 export function SettingsSaveBar() {
   const t = useTranslations('serverManage')
-  const { isDirty, dirtyCount, saving, installed, error, save, discard } = useSettingsDraft()
+  const { isDirty, dirtyCount, saving, installed, isRunning, error, save, discard } = useSettingsDraft()
 
   if (!isDirty) return null
 
@@ -24,6 +24,12 @@ export function SettingsSaveBar() {
           </span>
           {!installed && (
             <span className="text-xs text-muted-foreground">{t('save.metaOnly')}</span>
+          )}
+          {installed && isRunning && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3" />
+              {t('save.runningHint')}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">

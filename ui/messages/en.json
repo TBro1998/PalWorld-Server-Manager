@@ -305,6 +305,7 @@
     "save": {
       "unsaved": "Unsaved changes",
       "metaOnly": "Server not installed — only basic info is saved",
+      "runningHint": "Server is running · changes take effect on restart",
       "discard": "Discard",
       "saving": "Saving…",
       "save": "Save"

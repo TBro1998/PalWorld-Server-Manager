@@ -255,6 +255,7 @@ export function SettingsDraftProvider({
     params,
     paramByKey,
     installed: !!server?.installed,
+    isRunning: server?.status === 'running',
     loading: isLoading,
     isDirty,
     dirtyCount,

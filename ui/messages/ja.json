@@ -305,6 +305,7 @@
     "save": {
       "unsaved": "未保存の変更",
       "metaOnly": "サーバー未インストール — 基本情報のみ保存",
+      "runningHint": "サーバー起動中 · 再起動後に反映",
       "discard": "破棄",
       "saving": "保存中…",
       "save": "保存"
