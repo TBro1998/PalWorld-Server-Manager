@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/caarlos0/env/v11"
 	"gopkg.in/yaml.v3"
@@ -46,21 +47,53 @@ func (c *Config) Configured() bool {
 	return c.PasswordHash != ""
 }
 
-// Load loads configuration with priority: config.yaml > environment variables > defaults
+// Load loads configuration with priority: env vars > config.yaml > defaults.
+// This allows Docker deployments to override any config.yaml setting via
+// environment variables without modifying the file.
 func Load() (*Config, error) {
+	// Step 1: apply defaults via env package (envDefault tags).
 	cfg := &Config{}
+	if err := env.Parse(cfg); err != nil {
+		return nil, err
+	}
 
-	// Try to load from config.yaml first
+	// Step 2: overlay config.yaml on top of defaults (if the file exists).
 	if data, err := os.ReadFile("config.yaml"); err == nil {
 		if err := yaml.Unmarshal(data, cfg); err != nil {
 			return nil, err
 		}
-		return cfg, nil
 	}
 
-	// config.yaml doesn't exist, load from environment variables with defaults
-	if err := env.Parse(cfg); err != nil {
-		return nil, err
+	// Step 3: re-apply any explicitly set environment variables so they always
+	// win over whatever config.yaml says.
+	if v, ok := os.LookupEnv("HOST"); ok {
+		cfg.Host = v
+	}
+	if v, ok := os.LookupEnv("PORT"); ok {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.Port = n
+		}
+	}
+	if v, ok := os.LookupEnv("DATABASE_PATH"); ok {
+		cfg.DatabasePath = v
+	}
+	if v, ok := os.LookupEnv("JWT_SECRET"); ok {
+		cfg.JWTSecret = v
+	}
+	if v, ok := os.LookupEnv("PASSWORD_HASH"); ok {
+		cfg.PasswordHash = v
+	}
+	if v, ok := os.LookupEnv("STEAMCMD_PATH"); ok {
+		cfg.SteamCMDPath = v
+	}
+	if v, ok := os.LookupEnv("STEAM_USERNAME"); ok {
+		cfg.SteamUsername = v
+	}
+	if v, ok := os.LookupEnv("LOG_DIR"); ok {
+		cfg.LogDir = v
+	}
+	if v, ok := os.LookupEnv("GITHUB_REPO"); ok {
+		cfg.GitHubRepo = v
 	}
 
 	return cfg, nil

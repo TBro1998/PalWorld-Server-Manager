@@ -105,9 +105,9 @@ The program automatically creates the `steamclient.so` symlink required by Palwo
 
 ## Configuration
 
-The program supports two configuration methods with priority: **config file > environment variables > defaults**
+The program supports two configuration methods with priority: **environment variables > config file > defaults**
 
-> **Note**: If `config.yaml` exists in the program directory, environment variables are **completely ignored**. The two methods cannot be mixed.
+> **Note**: Environment variables always take precedence over `config.yaml`, making it easy to override specific settings in Docker without modifying the file. Both methods can be mixed.
 
 ### First-run Flow
 
@@ -133,9 +133,9 @@ github_repo: "TBro1998/PalWorld-Server-Manager"
 
 > `jwt_secret` and `password_hash` are written automatically by the program during the first web setup — **do not set them manually**.
 
-### Environment Variables (for Docker / no config file)
+### Environment Variables (Docker / Override Config File)
 
-When `config.yaml` does **not** exist in the program directory, the following environment variables are read:
+Environment variables always take effect and have higher priority than `config.yaml`, allowing you to override any field without modifying the file:
 
 | Variable | Description | Default |
 |---|---|---|

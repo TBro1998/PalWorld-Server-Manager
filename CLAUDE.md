@@ -45,11 +45,11 @@ go build .
 ## Configuration System
 
 The application uses a **three-tier configuration priority**:
-1. `config.yaml` file (highest priority)
-2. Environment variables
+1. Environment variables (highest priority)
+2. `config.yaml` file
 3. Hardcoded defaults (lowest priority)
 
-Configuration is loaded in `internal/config/config.go`. If `config.yaml` exists, it takes precedence over environment variables entirely.
+Configuration is loaded in `internal/config/config.go`. Environment variables always win over `config.yaml`, making it easy to override specific fields in Docker without modifying the file.
 
 **Key Configuration Fields:**
 - `host` / `HOST` - Web interface listen address (default: 127.0.0.1)
@@ -240,7 +240,7 @@ The build creates a completely self-contained executable with no external depend
 
 ### Configuration Priority
 
-Always remember: **config.yaml > environment variables > defaults**
+Always remember: **environment variables > config.yaml > defaults**
 
 The config loader in `config.Load()` returns immediately if `config.yaml` exists, bypassing all environment variable checks.
 
