@@ -270,6 +270,11 @@ jobs:
           [ -s /tmp/release_notes.md ] \
             || echo "No documented changes in this release." > /tmp/release_notes.md
 
+          # Append a Full Changelog link so users can trace every commit in this
+          # range, regardless of which notes path (AI or fallback) produced the body.
+          # printf "\n---\n\n**Full Changelog**: https://github.com/%s/compare/%s...%s\n" \
+          #  "${GITHUB_REPOSITORY}" "${PREV}" "${VERSION}" >> /tmp/release_notes.md
+
           echo "--- Preview ---"
           cat /tmp/release_notes.md
 
