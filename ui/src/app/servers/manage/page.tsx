@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   LayoutDashboard,
   Users,
-  Wrench,
   ScrollText,
   SlidersHorizontal,
   Gamepad2,
@@ -27,7 +26,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { OverviewSection } from '@/components/server-manage/OverviewSection'
 import { PlayersSection } from '@/components/server-manage/PlayersSection'
-import { OperationsSection } from '@/components/server-manage/OperationsSection'
 import { LogsSection } from '@/components/server-manage/LogsSection'
 import { WhitelistSection } from '@/components/server-manage/WhitelistSection'
 import { BackupSection } from '@/components/server-manage/BackupSection'
@@ -49,7 +47,6 @@ const NAV_GROUPS = [
       { key: 'overview', icon: LayoutDashboard },
       { key: 'players', icon: Users },
       { key: 'saveData', icon: Database },
-      { key: 'operations', icon: Wrench },
       { key: 'logs', icon: ScrollText },
     ],
   },
@@ -205,7 +202,6 @@ function ManagePanel() {
             {active === 'overview' && <OverviewSection />}
             {active === 'players' && <PlayersSection />}
             {active === 'saveData' && <SaveDataSection />}
-            {active === 'operations' && <OperationsSection />}
             {active === 'logs' && <LogsSection />}
             {active === 'basics' && <BasicsSettings />}
             {active === 'game' && <GameSettings />}
