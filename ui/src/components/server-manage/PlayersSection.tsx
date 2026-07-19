@@ -1,14 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
 import { UserX, Ban, RotateCcw, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Select } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -21,12 +19,27 @@ import { serversApi } from '@/lib/api'
 import { getApiErrorMessage } from '@/lib/apiError'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { useRestStatus } from '@/hooks/useRestStatus'
-import type { PalPlayer, SaveGuild, SavePal, SaveItem } from '@/types/server'
+import type { PalPlayer } from '@/types/server'
 import { SectionShell, Placeholder, useServerId } from './shared'
 import { RestUnavailableNotice } from './RestUnavailableNotice'
 
-type TabKey = 'players' | 'guilds' | 'pals' | 'inventory'
-const TABS: TabKey[] = ['players', 'guilds', 'pals', 'inventory']
+// ---------------------------------------------------------------------------
+// World-map helpers (Palpagos Island, Unreal Engine units)
+// ---------------------------------------------------------------------------
+const MAP_X_MIN = -582000
+const MAP_X_MAX = 582000
+const MAP_Y_MIN = -582000
+const MAP_Y_MAX = 582000
+
+function worldToPercent(x: number, y: number) {
+  const px = ((x - MAP_X_MIN) / (MAP_X_MAX - MAP_X_MIN)) * 100
+  // Screen Y is inverted relative to the game world Y axis.
+  const py = (1 - (y - MAP_Y_MIN) / (MAP_Y_MAX - MAP_Y_MIN)) * 100
+  return {
+    px: Math.max(0, Math.min(100, px)),
+    py: Math.max(0, Math.min(100, py)),
+  }
+}
 
 // Feedback shown inline after a mutation (no toast library in this project).
 type Feedback = { kind: 'success' | 'error'; text: string } | null
@@ -44,7 +57,7 @@ export function PlayersSection() {
   const queryClient = useQueryClient()
   const { status, isAvailable } = useRestStatus(serverId)
 
-  const [tab, setTab] = useState<TabKey>('players')
+  const [hovered, setHovered] = useState<PalPlayer | null>(null)
   const [unbanId, setUnbanId] = useState('')
   const [pending, setPending] = useState<PendingAction>(null)
   const [banMessage, setBanMessage] = useState('')
@@ -121,87 +134,72 @@ export function PlayersSection() {
 
   return (
     <SectionShell title={t('players.title')} desc={t('players.desc')} comingSoon={false}>
-      {/* Inner tab bar for the four data domains. */}
-      <div className="flex flex-wrap gap-1.5">
-        {TABS.map((tb) => {
-          const active = tb === tab
-          return (
-            <button
-              key={tb}
+      {!isAvailable ? (
+        <RestUnavailableNotice status={status} />
+      ) : (
+        <div className="space-y-4">
+          {/* Manual refresh */}
+          <div className="flex justify-end">
+            <Button
               type="button"
-              onClick={() => setTab(tb)}
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl border-2 shadow-pal"
+              onClick={() => playersQuery.refetch()}
+              disabled={!isAvailable || playersQuery.isFetching}
+            >
+              <RefreshCw className={`h-4 w-4 ${playersQuery.isFetching ? 'animate-spin' : ''}`} />
+              {t('players.refresh')}
+            </Button>
+          </div>
+
+          {feedback && (
+            <p
               className={
-                'rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ' +
-                (active
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground')
+                'text-sm ' +
+                (feedback.kind === 'success' ? 'text-success' : 'text-destructive')
               }
             >
-              {t(`players.tabs.${tb}`)}
-            </button>
-          )
-        })}
-      </div>
+              {feedback.text}
+            </p>
+          )}
 
-      {/* --- Live online players (via REST) --- */}
-      {tab === 'players' &&
-        (!isAvailable ? (
-          <RestUnavailableNotice status={status} />
-        ) : (
-          <div className="space-y-4">
-            {/* Manual refresh: the player list does not auto-poll. */}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 rounded-xl border-2 shadow-pal"
-                onClick={() => playersQuery.refetch()}
-                disabled={!isAvailable || playersQuery.isFetching}
-              >
-                <RefreshCw className={`h-4 w-4 ${playersQuery.isFetching ? 'animate-spin' : ''}`} />
-                {t('players.refresh')}
-              </Button>
+          {/* Unban by userId */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="unban-userid">{t('players.unban.label')}</Label>
+              <Input
+                id="unban-userid"
+                value={unbanId}
+                onChange={(e) => setUnbanId(e.target.value)}
+                placeholder={t('players.unban.placeholder')}
+              />
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openUnban}
+              disabled={!unbanId.trim() || unbanMut.isPending}
+            >
+              <RotateCcw className="h-4 w-4" />
+              {t('players.unban.action')}
+            </Button>
+          </div>
 
-            {feedback && (
-              <p
-                className={
-                  'text-sm ' +
-                  (feedback.kind === 'success' ? 'text-success' : 'text-destructive')
-                }
-              >
-                {feedback.text}
-              </p>
-            )}
+          {/* Map + online player table */}
+          {players.length === 0 ? (
+            <Placeholder className="min-h-[160px]">{t('overview.noPlayers')}</Placeholder>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[24rem_1fr]">
+              {/* World map with player positions */}
+              <InlinePlayerMap
+                players={players}
+                hovered={hovered}
+                onHover={setHovered}
+              />
 
-            {/* Unban by userId. */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="unban-userid">{t('players.unban.label')}</Label>
-                <Input
-                  id="unban-userid"
-                  value={unbanId}
-                  onChange={(e) => setUnbanId(e.target.value)}
-                  placeholder={t('players.unban.placeholder')}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={openUnban}
-                disabled={!unbanId.trim() || unbanMut.isPending}
-              >
-                <RotateCcw className="h-4 w-4" />
-                {t('players.unban.action')}
-              </Button>
-            </div>
-
-            {/* Online player table. */}
-            {players.length === 0 ? (
-              <Placeholder className="min-h-[160px]">{t('overview.noPlayers')}</Placeholder>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border-2 shadow-pal">
+              {/* Player table */}
+              <div className="overflow-x-auto self-start rounded-2xl border-2 shadow-pal">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 bg-muted/40 text-left text-xs font-bold uppercase text-muted-foreground">
@@ -217,6 +215,9 @@ export function PlayersSection() {
                       <PlayerRow
                         key={p.userId || p.playerId || p.name}
                         player={p}
+                        isHovered={hovered?.userId === p.userId}
+                        onHover={() => setHovered(p)}
+                        onLeave={() => setHovered(null)}
                         onKick={() => setPending({ type: 'kick', userid: p.userId, name: p.name })}
                         onBan={() => {
                           setBanMessage('')
@@ -229,16 +230,12 @@ export function PlayersSection() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* --- Parsed save data (offline-capable, independent of live REST) --- */}
-      {tab === 'guilds' && <GuildsView serverId={serverId} />}
-      {tab === 'pals' && <PalsView serverId={serverId} />}
-      {tab === 'inventory' && <InventoryView serverId={serverId} />}
-
-      {/* Confirmation dialog for the destructive actions (players tab only). */}
+      {/* Confirmation dialog */}
       <Dialog open={pending !== null} onOpenChange={(o) => !o && closeDialog()}>
         <DialogContent>
           <DialogHeader>
@@ -283,21 +280,120 @@ export function PlayersSection() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Inline player map
+// ---------------------------------------------------------------------------
+
+function InlinePlayerMap({
+  players,
+  hovered,
+  onHover,
+}: {
+  players: PalPlayer[]
+  hovered: PalPlayer | null
+  onHover: (p: PalPlayer | null) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <div
+        className="relative overflow-hidden rounded-xl border-2 border-border/60 bg-[#1b2a3b]"
+        style={{ aspectRatio: '1 / 1' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/World_Map.webp"
+          alt="Palpagos Island"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+          draggable={false}
+        />
+
+        {players.map((p) => {
+          const { px, py } = worldToPercent(p.location_x, p.location_y)
+          const isHov = hovered?.userId === p.userId
+          return (
+            <button
+              key={p.userId || p.playerId || p.name}
+              type="button"
+              className="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
+              style={{ left: `${px}%`, top: `${py}%` }}
+              onMouseEnter={() => onHover(p)}
+              onMouseLeave={() => onHover(null)}
+            >
+              <span
+                className={
+                  'block rounded-full border-2 border-white/70 transition-all duration-150 ' +
+                  (isHov
+                    ? 'h-4 w-4 bg-primary shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)]'
+                    : 'h-3 w-3 bg-emerald-400')
+                }
+              />
+              {isHov && (
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-lg">
+                  <p className="font-semibold text-foreground">{p.name}</p>
+                  <p className="text-muted-foreground">Lv.{p.level}</p>
+                  <p className="font-mono text-muted-foreground">
+                    {Math.round(p.location_x)}, {Math.round(p.location_y)}
+                  </p>
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Legend chips */}
+      <div className="flex flex-wrap gap-1">
+        {players.map((p) => (
+          <button
+            key={p.userId || p.name}
+            type="button"
+            className={
+              'flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors ' +
+              (hovered?.userId === p.userId
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground')
+            }
+            onMouseEnter={() => onHover(p)}
+            onMouseLeave={() => onHover(null)}
+          >
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+            {p.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Player table row
+// ---------------------------------------------------------------------------
+
 function PlayerRow({
   player,
+  isHovered,
+  onHover,
+  onLeave,
   onKick,
   onBan,
   kickLabel,
   banLabel,
 }: {
   player: PalPlayer
+  isHovered?: boolean
+  onHover?: () => void
+  onLeave?: () => void
   onKick: () => void
   onBan: () => void
   kickLabel: string
   banLabel: string
 }) {
   return (
-    <tr className="text-foreground">
+    <tr
+      className={'text-foreground transition-colors ' + (isHovered ? 'bg-primary/5' : '')}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+    >
       <td className="px-4 py-2.5 font-semibold">{player.name}</td>
       <td className="px-4 py-2.5">
         <Badge variant="secondary">Lv.{player.level}</Badge>
@@ -317,287 +413,5 @@ function PlayerRow({
         </div>
       </td>
     </tr>
-  )
-}
-
-// --- Save-data views ---------------------------------------------------------
-
-type QueryLike = { isLoading: boolean; isError: boolean; error: unknown }
-
-// Renders loading / not-found / error placeholders for a save query, or null
-// when the data is ready. A 404 means "no save on disk" (distinct from a real
-// failure) and gets a dedicated hint.
-function saveStatus(q: QueryLike, t: (k: string) => string): React.ReactNode | null {
-  if (q.isLoading) return <Placeholder className="min-h-[160px]">{t('players.save.loading')}</Placeholder>
-  if (q.isError) {
-    const notFound = q.error instanceof AxiosError && q.error.response?.status === 404
-    const msg = notFound
-      ? t('players.save.noSave')
-      : getApiErrorMessage(q.error, t('players.save.loadError'))
-    return <Placeholder className="min-h-[160px]">{msg}</Placeholder>
-  }
-  return null
-}
-
-// Unreal FDateTime ticks (100ns since 0001-01-01 UTC) -> localized date string.
-// Returns '—' for zero or out-of-range values (guards against unexpected units).
-function formatTicks(ticks: number): string {
-  if (!ticks) return '—'
-  const unixMs = ticks / 10000 - 62135596800000
-  const d = new Date(unixMs)
-  const year = d.getFullYear()
-  if (Number.isNaN(unixMs) || year < 2020 || year > 2100) return '—'
-  return d.toLocaleString()
-}
-
-function useSavePlayersQuery(serverId: number) {
-  return useQuery({
-    queryKey: ['save-players', serverId],
-    queryFn: async () => (await serversApi.savePlayers(serverId)).data.players,
-    enabled: Number.isFinite(serverId),
-    refetchOnWindowFocus: false,
-  })
-}
-
-// Player picker shared by the pals and inventory tabs. Auto-selects the first
-// player once the list loads and nothing is selected yet.
-function PlayerSelect({
-  serverId,
-  value,
-  onChange,
-}: {
-  serverId: number
-  value: string
-  onChange: (uid: string) => void
-}) {
-  const t = useTranslations('serverManage')
-  const q = useSavePlayersQuery(serverId)
-  const players = useMemo(() => q.data ?? [], [q.data])
-
-  useEffect(() => {
-    if (!value && players.length) onChange(players[0].uid)
-  }, [players, value, onChange])
-
-  const state = saveStatus(q, t)
-  if (state) return state
-  if (!players.length) return <Placeholder className="min-h-[160px]">{t('players.save.empty')}</Placeholder>
-
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor="save-player-select">{t('players.save.selectPlayer')}</Label>
-      <Select
-        id="save-player-select"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="sm:max-w-xs"
-      >
-        <option value="" disabled>
-          {t('players.save.selectPlayerPlaceholder')}
-        </option>
-        {players.map((p) => (
-          <option key={p.uid} value={p.uid}>
-            {p.name || p.uid} {p.level ? `(Lv.${p.level})` : ''}
-          </option>
-        ))}
-      </Select>
-    </div>
-  )
-}
-
-function GuildsView({ serverId }: { serverId: number }) {
-  const t = useTranslations('serverManage')
-  const q = useQuery({
-    queryKey: ['save-guilds', serverId],
-    queryFn: async () => (await serversApi.saveGuilds(serverId)).data.guilds,
-    enabled: Number.isFinite(serverId),
-    refetchOnWindowFocus: false,
-  })
-  const state = saveStatus(q, t)
-  if (state) return state
-  const guilds = q.data ?? []
-  if (!guilds.length) return <Placeholder className="min-h-[160px]">{t('players.save.guild.empty')}</Placeholder>
-
-  return (
-    <div className="space-y-4">
-      {guilds.map((g) => (
-        <GuildCard key={g.guildId} guild={g} />
-      ))}
-    </div>
-  )
-}
-
-function GuildCard({ guild }: { guild: SaveGuild }) {
-  const t = useTranslations('serverManage')
-  return (
-    <div className="overflow-hidden rounded-2xl border-2 shadow-pal">
-      <div className="flex flex-wrap items-center gap-3 bg-muted/40 px-4 py-3">
-        <span className="font-bold text-foreground">{guild.name || '—'}</span>
-        <Badge variant="secondary">
-          {t('players.save.guild.baseCamp')} {guild.baseCampLevel}
-        </Badge>
-        <span className="font-mono text-xs text-muted-foreground">
-          {t('players.save.guild.admin')}: {guild.adminUid || '—'}
-        </span>
-      </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/20 text-left text-xs font-bold uppercase text-muted-foreground">
-            <th className="px-4 py-2">{t('players.save.guild.memberName')}</th>
-            <th className="px-4 py-2">{t('players.save.guild.role')}</th>
-            <th className="px-4 py-2">{t('players.save.guild.lastOnline')}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/60">
-          {guild.members.map((m) => (
-            <tr key={m.uid} className="text-foreground">
-              <td className="px-4 py-2 font-semibold">
-                {m.name || '—'}
-                <span className="ml-2 font-mono text-xs text-muted-foreground">{m.uid}</span>
-              </td>
-              <td className="px-4 py-2 text-muted-foreground">{m.role}</td>
-              <td className="px-4 py-2 text-muted-foreground">{formatTicks(m.lastOnline)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function PalsView({ serverId }: { serverId: number }) {
-  const [uid, setUid] = useState('')
-
-  const palsQ = useQuery({
-    queryKey: ['save-pals', serverId, uid],
-    queryFn: async () => (await serversApi.savePals(serverId, uid)).data.pals,
-    enabled: Number.isFinite(serverId) && !!uid,
-    refetchOnWindowFocus: false,
-  })
-
-  return (
-    <div className="space-y-4">
-      <PlayerSelect serverId={serverId} value={uid} onChange={setUid} />
-      {uid && <PalsTable q={palsQ} />}
-    </div>
-  )
-}
-
-function PalsTable({
-  q,
-}: {
-  q: QueryLike & { data?: SavePal[] }
-}) {
-  const t = useTranslations('serverManage')
-  const state = saveStatus(q, t)
-  if (state) return state
-  const pals = q.data ?? []
-  if (!pals.length) return <Placeholder className="min-h-[160px]">{t('players.save.pal.empty')}</Placeholder>
-
-  return (
-    <div className="overflow-x-auto rounded-2xl border-2 shadow-pal">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b-2 bg-muted/40 text-left text-xs font-bold uppercase text-muted-foreground">
-            <th className="px-4 py-2.5">{t('players.save.pal.name')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.species')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.level')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.gender')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.rank')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.talent')}</th>
-            <th className="px-4 py-2.5">{t('players.save.pal.passives')}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/60">
-          {pals.map((p) => (
-            <tr key={p.instanceId} className="text-foreground">
-              <td className="px-4 py-2.5 font-semibold">{p.name || p.species}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{p.species}</td>
-              <td className="px-4 py-2.5">
-                <Badge variant="secondary">Lv.{p.level}</Badge>
-              </td>
-              <td className="px-4 py-2.5 text-muted-foreground">{p.gender || '—'}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{p.rank}</td>
-              <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                {p.talent.hp}/{p.talent.melee}/{p.talent.shot}/{p.talent.defense}
-              </td>
-              <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                {p.passives?.length ? p.passives.join(', ') : '—'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function InventoryView({ serverId }: { serverId: number }) {
-  const t = useTranslations('serverManage')
-  const [uid, setUid] = useState('')
-
-  const invQ = useQuery({
-    queryKey: ['save-inventory', serverId, uid],
-    queryFn: async () => (await serversApi.saveInventory(serverId, uid)).data.inventory,
-    enabled: Number.isFinite(serverId) && !!uid,
-    refetchOnWindowFocus: false,
-  })
-
-  const state = saveStatus(invQ, t)
-  const inventory = invQ.data ?? {}
-  const containers = Object.entries(inventory).filter(([, items]) => items.length > 0)
-
-  return (
-    <div className="space-y-4">
-      <PlayerSelect serverId={serverId} value={uid} onChange={setUid} />
-      {uid &&
-        (state ? (
-          state
-        ) : containers.length === 0 ? (
-          <Placeholder className="min-h-[160px]">{t('players.save.item.empty')}</Placeholder>
-        ) : (
-          <div className="space-y-4">
-            {containers.map(([container, items]) => (
-              <ContainerTable key={container} container={container} items={items} />
-            ))}
-          </div>
-        ))}
-    </div>
-  )
-}
-
-function ContainerTable({ container, items }: { container: string; items: SaveItem[] }) {
-  const t = useTranslations('serverManage')
-  return (
-    <div className="overflow-hidden rounded-2xl border-2 shadow-pal">
-      <div className="bg-muted/40 px-4 py-2 font-mono text-xs font-bold text-muted-foreground">
-        {container}
-      </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/20 text-left text-xs font-bold uppercase text-muted-foreground">
-            <th className="px-4 py-2">{t('players.save.item.slot')}</th>
-            <th className="px-4 py-2">{t('players.save.item.staticId')}</th>
-            <th className="px-4 py-2">{t('players.save.item.count')}</th>
-            <th className="px-4 py-2">{t('players.save.item.durability')}</th>
-            <th className="px-4 py-2">{t('players.save.item.passives')}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/60">
-          {items.map((it, i) => (
-            <tr key={`${it.slot}-${i}`} className="text-foreground">
-              <td className="px-4 py-2 text-muted-foreground">{it.slot}</td>
-              <td className="px-4 py-2 font-semibold">{it.staticId}</td>
-              <td className="px-4 py-2">{it.count}</td>
-              <td className="px-4 py-2 text-muted-foreground">
-                {it.durability ? it.durability.toFixed(1) : '—'}
-              </td>
-              <td className="px-4 py-2 text-xs text-muted-foreground">
-                {it.passives?.length ? it.passives.join(', ') : '—'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   )
 }

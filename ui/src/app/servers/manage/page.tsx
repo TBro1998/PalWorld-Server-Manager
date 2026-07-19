@@ -15,7 +15,8 @@ import {
   Terminal,
   Package,
   FileCode,
-  Map as MapIcon,
+  ShieldCheck,
+  Database,
   Archive,
   Server as ServerIcon,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ import { LogsSection } from '@/components/server-manage/LogsSection'
 import { MapSection } from '@/components/server-manage/MapSection'
 import { BackupSection } from '@/components/server-manage/BackupSection'
 import { ModsSection } from '@/components/server-manage/ModsSection'
+import { SaveDataSection } from '@/components/server-manage/SaveDataSection'
 import { SettingsDraftProvider } from '@/components/server-manage/SettingsDraftContext'
 import { SettingsSaveBar } from '@/components/server-manage/SettingsSaveBar'
 import { BasicsSettings } from '@/components/server-manage/settings/BasicsSettings'
@@ -46,6 +48,7 @@ const NAV_GROUPS = [
     items: [
       { key: 'overview', icon: LayoutDashboard },
       { key: 'players', icon: Users },
+      { key: 'saveData', icon: Database },
       { key: 'operations', icon: Wrench },
       { key: 'logs', icon: ScrollText },
     ],
@@ -63,7 +66,7 @@ const NAV_GROUPS = [
   {
     group: 'more',
     items: [
-      { key: 'map', icon: MapIcon },
+      { key: 'map', icon: ShieldCheck },
       { key: 'backup', icon: Archive },
     ],
   },
@@ -201,6 +204,7 @@ function ManagePanel() {
           <section className="min-w-0">
             {active === 'overview' && <OverviewSection />}
             {active === 'players' && <PlayersSection />}
+            {active === 'saveData' && <SaveDataSection />}
             {active === 'operations' && <OperationsSection />}
             {active === 'logs' && <LogsSection />}
             {active === 'basics' && <BasicsSettings />}

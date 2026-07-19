@@ -116,9 +116,10 @@
     "comingSoonDesc": "该功能正在开发中，界面已预留，敬请期待。",
     "sections": {
       "overview": "概览",
-      "players": "玩家数据",
+      "players": "在线玩家",
+      "saveData": "存档数据",
       "operations": "运维操作",
-      "map": "地图与白名单",
+      "map": "白名单",
       "backup": "存档与备份",
       "logs": "日志",
       "basics": "基础设置",
@@ -143,8 +144,8 @@
       "refresh": "刷新"
     },
     "players": {
-      "title": "玩家与存档数据",
-      "desc": "查看玩家、公会、帕鲁与背包数据",
+      "title": "在线玩家",
+      "desc": "查看在线玩家，踢出与封禁管理",
       "refresh": "刷新",
       "tabs": {
         "players": "玩家",
@@ -219,6 +220,10 @@
         }
       }
     },
+    "saveData": {
+      "title": "存档数据",
+      "desc": "查看公会、帕鲁与玩家背包存档数据"
+    },
     "operations": {
       "title": "运维操作",
       "desc": "广播、保存、平滑关服与立即停止",
@@ -257,8 +262,8 @@
       "control": "服务器控制"
     },
     "map": {
-      "title": "地图与白名单",
-      "desc": "可视化地图与白名单管理",
+      "title": "白名单管理",
+      "desc": "管理服务器白名单",
       "mapView": "可视化地图",
       "whitelist": "白名单管理",
       "refresh": "刷新",

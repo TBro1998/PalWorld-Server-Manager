@@ -116,9 +116,10 @@
     "comingSoonDesc": "This feature is under development. The layout is reserved — stay tuned.",
     "sections": {
       "overview": "Overview",
-      "players": "Player data",
+      "players": "Online Players",
+      "saveData": "Save Data",
       "operations": "Operations",
-      "map": "Map & whitelist",
+      "map": "Whitelist",
       "backup": "Saves & backups",
       "logs": "Logs",
       "basics": "Basics",
@@ -143,8 +144,8 @@
       "refresh": "Refresh"
     },
     "players": {
-      "title": "Players & save data",
-      "desc": "View player, guild, Pal and inventory data",
+      "title": "Online Players",
+      "desc": "View online players, kick and ban management",
       "refresh": "Refresh",
       "tabs": {
         "players": "Players",
@@ -219,6 +220,10 @@
         }
       }
     },
+    "saveData": {
+      "title": "Save Data",
+      "desc": "View guilds, pals and player inventory from save files"
+    },
     "operations": {
       "title": "Operations",
       "desc": "Broadcast, save, graceful shutdown and immediate stop",
@@ -257,8 +262,8 @@
       "control": "Server Control"
     },
     "map": {
-      "title": "Map & whitelist",
-      "desc": "Visual map and whitelist management",
+      "title": "Whitelist",
+      "desc": "Manage server whitelist",
       "mapView": "Visual map",
       "whitelist": "Whitelist",
       "refresh": "Refresh",

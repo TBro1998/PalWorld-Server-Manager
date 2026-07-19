@@ -2,166 +2,24 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Map as MapIcon, UserPlus, RefreshCw, X } from 'lucide-react'
+import { UserPlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { serversApi } from '@/lib/api'
 import { getApiErrorMessage } from '@/lib/apiError'
 import { useTranslations } from '@/contexts/LanguageContext'
-import { useRestStatus } from '@/hooks/useRestStatus'
-import type { PalPlayer } from '@/types/server'
 import { SectionShell, Placeholder, PanelCard, useServerId } from './shared'
-import { RestUnavailableNotice } from './RestUnavailableNotice'
-
-// Palworld world coordinate bounds (Unreal Engine units, Palpagos Island).
-// These approximate the playable zone; out-of-range points are clamped to the edge.
-const MAP_X_MIN = -582000
-const MAP_X_MAX = 582000
-const MAP_Y_MIN = -582000
-const MAP_Y_MAX = 582000
-
-/** Convert world coords to CSS percentage positions (top-left origin). */
-function worldToPercent(x: number, y: number) {
-  const px = ((x - MAP_X_MIN) / (MAP_X_MAX - MAP_X_MIN)) * 100
-  // Screen Y is inverted relative to the game world Y axis.
-  const py = (1 - (y - MAP_Y_MIN) / (MAP_Y_MAX - MAP_Y_MIN)) * 100
-  return {
-    px: Math.max(0, Math.min(100, px)),
-    py: Math.max(0, Math.min(100, py)),
-  }
-}
 
 export function MapSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
-  const { status, isAvailable } = useRestStatus(serverId)
 
   return (
     <SectionShell title={t('map.title')} desc={t('map.desc')} comingSoon={false}>
-      <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
-        <PanelCard icon={<MapIcon className="h-4 w-4" />} title={t('map.mapView')}>
-          {!isAvailable ? (
-            <RestUnavailableNotice status={status} />
-          ) : (
-            <MapView serverId={serverId} />
-          )}
-        </PanelCard>
-
-        <PanelCard icon={<UserPlus className="h-4 w-4" />} title={t('map.whitelist')}>
-          <WhitelistPanel serverId={serverId} />
-        </PanelCard>
-      </div>
+      <PanelCard icon={<UserPlus className="h-4 w-4" />} title={t('map.whitelist')}>
+        <WhitelistPanel serverId={serverId} />
+      </PanelCard>
     </SectionShell>
-  )
-}
-
-// --- Map view -----------------------------------------------------------------
-
-function MapView({ serverId }: { serverId: number }) {
-  const t = useTranslations('serverManage')
-  const [hovered, setHovered] = useState<PalPlayer | null>(null)
-
-  const playersQuery = useQuery({
-    queryKey: ['rest-players-map', serverId],
-    queryFn: async () => (await serversApi.restPlayers(serverId)).data,
-    refetchInterval: 10_000,
-    refetchOnWindowFocus: false,
-  })
-  const players = playersQuery.data?.players ?? []
-
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2 rounded-xl border-2 shadow-pal"
-          onClick={() => playersQuery.refetch()}
-          disabled={playersQuery.isFetching}
-        >
-          <RefreshCw className={`h-4 w-4 ${playersQuery.isFetching ? 'animate-spin' : ''}`} />
-          {t('map.refresh')}
-        </Button>
-      </div>
-
-      {/* Map container — square aspect ratio with world map background */}
-      <div
-        className="relative overflow-hidden rounded-xl border-2 border-border/60 bg-[#1b2a3b]"
-        style={{ aspectRatio: '1 / 1' }}
-      >
-        {/* World map image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/World_Map.webp"
-          alt="Palpagos Island"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
-          draggable={false}
-        />
-
-        {/* Player markers */}
-        {players.map((p) => {
-          const { px, py } = worldToPercent(p.location_x, p.location_y)
-          const isHov = hovered?.userId === p.userId
-          return (
-            <button
-              key={p.userId || p.playerId || p.name}
-              type="button"
-              className="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
-              style={{ left: `${px}%`, top: `${py}%` }}
-              onMouseEnter={() => setHovered(p)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              {/* Dot with pulse on hover */}
-              <span
-                className={
-                  'block rounded-full border-2 border-white/70 transition-all duration-150 ' +
-                  (isHov
-                    ? 'h-4 w-4 bg-primary shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)]'
-                    : 'h-3 w-3 bg-emerald-400')
-                }
-              />
-              {/* Hover tooltip */}
-              {isHov && (
-                <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-lg">
-                  <p className="font-semibold text-foreground">{p.name}</p>
-                  <p className="text-muted-foreground">Lv.{p.level}</p>
-                  <p className="font-mono text-muted-foreground">
-                    {Math.round(p.location_x)}, {Math.round(p.location_y)}
-                  </p>
-                </div>
-              )}
-            </button>
-          )
-        })}
-
-        {/* Empty-state overlay */}
-        {players.length === 0 && !playersQuery.isFetching && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-white/30">{t('map.noPlayers')}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Player legend beneath the map */}
-      {players.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {players.map((p) => (
-            <Badge
-              key={p.userId || p.name}
-              variant="secondary"
-              className="cursor-default gap-1.5"
-              onMouseEnter={() => setHovered(p)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-              {p.name}
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -252,7 +110,7 @@ function WhitelistPanel({ serverId }: { serverId: number }) {
       ) : entries.length === 0 ? (
         <Placeholder className="min-h-[100px] text-xs">{t('map.wl.empty')}</Placeholder>
       ) : (
-        <ul className="max-h-[380px] space-y-1 overflow-y-auto">
+        <ul className="max-h-[480px] space-y-1 overflow-y-auto">
           {entries.map((uid) => (
             <li
               key={uid}
