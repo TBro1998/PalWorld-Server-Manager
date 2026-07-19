@@ -1,0 +1,29 @@
+{
+  "id": "mcp-server-ai-ops",
+  "name": "mcp-server-ai-ops",
+  "title": "MCP Server 接口与 AI 运维 skill",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "TBro98",
+  "assignee": "TBro98",
+  "createdAt": "2026-07-19",
+  "completedAt": "2026-07-19",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "07-19-swagger-openapi",
+    "07-19-palworld-ops-skill"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
