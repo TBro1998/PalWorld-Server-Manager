@@ -10,7 +10,7 @@ import { getApiErrorMessage } from '@/lib/apiError'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { SectionShell, Placeholder, PanelCard, useServerId } from './shared'
 
-export function MapSection() {
+export function WhitelistSection() {
   const t = useTranslations('serverManage')
   const serverId = useServerId()
 

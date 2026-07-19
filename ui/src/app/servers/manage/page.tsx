@@ -29,7 +29,7 @@ import { OverviewSection } from '@/components/server-manage/OverviewSection'
 import { PlayersSection } from '@/components/server-manage/PlayersSection'
 import { OperationsSection } from '@/components/server-manage/OperationsSection'
 import { LogsSection } from '@/components/server-manage/LogsSection'
-import { MapSection } from '@/components/server-manage/MapSection'
+import { WhitelistSection } from '@/components/server-manage/WhitelistSection'
 import { BackupSection } from '@/components/server-manage/BackupSection'
 import { ModsSection } from '@/components/server-manage/ModsSection'
 import { SaveDataSection } from '@/components/server-manage/SaveDataSection'
@@ -212,7 +212,7 @@ function ManagePanel() {
             {active === 'launch' && <LaunchSettings />}
             {active === 'mods' && <ModsSection />}
             {active === 'raw' && <RawSettings />}
-            {active === 'map' && <MapSection />}
+            {active === 'map' && <WhitelistSection />}
             {active === 'backup' && <BackupSection />}
 
             {/* Shared sticky save bar: visible on any config page whenever the
