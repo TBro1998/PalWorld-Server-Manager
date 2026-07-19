@@ -44,6 +44,7 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 - 🔄 **Crash Recovery**: Auto-restart on unexpected server exit with alert notifications
 - 🌐 **Player Portal**: A dedicated login page for game players to check server status and submit requests
 - 🐳 **Containerized Game Server**: Run the Palworld game server inside an isolated Docker container for better isolation and resource control
+- 🛡️ **PalDefender Support**: Integrate PalDefender anti-cheat system with configuration management and status monitoring
 
 ## Installation & Usage
 
