@@ -122,7 +122,7 @@ function ManagePanel() {
   // Guard: missing / invalid id, or a fetch that resolved to nothing.
   if (!Number.isFinite(serverId) || (!isLoading && !server)) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
         <BackLink label={t('backToList')} />
         <Card className="mt-6 rounded-2xl border-2 border-dashed shadow-none">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
@@ -139,7 +139,7 @@ function ManagePanel() {
   const badge = server ? statusBadge[server.status] : null
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
+    <div className="px-4 py-8 sm:px-6 lg:px-8">
       {/* Header: back + server identity */}
       <BackLink label={t('backToList')} />
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

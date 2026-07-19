@@ -222,7 +222,7 @@ export default function SettingsPage() {
   useEffect(() => () => { eventSourceRef.current?.close() }, [])
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-8">
+    <div className="p-6 space-y-8">
       <h1 className="text-2xl font-extrabold tracking-tight text-foreground">{t('title')}</h1>
 
       {/* ── About ── */}

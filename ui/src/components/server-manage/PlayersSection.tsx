@@ -190,16 +190,16 @@ export function PlayersSection() {
           {players.length === 0 ? (
             <Placeholder className="min-h-[160px]">{t('overview.noPlayers')}</Placeholder>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[24rem_1fr]">
-              {/* World map with player positions */}
+            <div className="space-y-4">
+              {/* World map with player positions - full width on top */}
               <InlinePlayerMap
                 players={players}
                 hovered={hovered}
                 onHover={setHovered}
               />
 
-              {/* Player table */}
-              <div className="overflow-x-auto self-start rounded-2xl border-2 shadow-pal">
+              {/* Player table - full width below */}
+              <div className="overflow-x-auto rounded-2xl border-2 shadow-pal">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 bg-muted/40 text-left text-xs font-bold uppercase text-muted-foreground">
