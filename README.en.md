@@ -100,6 +100,22 @@ HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 
 The program automatically creates the `steamclient.so` symlink required by Palworld under `~/.steam/sdk64`; once installation completes, you can start the server.
 
+## AI Agent Operations Skill (palworld-ops)
+
+This project ships an AI Agent skill, [`skills/palworld-ops`](./skills/palworld-ops/), that lets agents like Claude Code and Claude Desktop operate your server directly through the REST API (health checks, performance tuning, guided setup, player management, troubleshooting, mod workflow, automation).
+
+**How to install**: You don't configure anything by hand. Hand the agent-facing install document to your agent and let it install the skill itself.
+
+Send this to your agent (or the document link):
+
+> Please read https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/skills/palworld-ops/INSTALL.en.md and install the palworld-ops skill for me by following its steps.
+
+If you have already cloned this repo, you can instead point the agent at the local file [`skills/palworld-ops/INSTALL.en.md`](./skills/palworld-ops/INSTALL.en.md) and have it run.
+
+After installation and restarting the agent session, you can ask the agent to manage your Palworld server. Before using it, make sure the manager is running and provide the agent with your admin password.
+
+**How to update**: After the tool is upgraded, API changes take effect automatically (the agent reads the latest API docs at runtime) — no action needed. Only when the skill content itself changes, have the agent re-fetch the latest skill to overwrite the old version and restart the session. See the "Updating an installed skill" section in [INSTALL.en.md](./skills/palworld-ops/INSTALL.en.md).
+
 ## Configuration
 
 The program supports two configuration methods with priority: **environment variables > config file > defaults**

@@ -100,6 +100,22 @@ HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 
 程序会在 `~/.steam/sdk64` 自动建立 Palworld 所需的 `steamclient.so` 软链接，安装完成后即可启动服务器。
 
+## AI Agent 运维技能（palworld-ops）
+
+本项目提供一个 AI Agent 技能 [`skills/palworld-ops`](./skills/palworld-ops/)，让 Claude Code、Claude Desktop 等 Agent 能够通过 REST API 直接运维你的服务器（健康检查、性能调优、引导建服、玩家管理、故障排查、模组流程、自动化）。
+
+**如何安装**：你不需要手动配置，把面向 Agent 的安装说明文档交给你的 Agent，让它自行完成安装即可。
+
+将下面这句话（或文档链接）发给你的 Agent：
+
+> 请阅读 https://raw.githubusercontent.com/TBro1998/PalWorld-Server-Manager/main/skills/palworld-ops/INSTALL.zh.md 并按其中步骤为我安装 palworld-ops 技能。
+
+若你已克隆本仓库，也可直接让 Agent 阅读本地文件 [`skills/palworld-ops/INSTALL.zh.md`](./skills/palworld-ops/INSTALL.zh.md) 并执行。
+
+安装完成并重启 Agent 会话后，你就可以让 Agent 帮你管理帕鲁服务器了。使用前请确保管理器正在运行，并向 Agent 提供管理员密码。
+
+**如何更新**：工具升级后，接口变化会自动生效（Agent 运行时读取最新的 API 文档），无需操作；仅当技能内容本身更新时，让 Agent 重新拉取最新技能覆盖旧版本、重启会话即可。详见 [INSTALL.zh.md](./skills/palworld-ops/INSTALL.zh.md) 的“更新已安装的技能”一节。
+
 ## 配置说明
 
 程序支持两种配置方式，优先级为：**环境变量 > 配置文件 > 默认值**
