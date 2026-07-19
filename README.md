@@ -102,7 +102,7 @@ HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 
 ## AI Agent 运维技能（palworld-ops）
 
-本项目提供一个 AI Agent 技能 [`skills/palworld-ops`](./skills/palworld-ops/)，让 Claude Code、Claude Desktop 等 Agent 能够通过 REST API 直接运维你的服务器（健康检查、性能调优、引导建服、玩家管理、故障排查、模组流程、自动化）。
+本项目提供一个 AI Agent 技能 [`skills/palworld-ops`](./skills/palworld-ops/)，让 Claude Code、Claude Desktop、Codex、OpenClaw、Hermes Agent 等 Agent 能够通过 REST API 直接运维你的服务器（健康检查、性能调优、引导建服、玩家管理、故障排查、模组流程、自动化）。
 
 **如何安装**：你不需要手动配置，把面向 Agent 的安装说明文档交给你的 Agent，让它自行完成安装即可。
 

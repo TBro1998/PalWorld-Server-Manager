@@ -4,7 +4,7 @@
 
 > **This document is a set of installation instructions written for an AI Agent.**
 > A user just needs to hand this document (or its link) to their agent (Claude Code,
-> Claude Desktop, etc.). The agent follows the steps below to complete the install —
+> Claude Desktop, Codex, OpenClaw, Hermes Agent, etc.). The agent follows the steps below to complete the install —
 > no manual work required from the user.
 
 ---
@@ -30,7 +30,7 @@ discover it automatically after restarting the session.
 ## Step 1 · Confirm the runtime
 
 Confirm you are running in an environment that supports Agent Skills (Claude Code /
-Claude Desktop, or an agent runtime compatible with the `SKILL.md` format). If the
+Claude Desktop / Codex / OpenClaw / Hermes Agent, or an agent runtime compatible with the `SKILL.md` format). If the
 skill mechanism is not supported, tell the user this skill cannot be installed as a
 "skill", but `SKILL.md` can still be supplied to you manually as a plain context
 document.

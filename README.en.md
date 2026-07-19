@@ -102,7 +102,7 @@ The program automatically creates the `steamclient.so` symlink required by Palwo
 
 ## AI Agent Operations Skill (palworld-ops)
 
-This project ships an AI Agent skill, [`skills/palworld-ops`](./skills/palworld-ops/), that lets agents like Claude Code and Claude Desktop operate your server directly through the REST API (health checks, performance tuning, guided setup, player management, troubleshooting, mod workflow, automation).
+This project ships an AI Agent skill, [`skills/palworld-ops`](./skills/palworld-ops/), that lets agents like Claude Code, Claude Desktop, Codex, OpenClaw, and Hermes Agent operate your server directly through the REST API (health checks, performance tuning, guided setup, player management, troubleshooting, mod workflow, automation).
 
 **How to install**: You don't configure anything by hand. Hand the agent-facing install document to your agent and let it install the skill itself.
 

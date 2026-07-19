@@ -4,7 +4,7 @@
 
 > **この文書は AI エージェント向けのインストール指示です。**
 > ユーザーはこの文書（またはそのリンク）を自分のエージェント（Claude Code、
-> Claude Desktop など）に渡すだけで済みます。エージェントが以下の手順に従って
+> Claude Desktop、Codex、OpenClaw、Hermes Agent など）に渡すだけで済みます。エージェントが以下の手順に従って
 > インストールを完了するため、ユーザーの手作業は不要です。
 
 ---
@@ -30,7 +30,7 @@ REST API を通じて **PalWorld Server Manager（幻兽帕鲁サーバー管理
 
 ## ステップ 1 · 実行環境を確認する
 
-あなたが Agent Skills に対応した環境（Claude Code / Claude Desktop、または `SKILL.md`
+あなたが Agent Skills に対応した環境（Claude Code / Claude Desktop / Codex / OpenClaw / Hermes Agent、または `SKILL.md`
 形式に対応したエージェントランタイム）で動作していることを確認してください。スキル機構
 に対応していない場合は、このスキルを「スキル」としてはインストールできない旨をユーザーに
 伝えてください。ただし `SKILL.md` を通常のコンテキスト文書として手動で渡すことは可能です。

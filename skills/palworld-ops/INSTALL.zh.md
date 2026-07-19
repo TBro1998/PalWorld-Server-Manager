@@ -3,7 +3,7 @@
 > [English](./INSTALL.en.md) | 中文 | [日本語](./INSTALL.ja.md)
 
 > **本文件是写给 AI Agent 的安装指令。**
-> 用户只需把这份文档（或它的链接）交给自己的 Agent（Claude Code、Claude Desktop 等），
+> 用户只需把这份文档（或它的链接）交给自己的 Agent（Claude Code、Claude Desktop、Codex、OpenClaw、Hermes Agent 等），
 > Agent 按下面的步骤执行即可完成安装，用户无需手动操作。
 
 ---
@@ -26,7 +26,7 @@
 
 ## 步骤 1 · 确认运行环境
 
-确认你运行在支持 Agent Skills 的环境（Claude Code / Claude Desktop 或兼容 `SKILL.md`
+确认你运行在支持 Agent Skills 的环境（Claude Code / Claude Desktop / Codex / OpenClaw / Hermes Agent 或兼容 `SKILL.md`
 格式的 Agent 运行时）。若不支持技能机制，请告知用户本技能无法以“技能”形式安装，
 但仍可将 `SKILL.md` 作为普通上下文文档手动提供给你。
 

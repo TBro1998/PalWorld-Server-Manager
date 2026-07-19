@@ -102,7 +102,7 @@ HOST=0.0.0.0 PORT=8080 ./palworld-server-manager
 
 ## AIエージェント運用スキル（palworld-ops）
 
-本プロジェクトはAIエージェント用スキル [`skills/palworld-ops`](./skills/palworld-ops/) を提供しています。Claude Code や Claude Desktop などのエージェントが、REST API を通じてサーバーを直接運用できます（ヘルスチェック、パフォーマンス調整、ガイド付きセットアップ、プレイヤー管理、トラブルシューティング、Mod ワークフロー、自動化）。
+本プロジェクトはAIエージェント用スキル [`skills/palworld-ops`](./skills/palworld-ops/) を提供しています。Claude Code、Claude Desktop、Codex、OpenClaw、Hermes Agent などのエージェントが、REST API を通じてサーバーを直接運用できます（ヘルスチェック、パフォーマンス調整、ガイド付きセットアップ、プレイヤー管理、トラブルシューティング、Mod ワークフロー、自動化）。
 
 **インストール方法**：手動での設定は不要です。エージェント向けのインストール手順書をあなたのエージェントに渡し、エージェント自身にインストールさせてください。
 
