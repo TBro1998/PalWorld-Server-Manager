@@ -24,20 +24,55 @@ import { SectionShell, Placeholder, useServerId } from './shared'
 import { RestUnavailableNotice } from './RestUnavailableNotice'
 
 // ---------------------------------------------------------------------------
-// World-map helpers (Palpagos Island, Unreal Engine units)
+// World-map helpers (Palpagos Island, Unreal Engine / .sav units)
 // ---------------------------------------------------------------------------
-const MAP_X_MIN = -582000
-const MAP_X_MAX = 582000
-const MAP_Y_MIN = -582000
-const MAP_Y_MAX = 582000
+//
+// The REST API returns raw Unreal Engine world coordinates (the same system as
+// .sav save files). The axes map to the visual map image as:
+//
+//   REST API location_x  →  world X  →  north-south (vertical on image)
+//   REST API location_y  →  world Y  →  east-west   (horizontal on image)
+//
+// IMPORTANT: the pixel placement must use the extent of the *map texture*
+// (t_worldmap.webp / World_Map.webp), NOT the in-game coordinate-readout box.
+// These are different rectangles: the texture covers more of the world (e.g.
+// the whole southern landmass) than the readout coordinate range does. Using
+// the readout box mis-scales and mis-offsets every marker.
+//
+// Texture bounds from the game's DT_WorldMapUIData (MainMap), verified against
+// the real 8192x8192 texture by palworld-save-pal:
+//   min: (x=-1099400, y=-724400)   max: (x=349400, y=724400)
+//
+// References:
+//   https://github.com/oMaN-Rod/palworld-save-pal  (ui/src/lib/components/map/utils.ts)
+const MAP_X_MIN = -1099400 // location_x: southern edge of texture (image bottom)
+const MAP_X_MAX =   349400 // location_x: northern edge of texture (image top)
+const MAP_Y_MIN =  -724400 // location_y: western  edge of texture (image left)
+const MAP_Y_MAX =   724400 // location_y: eastern  edge of texture (image right)
 
-function worldToPercent(x: number, y: number) {
-  const px = ((x - MAP_X_MIN) / (MAP_X_MAX - MAP_X_MIN)) * 100
-  // Screen Y is inverted relative to the game world Y axis.
-  const py = (1 - (y - MAP_Y_MIN) / (MAP_Y_MAX - MAP_Y_MIN)) * 100
+// In-game coordinate readout constants (the small numbers shown in-game).
+// Kept separate from pixel placement on purpose. Source: palworld-save-pal.
+const READOUT_TRANSLATION_X = 123930
+const READOUT_TRANSLATION_Y = 157935
+const READOUT_SCALE = 459
+
+function worldToPercent(apiX: number, apiY: number) {
+  // location_y drives the horizontal (west→east) axis.
+  const px = ((apiY - MAP_Y_MIN) / (MAP_Y_MAX - MAP_Y_MIN)) * 100
+  // location_x drives the vertical axis; higher = further north = top of image.
+  const py = ((MAP_X_MAX - apiX) / (MAP_X_MAX - MAP_X_MIN)) * 100
   return {
     px: Math.max(0, Math.min(100, px)),
     py: Math.max(0, Math.min(100, py)),
+  }
+}
+
+// Convert raw world coordinates to the in-game map coordinates a player sees
+// in-game (the readable numbers), matching palworld-save-pal's tooltip readout.
+function worldToGameCoords(apiX: number, apiY: number) {
+  return {
+    x: Math.round((apiY - READOUT_TRANSLATION_Y) / READOUT_SCALE),
+    y: Math.round((apiX + READOUT_TRANSLATION_X) / READOUT_SCALE),
   }
 }
 
@@ -332,7 +367,10 @@ function InlinePlayerMap({
                   <p className="font-semibold text-foreground">{p.name}</p>
                   <p className="text-muted-foreground">Lv.{p.level}</p>
                   <p className="font-mono text-muted-foreground">
-                    {Math.round(p.location_x)}, {Math.round(p.location_y)}
+                    {(() => {
+                      const g = worldToGameCoords(p.location_x, p.location_y)
+                      return `${g.x}, ${g.y}`
+                    })()}
                   </p>
                 </div>
               )}
