@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { WorkshopBrowserDialog } from '@/components/server-manage/WorkshopBrowserDialog'
+import { ModDependencies } from '@/components/server-manage/ModDependencies'
 
 export default function ModsPage() {
   const t = useTranslations('modLibrary')
@@ -674,6 +675,11 @@ function ModRow({ mod, downloading, onDownload, onDelete, onDownloadDone, t }: M
               </span>
             ))}
           </div>
+          <ModDependencies
+            deps={mod.dependencies}
+            label={t('dependencies')}
+            missingLabel={t('dependencyMissing')}
+          />
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {/* Toggle log panel when a log is available */}

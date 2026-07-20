@@ -381,6 +381,8 @@
     },
     "serverCount": "{{count}} 个服务器在使用",
     "noServers": "未被任何服务器引用",
+    "dependencies": "依赖",
+    "dependencyMissing": "该依赖尚未下载",
     "log": {
       "live": "下载中",
       "done": "下载完成",
@@ -429,7 +431,9 @@
       "incompatible": "该模组可能并非为服务器设计。",
       "deployedVersion": "已部署",
       "libraryVersion": "库版本",
-      "noDownloadedMods": "模组库中暂无已下载的模组"
+      "noDownloadedMods": "模组库中暂无已下载的模组",
+      "dependencies": "依赖",
+      "dependencyMissing": "该依赖尚未下载"
     },
     "steam": {
       "title": "Steam 账号",

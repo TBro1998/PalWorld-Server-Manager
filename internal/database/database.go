@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/glebarez/sqlite"
@@ -83,12 +84,18 @@ func collectLegacyMods(db *gorm.DB) ([]legacyModRow, error) {
 		return nil, nil // already new schema
 	}
 
+	// package_name/mod_name/version were added with the global-library refactor;
+	// the oldest per-server tables predate them. Only select the ones that exist
+	// so the query does not fail on a table that never had those columns.
+	cols := []string{"id", "server_id", "workshop_id", "name", "enabled", "install_path"}
+	for _, opt := range []string{"package_name", "mod_name", "version"} {
+		if hasRawColumn(db, "mods", opt) {
+			cols = append(cols, opt)
+		}
+	}
+
 	var rows []legacyModRow
-	if err := db.Raw(`
-		SELECT id, server_id, workshop_id, name, enabled, install_path,
-		       package_name, mod_name, version
-		FROM mods
-	`).Scan(&rows).Error; err != nil {
+	if err := db.Raw("SELECT " + strings.Join(cols, ", ") + " FROM mods").Scan(&rows).Error; err != nil {
 		return nil, fmt.Errorf("read legacy mods: %w", err)
 	}
 	return rows, nil

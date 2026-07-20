@@ -188,7 +188,7 @@ func TestDeployAndRemove(t *testing.T) {
 func TestParseInfoTolerant(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "Info.json"),
-		[]byte(`{"ModName":"My Mod","PackageName":"MyMod","Version":"1.2.3","Tags":["Gameplay","QoL"],"InstallRule":[{"IsServer":true}]}`), 0o644); err != nil {
+		[]byte(`{"ModName":"My Mod","PackageName":"MyMod","Version":"1.2.3","Tags":["Gameplay","QoL"],"Dependencies":["Dep1","Dep2"],"InstallRule":[{"IsServer":true}]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	info, err := ParseInfo(dir)
@@ -200,6 +200,9 @@ func TestParseInfoTolerant(t *testing.T) {
 	}
 	if len(info.Tags) != 2 || info.Tags[0] != "Gameplay" || info.Tags[1] != "QoL" {
 		t.Errorf("unexpected tags: %#v", info.Tags)
+	}
+	if len(info.Dependencies) != 2 || info.Dependencies[0] != "Dep1" || info.Dependencies[1] != "Dep2" {
+		t.Errorf("unexpected dependencies: %#v", info.Dependencies)
 	}
 }
 
@@ -226,6 +229,9 @@ func TestParseInfoNumericVersionAndMissingFields(t *testing.T) {
 	}
 	if info.Tags != nil {
 		t.Errorf("Tags should default to nil when absent: %#v", info.Tags)
+	}
+	if info.Dependencies != nil {
+		t.Errorf("Dependencies should default to nil when absent: %#v", info.Dependencies)
 	}
 }
 

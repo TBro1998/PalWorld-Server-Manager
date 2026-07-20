@@ -84,11 +84,14 @@ func TestZeroValueUpdatesPersist(t *testing.T) {
 	}
 }
 
-// TestModTagsSerializerRoundTrip guards the mod_name/tags backfill: the Tags
-// []string column uses gorm serializer:json, and the manager backfills it via
-// Updates(map[string]any{...}) (mirrored here). This verifies the serializer is
-// applied through the map-update path — a []string in, a []string out — and that
-// an absent value reads back as nil (empty mod list case).
+// TestModTagsSerializerRoundTrip guards the mod metadata backfill: the Tags and
+// Dependencies []string columns use gorm serializer:json, and the manager
+// backfills them via Select + struct Updates (mirrored here). This verifies the
+// serializer is applied through that path — a []string in, a []string out — and
+// that an absent value reads back as nil (fresh, not-yet-downloaded mod).
+//
+// Mods live in a global library (no ServerID/Enabled on Mod; those moved to
+// ServerMod), so this creates a library Mod directly.
 func TestModTagsSerializerRoundTrip(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "mods.db")
 	db, err := Initialize(dbPath)
@@ -97,15 +100,11 @@ func TestModTagsSerializerRoundTrip(t *testing.T) {
 	}
 	defer closeDB(t, db)
 
-	srv := models.Server{Name: "s", InstallPath: "/p"}
-	if err := db.Create(&srv).Error; err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-	mod := models.Mod{ServerID: srv.ID, WorkshopID: "123", Name: "123", Enabled: true}
+	mod := models.Mod{WorkshopID: "123", Name: "123"}
 	if err := db.Create(&mod).Error; err != nil {
 		t.Fatalf("create mod: %v", err)
 	}
-	// Fresh row: tags absent -> nil.
+	// Fresh row: tags/dependencies absent -> nil.
 	var fresh models.Mod
 	if err := db.First(&fresh, mod.ID).Error; err != nil {
 		t.Fatalf("first fresh: %v", err)
@@ -113,17 +112,22 @@ func TestModTagsSerializerRoundTrip(t *testing.T) {
 	if fresh.Tags != nil {
 		t.Errorf("fresh Tags should be nil, got %#v", fresh.Tags)
 	}
+	if fresh.Dependencies != nil {
+		t.Errorf("fresh Dependencies should be nil, got %#v", fresh.Dependencies)
+	}
 
-	// Backfill exactly as manager.UpdateMods does (Select + struct Updates so the
-	// Tags serializer is applied and zero values are still written).
+	// Backfill exactly as manager.DownloadGlobalMod does (Select + struct Updates
+	// so the serializer columns are applied and zero values are still written).
 	if err := db.Model(&models.Mod{}).Where("id = ?", mod.ID).
-		Select("package_name", "mod_name", "version", "tags", "install_path").
+		Select("downloaded", "download_path", "package_name", "mod_name", "version", "tags", "dependencies").
 		Updates(models.Mod{
-			PackageName: "MyMod",
-			ModName:     "My Mod",
-			Version:     "1.2.3",
-			Tags:        []string{"Gameplay", "QoL"},
-			InstallPath: "/p/Mods/Workshop/123",
+			Downloaded:   true,
+			DownloadPath: "/p/Mods/Workshop/123",
+			PackageName:  "MyMod",
+			ModName:      "My Mod",
+			Version:      "1.2.3",
+			Tags:         []string{"Gameplay", "QoL"},
+			Dependencies: []string{"DepA", "DepB"},
 		}).Error; err != nil {
 		t.Fatalf("backfill: %v", err)
 	}
@@ -137,6 +141,9 @@ func TestModTagsSerializerRoundTrip(t *testing.T) {
 	}
 	if len(got.Tags) != 2 || got.Tags[0] != "Gameplay" || got.Tags[1] != "QoL" {
 		t.Fatalf("tags serializer round-trip failed: %#v", got.Tags)
+	}
+	if len(got.Dependencies) != 2 || got.Dependencies[0] != "DepA" || got.Dependencies[1] != "DepB" {
+		t.Fatalf("dependencies serializer round-trip failed: %#v", got.Dependencies)
 	}
 }
 
@@ -234,7 +241,7 @@ func TestInitializeLegacyModsFK(t *testing.T) {
 	defer closeDB(t, db)
 
 	// mods table is usable after recreation.
-	if err := db.Create(&models.Mod{ServerID: 1, WorkshopID: "w", Name: "m"}).Error; err != nil {
+	if err := db.Create(&models.Mod{WorkshopID: "w", Name: "m"}).Error; err != nil {
 		t.Fatalf("create mod after migrate: %v", err)
 	}
 }

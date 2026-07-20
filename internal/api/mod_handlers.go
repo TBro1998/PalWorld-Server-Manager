@@ -17,6 +17,15 @@ import (
 
 // ── Global mod library ────────────────────────────────────────────────────────
 
+// ModDependency is one entry from a mod's Info.json Dependencies list, annotated
+// with whether the dependency is satisfied. Satisfied is a runtime-derived value
+// (not persisted): true when the global library contains a downloaded mod whose
+// PackageName equals this dependency name.
+type ModDependency struct {
+	Name      string `json:"name"`      // dependency PackageName (from Info.json)
+	Satisfied bool   `json:"satisfied"` // a downloaded global mod has this PackageName
+}
+
 // ModWithStatus extends models.Mod with runtime-computed fields for the UI.
 type ModWithStatus struct {
 	models.Mod
@@ -26,6 +35,37 @@ type ModWithStatus struct {
 	// in progress. It is runtime state (not persisted), so a page refresh can
 	// re-derive the in-flight download and reattach its log stream.
 	Downloading bool `json:"downloading"`
+	// Dependencies lists the mod's Info.json dependencies annotated with their
+	// satisfaction status. Overrides the embedded Mod.Dependencies ([]string)
+	// JSON field ("dependencies"): the UI receives the annotated shape.
+	Dependencies []ModDependency `json:"dependencies"`
+}
+
+// downloadedPackageSet returns the set of PackageNames of all downloaded mods in
+// the global library. Used to compute dependency satisfaction in one query
+// (avoids N+1 per mod dependency).
+func (r *Router) downloadedPackageSet() map[string]struct{} {
+	var names []string
+	r.db.Model(&models.Mod{}).
+		Where("downloaded = ? AND package_name != ''", true).
+		Pluck("package_name", &names)
+	set := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		set[n] = struct{}{}
+	}
+	return set
+}
+
+// buildModDependencies maps raw dependency names to annotated ModDependency
+// entries using the provided satisfied-package set. Returns an empty (non-nil)
+// slice when there are no dependencies, so the JSON is always an array.
+func buildModDependencies(names []string, satisfied map[string]struct{}) []ModDependency {
+	deps := make([]ModDependency, 0, len(names))
+	for _, n := range names {
+		_, ok := satisfied[n]
+		deps = append(deps, ModDependency{Name: n, Satisfied: ok})
+	}
+	return deps
 }
 
 // ListGlobalMods returns all mods in the global library, ordered by creation
@@ -65,12 +105,15 @@ func (r *Router) ListGlobalMods(c *gin.Context) {
 		countMap[cr.ModID] = cr.Count
 	}
 
+	satisfied := r.downloadedPackageSet()
+
 	result := make([]ModWithStatus, len(mods))
 	for i, m := range mods {
 		result[i] = ModWithStatus{
-			Mod:         m,
-			ServerCount: countMap[m.ID],
-			Downloading: r.process.IsDownloadingGlobalMod(m.WorkshopID),
+			Mod:          m,
+			ServerCount:  countMap[m.ID],
+			Downloading:  r.process.IsDownloadingGlobalMod(m.WorkshopID),
+			Dependencies: buildModDependencies(m.Dependencies, satisfied),
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"mods": result})
@@ -357,6 +400,9 @@ type ServerModDetail struct {
 	Version      string   `json:"version"`
 	Tags         []string `json:"tags"`
 	Downloaded   bool     `json:"downloaded"`
+	// Dependencies are the global mod's Info.json dependencies annotated with
+	// satisfaction status (same shape as the global library endpoint).
+	Dependencies []ModDependency `json:"dependencies"`
 	// VersionMismatch is true when the global library has a newer version than
 	// what is currently deployed to this server.
 	VersionMismatch bool `json:"version_mismatch"`
@@ -410,6 +456,8 @@ func (r *Router) ListServerMods(c *gin.Context) {
 		modMap[m.ID] = m
 	}
 
+	satisfied := r.downloadedPackageSet()
+
 	result := make([]ServerModDetail, len(serverMods))
 	for i, sm := range serverMods {
 		gm := modMap[sm.ModID]
@@ -423,6 +471,7 @@ func (r *Router) ListServerMods(c *gin.Context) {
 			Version:         gm.Version,
 			Tags:            gm.Tags,
 			Downloaded:      gm.Downloaded,
+			Dependencies:    buildModDependencies(gm.Dependencies, satisfied),
 			VersionMismatch: mismatch,
 		}
 	}

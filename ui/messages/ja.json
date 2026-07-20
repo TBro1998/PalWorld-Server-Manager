@@ -355,6 +355,10 @@
     "enable": "有効化",
     "uninstall": "アンインストール"
   },
+  "modLibrary": {
+    "dependencies": "依存",
+    "dependencyMissing": "この依存はまだダウンロードされていません"
+  },
   "serverConfig": {
     "title": "サーバー設定",
     "loading": "設定を読み込み中...",
@@ -392,7 +396,9 @@
       "remove": "削除",
       "restartNeeded": "MOD の変更はサーバー再起動後に反映されます。",
       "notDownloaded": "未ダウンロードです。「MOD を更新」をクリックしてください。",
-      "incompatible": "この MOD はサーバー用に設計されていない可能性があります。"
+      "incompatible": "この MOD はサーバー用に設計されていない可能性があります。",
+      "dependencies": "依存",
+      "dependencyMissing": "この依存はまだダウンロードされていません"
     },
     "steam": {
       "title": "Steam アカウント",

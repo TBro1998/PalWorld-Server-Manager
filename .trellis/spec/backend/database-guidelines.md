@@ -80,6 +80,16 @@ db.Model(&models.Server{}).Where("id = ?", id).
 
 ---
 
+### Gotcha（已踩，2026-07-20）: 读旧表迁移数据时只 SELECT 该旧 schema 真有的列
+
+**What**: `collectLegacyMods`（把 per-server `mods` 旧行迁到 全局库+`server_mods` 新 schema）曾无条件 `SELECT id, server_id, workshop_id, name, enabled, install_path, package_name, mod_name, version`。但 `package_name/mod_name/version` 是**全局库重构时才加的列**，最老的 per-server `mods` 表根本没有它们 → SQLite 报 `no such column: package_name`，`Initialize` 失败。此前该分支被"测试包编译不过、`TestInitializeLegacyModsFK` 从未真跑"掩盖，修好测试后才暴露。
+
+**Fix**: 迁移读取按 `hasRawColumn(db,"mods",col)` **动态拼列**——固定列（`id/server_id/workshop_id/name/enabled/install_path`）+ 仅存在时才追加的可选列（`package_name/mod_name/version`），再 `SELECT strings.Join(cols)`。缺失的可选列在 `legacyModRow` 里留零值，`insertLegacyMods` 照常。
+
+**Rule**: 任何"读旧 schema 行做迁移"的 SQL 都不能假设新列存在；跨 schema 版本读取按列探测（`hasRawColumn`）拼 SELECT。改迁移逻辑务必让 `internal/database` 测试包**能编译**，否则 `TestInitializeLegacyMods*` 这类回归用例会静默不执行。
+
+---
+
 ## Common Mistakes
 
 ### Gotcha: `servers` 表的端口/RCON 列不影响运行——生效源是 launch_args + INI

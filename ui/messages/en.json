@@ -381,6 +381,8 @@
     },
     "serverCount": "Used by {{count}} server(s)",
     "noServers": "Not used by any server",
+    "dependencies": "Dependencies",
+    "dependencyMissing": "This dependency is not downloaded",
     "log": {
       "live": "Downloading",
       "done": "Download complete",
@@ -429,7 +431,9 @@
       "incompatible": "This mod may not be designed for dedicated servers.",
       "deployedVersion": "Deployed",
       "libraryVersion": "Library",
-      "noDownloadedMods": "No downloaded mods in the library yet"
+      "noDownloadedMods": "No downloaded mods in the library yet",
+      "dependencies": "Dependencies",
+      "dependencyMissing": "This dependency is not downloaded"
     },
     "steam": {
       "title": "Steam Account",

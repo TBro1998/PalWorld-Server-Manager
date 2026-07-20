@@ -107,7 +107,7 @@
 
 ## 跨层字段一致性
 
-`Mod` 的 DB 列（`internal/models/server.go`，显式 `gorm:"column:..."`，`PackageName`/`Version` 为 D5 新增，`ModName`/`Tags` 为展示元信息新增）→ Go `json` tag（snake_case）→ 前端 `ui/src/types/server.ts` 的 `Mod` 接口（snake_case）→ i18n `serverConfig.mods.*`（zh/en/ja 三语齐全）。改任一侧四处同步。UI 的 Mods tab 在 `ServerSettingsDialog` 的 `tabs` 数组追加 `'mods'`，`ModsSection` 顶部常驻 `mods.loginHint`（配 `steam_username` + 一次性手动登录说明）。
+`Mod` 的 DB 列（`internal/models/server.go`，显式 `gorm:"column:..."`，`PackageName`/`Version` 为 D5 新增，`ModName`/`Tags`/`Dependencies` 为展示元信息新增，`Tags`/`Dependencies` 均 `serializer:json`）→ Go `json` tag（snake_case）→ 前端 `ui/src/types/server.ts` 的 `Mod` 接口（snake_case）→ i18n `serverConfig.mods.*` / `modLibrary.*`（zh/en/ja 三语齐全）。改任一侧四处同步。UI 的 Mods tab 在 `ServerSettingsDialog` 的 `tabs` 数组追加 `'mods'`，`ModsSection` 顶部常驻 `mods.loginHint`（配 `steam_username` + 一次性手动登录说明）。
 
 **展示层级（Mods 列表条目）**：主标题优先 `mod_name`（Info.json ModName），回退用户 `name`，再回退 `workshop_id`；次级 mono 小字行拼 `package_name`+`workshop_id`+`v{version}`；`tags` 有值时以 badge 展示（`tags ?? []` 容错——见下方 serializer 陷阱，DB 空值反序列化为 `null`）。纯展示字段不新增 i18n 文案（tag 文本/包名直显）。
 
@@ -124,7 +124,18 @@
 ## Info.json 真机键名（2026-07-18 真实 mod 样本确认）
 
 - 真实样本（工作区 `steamcmd/.../content/1623730/<id>/Info.json`）确认键名：`ModName`、`PackageName`、`Thumbnail`、`Version`（字符串如 `"1.7.2"`）、`Tags`（字符串数组如 `["Gameplay"]`）、`Author`、`Dependencies`、`MinRevision`、`InstallRule[]`（`Type`/`IsServer`/`Targets`）。此前"依官方文档、未真机核对"的疑虑已消除；`ParseInfo` 键名与之一致。
-- 本项目现用字段：`PackageName`/`Version`/`InstallRule[].IsServer`（加载逻辑）+ `ModName`/`Tags`（展示）。`Thumbnail`（缩略图文件名，如 `thumbnail.png`）**已知但故意不展示**（产品决策，避免额外图片服务端点）；`Author`/`Dependencies`/`MinRevision` 暂未使用。
+- 本项目现用字段：`PackageName`/`Version`/`InstallRule[].IsServer`（加载逻辑）+ `ModName`/`Tags`/`Dependencies`（展示）。`Thumbnail`（缩略图文件名，如 `thumbnail.png`）**已知但故意不展示**（产品决策，避免额外图片服务端点）；`Author`/`MinRevision` 暂未使用。
+
+## Convention: `Dependencies` 存依赖的 PackageName，满足度按"已下载库的 package_name 集合"运行时计算
+
+**What**: `Info.json.Dependencies` 是**依赖 mod 的 PackageName 数组**（例：PalSchema 依赖 `["UE4SSExperimentalPW"]`），**不是** Workshop ID。链路：`palmod.ParseInfo` 读入 `Info.Dependencies`（缺失→nil，容忍式，与 `Tags` 同构）→ `Manager.DownloadGlobalMod` 回填 `mods.dependencies`（`[]string` + `serializer:json`，**必须** `Select("...","dependencies")`+结构体 `Updates`，同 Tags 陷阱）→ 两个列表端点计算满足度。
+- **满足度口径（运行时派生，不落库）**：`Router.downloadedPackageSet()` 一次查全局库 `downloaded=1 AND package_name!=''` 的 `package_name` 成集合；`buildModDependencies(names, set)` 把原始名映射为 `[]ModDependency{Name, Satisfied}`（`Satisfied` = 名字在集合中）。二态：已下载(✓)/未满足(⚠)，不区分"在库未下载"。
+- `GET /api/mods`（`ModWithStatus.Dependencies`）与 `GET /api/servers/:id/mods`（`ServerModDetail.Dependencies`）各调一次 `downloadedPackageSet`（避免 N+1），返回**注解后**的 `dependencies` 数组（`ModWithStatus` 的字段**覆盖**内嵌 `Mod.Dependencies []string` 的同名 json 键）。
+- 前端共享组件 `ui/src/components/server-manage/ModDependencies.tsx`（`/mods` 页 `ModRow` 与 `ModsSection` 的 `ServerModRow` 共用），入参 `deps` 空则不渲染；label/missingLabel 由各页传入（命名空间：`/mods` 走 `modLibrary.dependencies*`，服务器页走 `serverConfig.mods.dependencies*`）。前端读 `dependencies` 用 `?? []` 容错。
+
+**Why**: 与已有的 `steamworkshop.ResolveDependencies`（下载**前**按 Workshop ID 走 Steam Web API 递归解析、供 WorkshopBrowser 弹窗提示）是**两个独立机制**——本约定用**下载后**本地 Info.json 的 PackageName 判断"库里是否已备齐依赖"，不走网络、不复用 Workshop 依赖解析。
+
+**Rule**: `Dependencies` 满足度是运行时计算，只落 `dependencies` 原始名数组；新增依赖相关展示走这条链路，别把满足度写库、也别与 `steamworkshop.ResolveDependencies` 混用。回填走 `Select`+结构体 `Updates`（serializer 列陷阱），前端 `?? []` 容错。
 
 ## 待真机复核
 

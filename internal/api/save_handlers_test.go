@@ -9,10 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/auth"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/database"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/models"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/palsave"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
 )
 
@@ -62,16 +64,32 @@ func newTestRouter(t *testing.T) (*gin.Engine, *Router) {
 			_ = sqlDB.Close()
 		}
 	})
-	cfg := &config.Config{LogDir: t.TempDir()}
-	r := NewRouter(db, cfg)
+	cfg := &config.Config{LogDir: t.TempDir(), JWTSecret: testJWTSecret}
+	r := NewRouter(db, cfg, update.BuildInfo{})
 	eng := gin.New()
 	r.RegisterRoutes(eng.Group("/api"))
 	return eng, r
 }
 
+// testJWTSecret signs the token used by test requests. RegisterRoutes mounts the
+// protected group behind JWT auth, so every test request must carry a valid
+// bearer token (see testToken / doJSON / doGET).
+const testJWTSecret = "test-secret"
+
+// testToken returns a bearer token valid for the test router's JWT secret.
+func testToken(t *testing.T) string {
+	t.Helper()
+	tok, err := auth.GenerateToken(testJWTSecret)
+	if err != nil {
+		t.Fatalf("generate token: %v", err)
+	}
+	return tok
+}
+
 func doGET(t *testing.T, eng *gin.Engine, path string) (int, map[string]json.RawMessage) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set("Authorization", "Bearer "+testToken(t))
 	w := httptest.NewRecorder()
 	eng.ServeHTTP(w, req)
 	var body map[string]json.RawMessage

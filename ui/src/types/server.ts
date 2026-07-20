@@ -21,6 +21,14 @@ export interface CreateServerData {
   installPath?: string
 }
 
+// ModDependency is one Info.json dependency (a PackageName) annotated with
+// whether it is satisfied — i.e. a downloaded global-library mod has that
+// PackageName. Runtime-derived by the list endpoints; not a raw DB field.
+export interface ModDependency {
+  name: string
+  satisfied: boolean
+}
+
 // Mod mirrors models.Mod — the global mod library entry.
 // package_name, mod_name, version and tags are backfilled from Info.json after
 // a successful download. tags may arrive as null — read via `tags ?? []`.
@@ -36,6 +44,9 @@ export interface Mod {
   tags: string[] | null
   created_at: string
   updated_at: string
+  // dependencies (with satisfaction status) are computed and returned by
+  // GET /api/mods. Absent from other responses (e.g. AddGlobalMod).
+  dependencies?: ModDependency[]
   // server_count is included when fetched via GET /api/mods
   server_count?: number
   // downloading is runtime state included by GET /api/mods: true while a
@@ -61,6 +72,9 @@ export interface ServerMod {
   version: string
   tags: string[] | null
   downloaded: boolean
+  // Info.json dependencies with satisfaction status; always returned by
+  // ListServerMods (may be an empty array).
+  dependencies: ModDependency[]
   // True when global library has a newer version than deployed_version.
   version_mismatch: boolean
   created_at: string

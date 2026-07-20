@@ -41,6 +41,7 @@ type Mod struct {
 	ModName      string    `json:"mod_name" gorm:"column:mod_name;default:''"`             // from Info.json; display-only
 	Version      string    `json:"version" gorm:"column:version;default:''"`               // from Info.json; update detection / display
 	Tags         []string  `json:"tags" gorm:"column:tags;serializer:json"`                 // from Info.json; display-only (JSON in DB, may be null)
+	Dependencies []string  `json:"dependencies" gorm:"column:dependencies;serializer:json"` // from Info.json; PackageNames this mod depends on (JSON in DB, may be null)
 	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt    time.Time `json:"updated_at" gorm:"column:updated_at"`
 }

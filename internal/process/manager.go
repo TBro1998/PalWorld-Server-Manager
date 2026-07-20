@@ -423,7 +423,7 @@ func (m *Manager) DownloadGlobalMod(modID int64, out io.Writer) error {
 	}
 
 	if err := m.db.Model(&models.Mod{}).Where("id = ?", modID).
-		Select("downloaded", "download_path", "package_name", "mod_name", "version", "tags").
+		Select("downloaded", "download_path", "package_name", "mod_name", "version", "tags", "dependencies").
 		Updates(models.Mod{
 			Downloaded:   true,
 			DownloadPath: downloadPath,
@@ -431,6 +431,7 @@ func (m *Manager) DownloadGlobalMod(modID int64, out io.Writer) error {
 			ModName:      info.ModName,
 			Version:      info.Version,
 			Tags:         info.Tags,
+			Dependencies: info.Dependencies,
 		}).Error; err != nil {
 		return fmt.Errorf("mod %s: persist metadata: %w", mod.WorkshopID, err)
 	}

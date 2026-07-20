@@ -30,6 +30,11 @@ type Info struct {
 	Version     string
 	Tags        []string
 	IsServer    bool
+	// Dependencies lists the PackageNames of other mods this mod depends on
+	// (e.g. PalSchema depends on "UE4SSExperimentalPW"). Display-only: the UI
+	// annotates each entry with whether a same-named mod is already downloaded
+	// in the global library. Missing/absent yields nil, same as Tags.
+	Dependencies []string
 }
 
 // rawInfo mirrors the parts of Info.json we read. The exact key names come from
@@ -42,6 +47,7 @@ type rawInfo struct {
 	ModName      string           `json:"ModName"`
 	Version      json.RawMessage  `json:"Version"`
 	Tags         []string         `json:"Tags"`
+	Dependencies []string         `json:"Dependencies"`
 	InstallRules []rawInstallRule `json:"InstallRule"`
 	// InstallRules is an alternate spelling seen in some samples; harmless if absent.
 	InstallRulesAlt []rawInstallRule `json:"InstallRules"`
@@ -68,10 +74,11 @@ func ParseInfo(dir string) (*Info, error) {
 	}
 
 	info := &Info{
-		PackageName: raw.PackageName,
-		ModName:     raw.ModName,
-		Version:     decodeVersion(raw.Version),
-		Tags:        raw.Tags,
+		PackageName:  raw.PackageName,
+		ModName:      raw.ModName,
+		Version:      decodeVersion(raw.Version),
+		Tags:         raw.Tags,
+		Dependencies: raw.Dependencies,
 	}
 
 	rules := raw.InstallRules

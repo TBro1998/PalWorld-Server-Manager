@@ -16,6 +16,7 @@ import { useTranslations } from '@/contexts/LanguageContext'
 import type { ServerMod, Mod } from '@/types/server'
 import { ServerLogsDialog } from '@/components/ServerLogsDialog'
 import { SectionShell, Placeholder, useServer } from './shared'
+import { ModDependencies } from './ModDependencies'
 
 // ModsSection: server-scoped mod management. Shows which global library mods
 // are linked to this server, lets the user add/remove links and toggle enabled
@@ -222,6 +223,11 @@ function ServerModRow({
             ))}
           </div>
         )}
+        <ModDependencies
+          deps={sm.dependencies}
+          label={t('mods.dependencies')}
+          missingLabel={t('mods.dependencyMissing')}
+        />
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <Switch checked={sm.enabled} onCheckedChange={onToggle} disabled={busy} />
