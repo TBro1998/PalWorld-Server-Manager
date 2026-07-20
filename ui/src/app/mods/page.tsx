@@ -136,6 +136,27 @@ export default function ModsPage() {
     invalidate()
   }
 
+  // Re-derive in-flight downloads from the server after a page refresh: the
+  // backend reports `downloading` per mod, so merge those ids into the local
+  // tracking set (union, never overwrite, so a download started in this tab is
+  // not dropped). Keeps the row's spinner/log panel open and polling alive.
+  useEffect(() => {
+    const serverDownloading = mods.filter((m) => m.downloading).map((m) => m.id)
+    if (serverDownloading.length === 0) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync in-flight downloads from server list into local tracking set
+    setDownloadingIds((prev) => {
+      let changed = false
+      const next = new Set(prev)
+      for (const id of serverDownloading) {
+        if (!next.has(id)) {
+          next.add(id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [mods])
+
   const invalidateSteam = () => queryClient.invalidateQueries({ queryKey: ['steamStatus'] })
 
   // Steam account login
@@ -529,23 +550,61 @@ function ModRow({ mod, downloading, onDownload, onDelete, onDownloadDone, t }: M
   const [logDone, setLogDone] = useState<'ok' | 'error' | null>(null)
   const logEndRef = useRef<HTMLDivElement>(null)
 
-  // Open the log panel automatically when download starts; reset state.
+  // Hold onDownloadDone in a ref so the SSE effect below does not depend on its
+  // identity (the parent passes a fresh arrow each render). Keeps the effect
+  // keyed only on [downloading, mod.id] — polling re-renders won't reconnect the
+  // stream or re-backfill history. (Follows the mod-handling spec convention.)
+  const onDownloadDoneRef = useRef(onDownloadDone)
+  useEffect(() => {
+    onDownloadDoneRef.current = onDownloadDone
+  }, [onDownloadDone])
+
+  // Whether this row was already downloading at mount. True only when the page
+  // (re)loaded while a download was in flight — i.e. the refresh case, where the
+  // download's log was reset before reload so disk history belongs to it. A
+  // download started later in this session goes through downloadMutation, which
+  // resets the log server-side; backfilling there could race ResetLog and show
+  // the previous run's lines, so we start clean instead.
+  const reattachedRef = useRef(downloading)
+
+  // Open the log panel automatically when a download is in progress; clear the
+  // finished marker. Log lines are managed by the backfill+SSE effect below
+  // (do not clear them here, or the refresh backfill would be wiped).
   useEffect(() => {
     if (downloading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowLog(true)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollapsed(false)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLogLines([])
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLogDone(null)
     }
   }, [downloading])
 
-  // Connect SSE while a download is in progress.
+  // While a download is in progress: backfill historical log lines (so a page
+  // refresh re-shows output produced before the reload), then follow the live
+  // SSE stream. Mirrors LogsSection's history-then-stream pattern.
   useEffect(() => {
     if (!downloading) return
+    let cancelled = false
+
+    // 1. Backfill history captured on disk — only when re-attaching to a
+    // download that was already running at mount (refresh case). For a download
+    // started in this session, start clean: the POST resets the log server-side,
+    // and backfilling would race that reset and surface the previous run's lines.
+    if (reattachedRef.current) {
+      globalModsApi
+        .getLogs(mod.id)
+        .then((res) => {
+          if (!cancelled) setLogLines(res.data.logs ?? [])
+        })
+        .catch(() => {
+          /* ignore: SSE will still deliver new lines */
+        })
+    } else {
+      // Fresh in-session download starts with an empty log panel.
+      setLogLines([])
+    }
+
+    // 2. Live stream for subsequent lines and the terminal done event.
     const es = new EventSource(globalModsApi.logStreamUrl(mod.id))
     es.addEventListener('log', (e: MessageEvent) => {
       setLogLines((prev) => [...prev, (e as MessageEvent).data])
@@ -553,16 +612,19 @@ function ModRow({ mod, downloading, onDownload, onDelete, onDownloadDone, t }: M
     es.addEventListener('done', (e: MessageEvent) => {
       const result = (e as MessageEvent).data === 'ok' ? 'ok' : 'error'
       setLogDone(result)
-      onDownloadDone()
+      onDownloadDoneRef.current()
       es.close()
     })
     es.onerror = () => {
       setLogDone('error')
-      onDownloadDone()
+      onDownloadDoneRef.current()
       es.close()
     }
-    return () => es.close()
-  }, [downloading, mod.id, onDownloadDone])
+    return () => {
+      cancelled = true
+      es.close()
+    }
+  }, [downloading, mod.id])
 
   // Auto-scroll to the latest log line.
   useEffect(() => {

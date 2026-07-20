@@ -339,6 +339,42 @@ paths:
       summary: Download mod files via SteamCMD
       tags:
       - mods
+  /mods/{modId}/logs:
+    get:
+      description: Returns the most recent SteamCMD download log lines for a mod
+      parameters:
+      - description: Mod ID
+        in: path
+        name: modId
+        required: true
+        type: integer
+      - description: Number of trailing lines (default 200)
+        in: query
+        name: lines
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get mod download logs
+      tags:
+      - mods
   /mods/{modId}/logs/stream:
     get:
       parameters:

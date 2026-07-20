@@ -77,6 +77,21 @@
 
 ---
 
+## Convention: 全局 mod 下载的下载态 + 日志可在刷新后重挂（history + live）
+
+**What**: 全局 mod 库下载（`POST /api/mods/:modId/download`）跑在后台 goroutine，与前端页面生命周期无关。前端刷新后要能重新识别"下载中"并续看日志，靠两个渠道把后端状态捞回：
+- **下载态**：`GET /api/mods` 的 `ModWithStatus` 带运行时字段 `downloading`（`json:"downloading"`，**不落库**），由 `r.process.IsDownloadingGlobalMod(mod.WorkshopID)` 逐条计算。前端 `/mods` 页据此把 `downloading===true` 的 mod id **并入**（非覆盖）本地 `downloadingIds`，刷新后保持 spinner/日志面板/轮询。
+- **历史日志**：`GET /api/mods/:modId/logs`（复用 `logger.ReadLogs(LogDir, modID, KindSteamCMD, lines)`，形状对齐服务器 `GetLogs`）回填刷新前落盘的行；随后 `GET /api/mods/:modId/logs/stream`（SSE）接实时行。这就是本项目既有的"history-then-stream"模式（服务器运行日志 `GetLogs`+`StreamLogs` / `LogsSection` 同构）。
+- mod 下载日志的落盘/流 key 用 **modID** 当 `serverID` 位（真实 server ≥1 不冲突，同 steam 登录用 sentinel 0 的思路），kind 固定 `KindSteamCMD`，故 `GetModLogs` 不解析 `kind` query。
+
+**Gotcha（回填竞态，2026-07-20 review 捕获）**: **不能无条件回填** `getLogs`。本会话内点"下载/重新下载"会经 `downloadMutation` 触发 `POST /download`，后端 `logger.ResetLog` 清空日志；若前端同时无脑 `getLogs`，可能读到**上一次**下载的残留行并与新 SSE 行混排。修正：前端用一个"挂载即在下载中"的 ref（`reattachedRef`）区分——**仅刷新重挂场景**（mount 时已 `downloading`）才 `getLogs` 回填；**本会话内新发起**的下载 `setLogLines([])` 从空开始，让 SSE 从头补。
+
+**Why**: 后端状态本就完整（`IsDownloadingGlobalMod` + 落盘日志），丢的只是前端内存态；补齐两个只读渠道即可，无需新机制、不碰落盘/广播路径。
+
+**Rule**: 全局 mod 下载态走 `GET /api/mods` 的 `downloading` 运行时字段（不加 DB 列、不加独立 status 端点，复用列表轮询）；历史日志走独立只读端点 + SSE 续流，别把历史塞进 SSE 建流逻辑；回填只在刷新重挂时做，本会话内新下载从空开始以避开 `ResetLog` 竞态。服务器 mod 部署弹窗（`ModsSection` deploy）尚未享有此重挂能力（同类刷新问题，未在本次范围）。
+
+---
+
 ## Gotcha: 并发——`updatingMods` 与 `installing` 互斥；运行中不拦截；INI 写有独立锁
 
 **What**:

@@ -22,6 +22,10 @@ type ModWithStatus struct {
 	models.Mod
 	// ServerCount is how many servers currently reference this mod.
 	ServerCount int `json:"server_count"`
+	// Downloading reports whether a SteamCMD download for this mod is currently
+	// in progress. It is runtime state (not persisted), so a page refresh can
+	// re-derive the in-flight download and reattach its log stream.
+	Downloading bool `json:"downloading"`
 }
 
 // ListGlobalMods returns all mods in the global library, ordered by creation
@@ -63,7 +67,11 @@ func (r *Router) ListGlobalMods(c *gin.Context) {
 
 	result := make([]ModWithStatus, len(mods))
 	for i, m := range mods {
-		result[i] = ModWithStatus{Mod: m, ServerCount: countMap[m.ID]}
+		result[i] = ModWithStatus{
+			Mod:         m,
+			ServerCount: countMap[m.ID],
+			Downloading: r.process.IsDownloadingGlobalMod(m.WorkshopID),
+		}
 	}
 	c.JSON(http.StatusOK, gin.H{"mods": result})
 }
@@ -246,6 +254,49 @@ func (r *Router) DownloadGlobalMod(c *gin.Context) {
 		"message": "Mod download started",
 		"modId":   modID,
 		"status":  "downloading",
+	})
+}
+
+// GetModLogs returns the most recent captured download log lines for a single
+// mod. The mod's download log is captured to disk under the SteamCMD log kind
+// keyed by the mod's own ID, so this backfills history when the UI (re)attaches
+// to an in-progress or finished download — mirroring GetLogs for servers.
+// GetModLogs godoc
+// @Summary      Get mod download logs
+// @Description  Returns the most recent SteamCMD download log lines for a mod
+// @Tags         mods
+// @Produce      json
+// @Param        modId  path      int  true   "Mod ID"
+// @Param        lines  query     int  false  "Number of trailing lines (default 200)"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Security     BearerAuth
+// @Router       /mods/{modId}/logs [get]
+func (r *Router) GetModLogs(c *gin.Context) {
+	modID, err := strconv.ParseInt(c.Param("modId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mod ID"})
+		return
+	}
+
+	lines := 200
+	if v := c.Query("lines"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			lines = n
+		}
+	}
+
+	// Mod downloads only use the SteamCMD log kind; no kind query to parse.
+	logs, err := logger.ReadLogs(r.config.LogDir, modID, logger.KindSteamCMD, lines)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read logs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"modId": modID,
+		"logs":  logs,
 	})
 }
 

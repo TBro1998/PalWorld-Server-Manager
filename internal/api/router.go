@@ -124,6 +124,7 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			globalMods.POST("", r.AddGlobalMod)
 			globalMods.DELETE("/:modId", r.DeleteGlobalMod)
 			globalMods.POST("/:modId/download", r.DownloadGlobalMod)
+			globalMods.GET("/:modId/logs", r.GetModLogs)
 			globalMods.GET("/:modId/logs/stream", r.ModLogStream)
 		}
 

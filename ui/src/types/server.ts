@@ -38,6 +38,10 @@ export interface Mod {
   updated_at: string
   // server_count is included when fetched via GET /api/mods
   server_count?: number
+  // downloading is runtime state included by GET /api/mods: true while a
+  // SteamCMD download for this mod is in progress. Lets the UI re-derive an
+  // in-flight download after a page refresh and reattach its log stream.
+  downloading?: boolean
 }
 
 // ServerMod mirrors models.ServerMod — a server's reference to a global Mod.

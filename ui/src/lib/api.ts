@@ -156,6 +156,12 @@ export const globalModsApi = {
     apiClient.post<Mod>('/api/mods', data),
   remove: (modId: number) => apiClient.delete(`/api/mods/${modId}`),
   download: (modId: number) => apiClient.post(`/api/mods/${modId}/download`),
+  // Historical download log lines for a mod, used to backfill the log panel
+  // when (re)attaching to an in-progress download after a page refresh.
+  getLogs: (modId: number, lines = 200) =>
+    apiClient.get<{ modId: number; logs: string[] }>(`/api/mods/${modId}/logs`, {
+      params: { lines },
+    }),
   // Relative URL for EventSource: per-mod download progress stream.
   // Each mod uses its own ID as the stream key so concurrent downloads stay independent.
   logStreamUrl: (modId: number) => `/api/mods/${modId}/logs/stream?token=${encodeURIComponent(getToken())}`,
