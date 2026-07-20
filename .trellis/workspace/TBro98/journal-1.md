@@ -204,3 +204,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Mod 依赖显示与已下载状态标注
+
+**Date**: 2026-07-20
+**Task**: Mod 依赖显示与已下载状态标注
+**Branch**: `main`
+
+### Summary
+
+解析 Info.json 的 Dependencies（依赖 PackageName）并入库，在全局 mod 库页与服务器 mod 页展示依赖列表，按'已下载库 package_name 集合'标注每个依赖是否已满足（✓/⚠）。后端 palmod.ParseInfo + models.Mod dependencies 列 + 两个列表端点运行时计算满足度；前端共享 ModDependencies 组件 + i18n 三语。收尾修复了 internal/api 测试包编译（NewRouter 三参 + JWT token）、重写废弃的 TestModsCRUD、并修掉暴露出的迁移 bug（collectLegacyMods 无条件 SELECT 新列致最老 mods 表迁移失败），go test ./... 首次全量通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4719a76` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
