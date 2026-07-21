@@ -64,6 +64,20 @@
 
 ---
 
+## Gotcha（已固化）: 备份存档时必须排除游戏自带的 `backup` 目录
+
+**What**: 备份打包（`internal/backup`）归档的是整棵 `SaveGames/0` 树（非单一 world 目录，见 `archive.go:saveGamesRel`），但游戏引擎会在 `SaveGames/0/<worldid>/backup/` 下维护自己的滚动存档备份。`CreateZip` 对 save 范围传入 `skipGameBackup`：相对 `SaveGames/0` 根、第二段为 `backup` 的路径整棵剪除（`filepath.SkipDir`）；config 范围传 `nil`（无需排除）。
+
+```
+SaveGames/0/<worldid>/backup/**   ← 游戏自带备份，本工具不纳入
+```
+
+**Why**: 游戏自带备份是引擎自身的滚动快照，与本工具的备份闭环无关。若一并打包会让每个 zip 体积膨胀，并造成"备份里套备份"的嵌套。排除发生在打包阶段，zip 内本就没有该数据，恢复逻辑无需改动。判定用"第二段"而非文件名匹配，因 `backup` 只出现在 `<worldid>` 那一层（`0` 是 Steam 用户 ID 目录），不会误伤名字含 backup 的其他文件。
+
+**Rule**: 备份/归档 `SaveGames/0` 树时保留 `skipGameBackup` 排除；新增其他"整树打包"的功能若也覆盖存档目录，需同样排除游戏自带 `backup` 目录。
+
+---
+
 ## Convention: `/save` 端点独立于实时 REST，服务器停机也可用
 
 **What**: 存档端点 `GET /api/servers/:id/save/{players,guilds,players/:uid/pals,players/:uid/inventory}`（`protected` 组，参数沿用 `:id`）解析磁盘存档，**不**依赖游戏进程或官方 REST API 在线。错误码：400（id 非法）/ 404（server 不存在、`ErrNoSave` 无存档、玩家存档缺失）/ 500（解析失败），均为结构化 `gin.H{"error": msg}`。
