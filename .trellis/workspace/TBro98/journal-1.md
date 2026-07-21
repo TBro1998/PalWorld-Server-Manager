@@ -237,3 +237,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 服务器性能监控 (CPU/内存)
+
+**Date**: 2026-07-21
+**Task**: 服务器性能监控 (CPU/内存)
+**Branch**: `main`
+
+### Summary
+
+新增 internal/sysstat (gopsutil 采集宿主机+进程树 CPU/内存/磁盘，自维护 CPU 增量基线)；填充 /system/stats、新增 /servers/:id/stats (三态降级)；process.Manager 加只读 PID getter；前端 Overview 资源占用面板 5s 轮询 + zh/en/ja 三语；spec 记录 gopsutil/进程树/CGO-race 约定。跨平台编译+vet+test 全绿。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cdf6fca` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
