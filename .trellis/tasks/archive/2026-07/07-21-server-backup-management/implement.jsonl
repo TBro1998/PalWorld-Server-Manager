@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "GORM model 列命名/AutoMigrate 幂等约定，新增 backups/backup_schedules 表须对齐"}
+{"file": ".trellis/spec/backend/save-file-handling.md", "reason": "存档定位/路径约定（LocateWorld、SaveGames/0/<world>），备份 scope=save 复用"}
+{"file": ".trellis/spec/backend/platform-and-deployment.md", "reason": "Win/Linux 路径与 build-tag、目录布局约定，backup_dir 与 zip 打包需遵循"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "新增 config 字段/DB 表/API/前端类型跨层，避免层边界数据格式漂移"}

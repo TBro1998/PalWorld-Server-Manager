@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "校验 backups/backup_schedules model 列名、迁移幂等、config source-of-truth"}
+{"file": ".trellis/spec/backend/save-file-handling.md", "reason": "校验备份/恢复对存档目录的读写与定位逻辑是否符合既有约定"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "校验是否复用 palconfig/palsave/process.Manager，避免重复实现路径/状态判断"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "校验 config→DB→API→前端类型/i18n 跨层一致性"}
