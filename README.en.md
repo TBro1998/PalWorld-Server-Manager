@@ -23,6 +23,11 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 ### 🎛️ REST API Commands (Implemented)
 - broadcast / save / shutdown / kick / ban (RCON replacement)
 
+### 📊 Real-time Monitoring (Implemented)
+- Server process CPU / memory usage (process tree auto-aggregated, including child processes on Windows)
+- Host-wide CPU / memory / disk usage
+- Online player count, server FPS, frame time, and uptime (game REST API)
+
 ### 🔧 Mod Management (Implemented)
 - Enter a Workshop ID to auto-download, install, and toggle mods via SteamCMD
 
@@ -38,7 +43,6 @@ A comprehensive management tool for Palworld dedicated servers with mod support,
 - Cross-platform architecture — cross-platform at the code level; currently only Windows is officially supported due to mod constraints
 
 ### 📋 Planned
-- 📊 **Real-time Monitoring**: Server CPU, memory usage, and online player count
 - ⏰ **Scheduled Tasks**: Configure scheduled restarts, saves, and other recurring tasks
 - 💾 **Backup Management**: Automatic save backups and one-click restore
 - 🔄 **Crash Recovery**: Auto-restart on unexpected server exit with alert notifications
