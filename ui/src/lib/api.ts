@@ -74,6 +74,9 @@ import type {
   ServerMod,
   WorkshopItem,
   WorkshopDep,
+  Backup,
+  BackupScope,
+  BackupSchedule,
 } from '@/types/server'
 
 export const serversApi = {
@@ -151,6 +154,30 @@ export const serversApi = {
   // CPU / memory of the server's process tree. When the server is not running
   // the backend returns 200 with { running: false, reason: 'not_running' }.
   stats: (id: number) => apiClient.get<ProcessStats>(`/api/servers/${id}/stats`),
+}
+
+// --- Backup management ---
+// Create/list/download/delete/restore backups of a server's save and/or config,
+// plus the per-server automatic-backup schedule. Restore requires the server to
+// be stopped (backend returns 409 otherwise).
+export const backupsApi = {
+  list: (id: number) =>
+    apiClient.get<{ backups: Backup[] }>(`/api/servers/${id}/backups`),
+  create: (id: number, scope: BackupScope) =>
+    apiClient.post<Backup>(`/api/servers/${id}/backups`, { scope }),
+  remove: (id: number, backupId: number) =>
+    apiClient.delete(`/api/servers/${id}/backups/${backupId}`),
+  restore: (id: number, backupId: number) =>
+    apiClient.post(`/api/servers/${id}/backups/${backupId}/restore`),
+  // Downloads the zip as a blob so the browser can save it via an object URL.
+  download: (id: number, backupId: number) =>
+    apiClient.get<Blob>(`/api/servers/${id}/backups/${backupId}/download`, {
+      responseType: 'blob',
+    }),
+  getSchedule: (id: number) =>
+    apiClient.get<BackupSchedule>(`/api/servers/${id}/backups/schedule`),
+  updateSchedule: (id: number, data: Omit<BackupSchedule, 'server_id'>) =>
+    apiClient.put<BackupSchedule>(`/api/servers/${id}/backups/schedule`, data),
 }
 
 // --- Global mod library ---

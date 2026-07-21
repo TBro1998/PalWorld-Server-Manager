@@ -31,6 +31,9 @@ go.work
 logs/
 *.log
 
+# Backups (runtime backup_dir, default ./backups)
+backups/
+
 # SteamCMD
 /steamcmd
 

@@ -1,7 +1,10 @@
 package api
 
 import (
+	"context"
+
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/auth"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/backup"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
@@ -13,13 +16,15 @@ import (
 
 // Router handles API routing
 type Router struct {
-	db      *gorm.DB
-	config  *config.Config
-	process *process.Manager
-	streams *logger.StreamManager
-	saves   *saveCache
-	checker *update.Checker
-	sys     *sysstat.Collector
+	db              *gorm.DB
+	config          *config.Config
+	process         *process.Manager
+	streams         *logger.StreamManager
+	saves           *saveCache
+	checker         *update.Checker
+	sys             *sysstat.Collector
+	backups         *backup.Service
+	backupScheduler *backup.Scheduler
 }
 
 // NewRouter creates a new API router
@@ -27,7 +32,8 @@ func NewRouter(db *gorm.DB, cfg *config.Config, buildInfo update.BuildInfo) *Rou
 	streams := logger.NewStreamManager()
 	pm := process.NewManager(db, streams, cfg.LogDir, cfg.SteamCMDPath, cfg.SteamUsername)
 	checker := update.NewChecker(cfg.GitHubRepo, buildInfo)
-	return &Router{
+
+	r := &Router{
 		db:      db,
 		config:  cfg,
 		process: pm,
@@ -36,6 +42,29 @@ func NewRouter(db *gorm.DB, cfg *config.Config, buildInfo update.BuildInfo) *Rou
 		checker: checker,
 		sys:     sysstat.New(),
 	}
+
+	// Backup service: reuse the process manager for running-state and the REST
+	// proxy for a best-effort in-game save before a hot backup. The closures
+	// keep internal/backup free of any dependency on api/process internals.
+	r.backups = backup.NewService(db, cfg.BackupDir, pm.IsRunning, r.triggerRestSave)
+	r.backupScheduler = backup.NewScheduler(db, r.backups)
+
+	return r
+}
+
+// triggerRestSave best-effort forwards a POST /save to a server's Palworld REST
+// API so a running server flushes to disk before a hot backup. Errors (REST
+// disabled / unreachable) are returned for the caller to log; they never block
+// the backup.
+func (r *Router) triggerRestSave(serverID int64) error {
+	res, _, err := r.resolveRest(serverID)
+	if err != nil {
+		return err
+	}
+	if !res.ready() {
+		return nil // REST not usable; skip silently
+	}
+	return res.client.Save(context.Background())
 }
 
 // ProcessManager exposes the process manager for startup reconciliation.
@@ -46,6 +75,12 @@ func (r *Router) ProcessManager() *process.Manager {
 // Checker exposes the update checker so server.go can start the background check.
 func (r *Router) Checker() *update.Checker {
 	return r.checker
+}
+
+// BackupScheduler exposes the backup scheduler so server.go can start it after
+// startup reconciliation.
+func (r *Router) BackupScheduler() *backup.Scheduler {
+	return r.backupScheduler
 }
 
 // RegisterRoutes registers all API routes
@@ -119,6 +154,19 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 			// Per-server process resource stats (CPU / memory of the process
 			// tree). Structured degradation when the server is not running.
 			servers.GET("/:id/stats", r.GetServerStats)
+
+			// Backup management: create/list/download/delete/restore backups of
+			// the server's save and/or config, plus automatic-backup schedule.
+			backups := servers.Group("/:id/backups")
+			{
+				backups.GET("", r.ListBackups)
+				backups.POST("", r.CreateBackup)
+				backups.GET("/schedule", r.GetBackupSchedule)
+				backups.PUT("/schedule", r.UpdateBackupSchedule)
+				backups.GET("/:backupId/download", r.DownloadBackup)
+				backups.DELETE("/:backupId", r.DeleteBackup)
+				backups.POST("/:backupId/restore", r.RestoreBackup)
+			}
 		}
 
 		// Config schema (drives the structured config form)

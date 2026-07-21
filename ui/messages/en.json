@@ -306,10 +306,51 @@
     },
     "backup": {
       "title": "Save sync & backups",
-      "desc": "Scheduled save sync, auto backup and backup management",
-      "sync": "Scheduled sync",
+      "desc": "Auto backup, backup management and restore",
       "auto": "Auto backup",
-      "manage": "Backup management"
+      "manage": "Backup management",
+      "loading": "Loading…",
+      "scope": {
+        "all": "Save + config",
+        "save": "Save only",
+        "config": "Config only"
+      },
+      "source": {
+        "manual": "Manual",
+        "auto": "Auto",
+        "pre-restore": "Pre-restore snapshot"
+      },
+      "form": {
+        "enabled": "Enable auto backup",
+        "interval": "Interval (minutes)",
+        "scope": "Backup scope",
+        "keepCount": "Keep count",
+        "keepDays": "Keep days",
+        "zeroUnlimited": "0 means unlimited",
+        "save": "Save",
+        "saving": "Saving…",
+        "saveOk": "Saved",
+        "saveFail": "Failed to save"
+      },
+      "list": {
+        "create": "Create backup",
+        "creating": "Creating…",
+        "createOk": "Backup created",
+        "createFail": "Failed to create backup",
+        "empty": "No backups yet",
+        "hot": "Hot",
+        "download": "Download",
+        "downloadFail": "Download failed",
+        "restore": "Restore",
+        "restoreConfirm": "Restore from this backup? The current save will be overwritten (a safety backup is taken first).",
+        "restoreOk": "Restored",
+        "restoreFail": "Restore failed",
+        "mustStop": "Stop the server before restoring",
+        "delete": "Delete",
+        "deleteConfirm": "Delete this backup? This cannot be undone.",
+        "deleteOk": "Deleted",
+        "deleteFail": "Delete failed"
+      }
     },
     "groups": {
       "monitor": "Monitor",

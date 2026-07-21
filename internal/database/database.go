@@ -50,6 +50,8 @@ func migrate(db *gorm.DB) error {
 		&models.ServerMod{},
 		&models.User{},
 		&models.Setting{},
+		&models.Backup{},
+		&models.BackupSchedule{},
 	); err != nil {
 		return err
 	}

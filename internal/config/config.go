@@ -38,6 +38,11 @@ type Config struct {
 	// Logging
 	LogDir string `yaml:"log_dir" env:"LOG_DIR" envDefault:"./logs"`
 
+	// Backup root directory. Backups live at <BackupDir>/<serverID>/<backupID>.zip,
+	// independent of a server's install path so reinstalling or deleting a server's
+	// files never touches its backups. Mirrors the LogDir "global root" pattern.
+	BackupDir string `yaml:"backup_dir" env:"BACKUP_DIR" envDefault:"./backups"`
+
 	// Update settings (always enabled, update via UI)
 	GitHubRepo string `yaml:"github_repo" env:"GITHUB_REPO" envDefault:"TBro1998/PalWorld-Server-Manager"`
 }
@@ -91,6 +96,9 @@ func Load() (*Config, error) {
 	}
 	if v, ok := os.LookupEnv("LOG_DIR"); ok {
 		cfg.LogDir = v
+	}
+	if v, ok := os.LookupEnv("BACKUP_DIR"); ok {
+		cfg.BackupDir = v
 	}
 	if v, ok := os.LookupEnv("GITHUB_REPO"); ok {
 		cfg.GitHubRepo = v

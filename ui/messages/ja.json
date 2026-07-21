@@ -306,10 +306,51 @@
     },
     "backup": {
       "title": "セーブ同期とバックアップ",
-      "desc": "セーブの定期同期、自動バックアップ、バックアップ管理",
-      "sync": "定期同期",
+      "desc": "自動バックアップ、バックアップ管理と復元",
       "auto": "自動バックアップ",
-      "manage": "バックアップ管理"
+      "manage": "バックアップ管理",
+      "loading": "読み込み中…",
+      "scope": {
+        "all": "セーブ + 設定",
+        "save": "セーブのみ",
+        "config": "設定のみ"
+      },
+      "source": {
+        "manual": "手動",
+        "auto": "自動",
+        "pre-restore": "復元前スナップショット"
+      },
+      "form": {
+        "enabled": "自動バックアップを有効化",
+        "interval": "間隔（分）",
+        "scope": "バックアップ範囲",
+        "keepCount": "保持数",
+        "keepDays": "保持日数",
+        "zeroUnlimited": "0 は無制限",
+        "save": "保存",
+        "saving": "保存中…",
+        "saveOk": "保存しました",
+        "saveFail": "保存に失敗しました"
+      },
+      "list": {
+        "create": "バックアップを作成",
+        "creating": "作成中…",
+        "createOk": "バックアップを作成しました",
+        "createFail": "バックアップの作成に失敗しました",
+        "empty": "バックアップはまだありません",
+        "hot": "ホット",
+        "download": "ダウンロード",
+        "downloadFail": "ダウンロードに失敗しました",
+        "restore": "復元",
+        "restoreConfirm": "このバックアップから復元しますか？現在のセーブは上書きされます（復元前に安全バックアップを作成します）。",
+        "restoreOk": "復元しました",
+        "restoreFail": "復元に失敗しました",
+        "mustStop": "復元する前にサーバーを停止してください",
+        "delete": "削除",
+        "deleteConfirm": "このバックアップを削除しますか？この操作は取り消せません。",
+        "deleteOk": "削除しました",
+        "deleteFail": "削除に失敗しました"
+      }
     },
     "groups": {
       "monitor": "モニター",

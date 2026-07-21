@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/api"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/backup"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,15 @@ func (s *Server) setupRoutes() {
 
 	// Start background update check (non-blocking; result cached for UI).
 	apiRouter.Checker().StartBackgroundCheck()
+
+	// Reconcile backup records with on-disk zips (drop orphans whose file is
+	// gone), then start per-server automatic-backup schedules.
+	if n, err := backup.Reconcile(s.db); err != nil {
+		fmt.Printf("warning: backup reconciliation failed: %v\n", err)
+	} else if n > 0 {
+		fmt.Printf("backup reconciliation removed %d orphan record(s)\n", n)
+	}
+	apiRouter.BackupScheduler().Start()
 
 	apiGroup := s.router.Group("/api")
 	apiRouter.RegisterRoutes(apiGroup)

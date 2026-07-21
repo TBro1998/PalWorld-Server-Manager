@@ -306,10 +306,51 @@
     },
     "backup": {
       "title": "存档同步与备份",
-      "desc": "存档定时同步、自动备份与备份管理",
-      "sync": "定时同步",
+      "desc": "自动备份、备份管理与恢复",
       "auto": "自动备份",
-      "manage": "备份管理"
+      "manage": "备份管理",
+      "loading": "加载中…",
+      "scope": {
+        "all": "存档 + 配置",
+        "save": "仅存档",
+        "config": "仅配置"
+      },
+      "source": {
+        "manual": "手动",
+        "auto": "自动",
+        "pre-restore": "恢复前快照"
+      },
+      "form": {
+        "enabled": "启用自动备份",
+        "interval": "备份间隔（分钟）",
+        "scope": "备份范围",
+        "keepCount": "保留数量",
+        "keepDays": "保留天数",
+        "zeroUnlimited": "0 表示不限制",
+        "save": "保存",
+        "saving": "保存中…",
+        "saveOk": "已保存",
+        "saveFail": "保存失败"
+      },
+      "list": {
+        "create": "创建备份",
+        "creating": "创建中…",
+        "createOk": "备份已创建",
+        "createFail": "创建备份失败",
+        "empty": "暂无备份",
+        "hot": "热备份",
+        "download": "下载",
+        "downloadFail": "下载失败",
+        "restore": "恢复",
+        "restoreConfirm": "确定用此备份恢复吗？当前存档将被覆盖（恢复前会自动创建一次安全备份）。",
+        "restoreOk": "已恢复",
+        "restoreFail": "恢复失败",
+        "mustStop": "请先停止服务器再恢复",
+        "delete": "删除",
+        "deleteConfirm": "确定删除此备份吗？此操作不可撤销。",
+        "deleteOk": "已删除",
+        "deleteFail": "删除失败"
+      }
     },
     "groups": {
       "monitor": "监控",

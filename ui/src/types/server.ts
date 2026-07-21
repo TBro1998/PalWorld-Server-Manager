@@ -285,3 +285,27 @@ export interface SaveItem {
 export interface SaveInventory {
   inventory: Record<string, SaveItem[]>
 }
+
+// --- Backup management ---
+
+export type BackupScope = 'save' | 'config' | 'all'
+export type BackupSource = 'manual' | 'auto' | 'pre-restore'
+
+export interface Backup {
+  id: number
+  server_id: number
+  scope: BackupScope
+  source: BackupSource
+  hot: boolean
+  size_bytes: number
+  created_at: string
+}
+
+export interface BackupSchedule {
+  server_id: number
+  enabled: boolean
+  interval_minutes: number
+  scope: BackupScope
+  keep_count: number
+  keep_days: number
+}
