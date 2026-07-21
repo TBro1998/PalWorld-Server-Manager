@@ -125,3 +125,62 @@ if not excluded. Keep them in `.dockerignore`. Also exclude `ui/out` /
 `8080/tcp` (web UI), `8211/udp` (game), `27015/udp` (query). If a server's
 `-port` / `-QueryPort` launch args change, the compose port mapping must change
 to match.
+
+---
+
+## OS resource sampling (CPU / memory / disk) — `internal/sysstat`
+
+Host and per-server-process resource metrics are sampled with
+`github.com/shirou/gopsutil/v4` (`cpu`, `mem`, `disk`, `process`). gopsutil is
+pure Go and works under `CGO_ENABLED=0` on both Windows and Linux, so **no
+`platform_*.go` pair and no `tasklist`/`wmic`/`ps` shelling** is needed — its
+`Children()`/`Times()`/`MemoryInfo()` already abstract the platform (Windows
+toolhelp snapshot vs Linux `/proc`). Prefer this over hand-rolled platform code
+for any new OS-metric need.
+
+### Signatures (`sysstat.Collector`, held once by `api.Router`)
+
+- `New() *Collector` — resolves `cpu.Counts(true)` once (falls back to 1).
+- `Host(ctx) HostStats` — never returns an error; each of cpu/mem/disk is
+  sampled independently and left at zero on failure (endpoint always 200).
+- `Process(ctx, key string, pid int) ProcessStats` — aggregates the whole
+  process tree rooted at pid.
+
+### Contracts
+
+- `HostStats{cpuPercent(0-100 norm), numCpu, memUsed/Total/Percent, diskUsed/Total/Percent}`.
+  Disk is `disk.Usage(".")` — the volume holding the working dir (the data disk);
+  in Docker that is the mounted `/data` volume, which is what we want.
+- `ProcessStats{running, reason, pid, cpuPercent(per-core, may exceed 100), numCpu, memoryRss, processCount}`.
+  Not-running → `{running:false, reason:"not_running", numCpu}` (structured 200,
+  mirrors the palapi rest-handler degradation style), NOT a 500.
+
+### Process-tree aggregation is mandatory on Windows
+
+Same root cause as the log-capture note above: `PalServer.exe` is only a
+launcher; the real server is a child (`PalServer-Win64-Shipping-Cmd.exe`).
+Sampling only the recorded PID reports near-zero CPU/RSS. `gatherTree` recurses
+`ChildrenWithContext` from the root, summing `MemoryInfo().RSS` and
+`Times().User+System`, with:
+- a `seen map[int32]struct{}` cycle/re-visit guard (never assume the tree is acyclic),
+- per-node error skip (a child that just exited must not fail the whole sample),
+- `count==0` after the walk ⇒ treat as not-running.
+
+The manager's PID comes from a read-only `Manager.PID(serverID)` getter
+(running-handle pid, DB `Server.PID` fallback) — it does not mutate lifecycle state.
+
+### CPU-delta baseline pattern
+
+gopsutil's `Process.Percent(0)` caches its baseline *inside the Process struct*,
+which is useless when each poll builds a fresh tree of Process objects. So the
+Collector keeps its own `map[key]cpuSample{totalCPUSeconds, at}` under a
+`sync.Mutex` and computes `deltaCPUSeconds / deltaWallSeconds * 100` itself:
+- store the new baseline on **every** call, before any early return;
+- first frame OR baseline older than `baselineExpiry` (30s) ⇒ return 0 (next 5s poll corrects);
+- guard `wall <= 0` (two rapid calls) and clamp negative deltas to 0;
+- process metric is **per-core** (no `/numCPU`); host `cpu.Percent(0,false)` is already normalized.
+
+> **Warning**: `go test -race` requires CGO (a C compiler). The Windows dev host
+> has no gcc, so `-race` cannot run there — the sysstat mutex coverage is verified
+> by inspection and plain `go test` instead. Don't add a `-race` step to a
+> Windows-only verification flow expecting it to pass.

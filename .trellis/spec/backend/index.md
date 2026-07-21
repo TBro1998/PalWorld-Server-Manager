@@ -18,7 +18,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | Partial — serverColumns/scanServer alignment, migration helpers, config source-of-truth |
 | [Save-File Handling](./save-file-handling.md) | Palworld save parsing, location, caching, DTO mapping, /save endpoints | Filled — palsave lib + internal/api/save_* |
 | [Mod-Handling](./mod-handling.md) | Workshop download (login required), copy-deploy, PalModSettings.ini, UpdateMods pipeline, concurrency | Filled — internal/palmod + steamcmd/workshop + process.UpdateMods |
-| [Platform & Deployment](./platform-and-deployment.md) | Cross-platform (Win/Linux) build-tag layout, Steam client symlinks, Docker run mode, .dockerignore hygiene | Filled — internal/process, internal/steamcmd, Dockerfile |
+| [Platform & Deployment](./platform-and-deployment.md) | Cross-platform (Win/Linux) build-tag layout, Steam client symlinks, Docker run mode, .dockerignore hygiene, OS resource sampling (gopsutil sysstat) | Filled — internal/process, internal/steamcmd, internal/sysstat, Dockerfile |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
