@@ -23,6 +23,33 @@ export interface SystemSettings {
   download_mirror: string
 }
 
+// Whole-host resource usage. Mirrors sysstat.HostStats on the backend.
+// Returned by GET /api/system/stats. cpuPercent is normalized across cores
+// (0..100); memory/disk values are bytes.
+export interface HostStats {
+  cpuPercent: number
+  numCpu: number
+  memUsed: number
+  memTotal: number
+  memPercent: number
+  diskUsed: number
+  diskTotal: number
+  diskPercent: number
+}
+
+// Per-server process-tree resource usage. Mirrors sysstat.ProcessStats.
+// Returned by GET /api/servers/:id/stats. cpuPercent is per-core (may exceed
+// 100). When the server is not running, running=false and reason explains why.
+export interface ProcessStats {
+  running: boolean
+  reason?: string
+  pid?: number
+  cpuPercent: number
+  numCpu: number
+  memoryRss: number
+  processCount: number
+}
+
 export interface UpdateProgressEvent {
   pct: number
   msg: string

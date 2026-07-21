@@ -281,6 +281,26 @@ func (m *Manager) RestartServer(serverID int64) error {
 	return m.StartServer(serverID)
 }
 
+// PID returns the process id for a server: the live handle's pid when the
+// manager is tracking it, otherwise the pid persisted in the database (0 when
+// none). Read-only — it never mutates lifecycle state. Used by the stats
+// endpoint to root the process-tree sample.
+func (m *Manager) PID(serverID int64) int {
+	m.mu.Lock()
+	if handle, ok := m.running[serverID]; ok {
+		pid := handle.pid
+		m.mu.Unlock()
+		return pid
+	}
+	m.mu.Unlock()
+
+	var srv models.Server
+	if err := m.db.Select("pid").First(&srv, serverID).Error; err != nil {
+		return 0
+	}
+	return srv.PID
+}
+
 // IsRunning reports whether the manager is currently tracking a live process
 // for the server.
 func (m *Manager) IsRunning(serverID int64) bool {

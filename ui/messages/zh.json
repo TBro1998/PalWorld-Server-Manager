@@ -141,7 +141,16 @@
       "version": "版本",
       "description": "描述",
       "noPlayers": "当前没有在线玩家",
-      "refresh": "刷新"
+      "refresh": "刷新",
+      "resource": {
+        "title": "资源占用",
+        "processCpu": "进程 CPU",
+        "processMem": "进程内存",
+        "hostCpu": "主机 CPU",
+        "hostMem": "主机内存",
+        "hostDisk": "数据盘",
+        "cores": "核"
+      }
     },
     "players": {
       "title": "在线玩家",

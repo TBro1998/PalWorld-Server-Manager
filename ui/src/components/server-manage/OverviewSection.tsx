@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Gauge, Timer, Signal, Clock, Server as ServerIcon, RefreshCw,
   Megaphone, Save, Power, PowerOff, Play, Square, RotateCw, Download, Terminal,
+  Cpu, MemoryStick, HardDrive,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,7 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { serversApi } from '@/lib/api'
+import { serversApi, systemApi } from '@/lib/api'
 import { getApiErrorMessage } from '@/lib/apiError'
 import { useTranslations } from '@/contexts/LanguageContext'
 import { useRestStatus } from '@/hooks/useRestStatus'
@@ -160,6 +161,9 @@ export function OverviewSection() {
           )
         })}
       </div>
+
+      {/* Host + process resource usage */}
+      <ResourceUsage serverId={serverId} />
 
       {/* Static server info from REST /info */}
       <PanelCard icon={<ServerIcon className="h-4 w-4" />} title={t('overview.info')}>
@@ -381,6 +385,103 @@ function LifecycleControls() {
       />
     </PanelCard>
   )
+}
+
+// ResourceUsage shows OS-level resource metrics: the server's process-tree CPU
+// and memory (polled only while running) plus whole-host CPU / memory / disk
+// (always polled). Both poll every 5s; missing data renders an em dash.
+function ResourceUsage({ serverId }: { serverId: number }) {
+  const t = useTranslations('serverManage')
+  const { data: server } = useServer()
+  const isRunning = server?.status === 'running'
+  const dash = '—'
+
+  const procQuery = useQuery({
+    queryKey: ['server-stats', serverId],
+    queryFn: async () => (await serversApi.stats(serverId)).data,
+    enabled: Number.isFinite(serverId) && isRunning,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+  })
+
+  const hostQuery = useQuery({
+    queryKey: ['host-stats'],
+    queryFn: async () => (await systemApi.stats()).data,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+  })
+
+  const proc = procQuery.data
+  const host = hostQuery.data
+  const procActive = isRunning && proc?.running
+
+  const procCpu = procActive ? `${proc!.cpuPercent.toFixed(0)}%` : dash
+  const procMem = procActive ? formatBytes(proc!.memoryRss) : dash
+  const hostCpu = host ? `${host.cpuPercent.toFixed(0)}%` : dash
+  const hostMem = host && host.memTotal > 0
+    ? `${formatBytes(host.memUsed)} / ${formatBytes(host.memTotal)}`
+    : dash
+  const hostDisk = host && host.diskTotal > 0
+    ? `${formatBytes(host.diskUsed)} / ${formatBytes(host.diskTotal)}`
+    : dash
+
+  return (
+    <PanelCard icon={<Cpu className="h-4 w-4" />} title={t('overview.resource.title')}>
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile icon={Cpu} label={t('overview.resource.processCpu')} value={procCpu} />
+        <StatTile icon={MemoryStick} label={t('overview.resource.processMem')} value={procMem} />
+      </div>
+      <dl className="mt-2 space-y-2 border-t border-dashed pt-3 text-sm">
+        <ResourceRow icon={<Cpu className="h-3.5 w-3.5" />}
+          label={`${t('overview.resource.hostCpu')} · ${host?.numCpu ?? proc?.numCpu ?? '—'} ${t('overview.resource.cores')}`}
+          value={hostCpu} />
+        <ResourceRow icon={<MemoryStick className="h-3.5 w-3.5" />} label={t('overview.resource.hostMem')} value={hostMem} />
+        <ResourceRow icon={<HardDrive className="h-3.5 w-3.5" />} label={t('overview.resource.hostDisk')} value={hostDisk} />
+      </dl>
+    </PanelCard>
+  )
+}
+
+// StatTile is a compact metric card used for the per-process CPU / memory tiles.
+function StatTile({ icon: Icon, label, value }: { icon: typeof Cpu; label: string; value: string }) {
+  return (
+    <Card className="rounded-2xl border-2 shadow-pal">
+      <CardContent className="flex items-center gap-3 p-4">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-2xl font-extrabold leading-none text-foreground">{value}</div>
+          <div className="mt-1 text-xs font-medium text-muted-foreground">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ResourceRow is a label/value line for the compact host metrics list.
+function ResourceRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <dt className="flex items-center gap-1.5 text-muted-foreground">{icon}{label}</dt>
+      <dd className="font-medium text-foreground">{value}</dd>
+    </div>
+  )
+}
+
+// formatBytes renders a byte count with an adaptive unit (up to GB), keeping one
+// decimal for GB/MB and none for smaller units. Returns '0 B' for zero.
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let i = 0
+  let n = bytes
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024
+    i++
+  }
+  const digits = i >= 2 ? 1 : 0
+  return `${n.toFixed(digits)} ${units[i]}`
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

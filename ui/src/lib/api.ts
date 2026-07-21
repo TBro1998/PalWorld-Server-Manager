@@ -146,6 +146,11 @@ export const serversApi = {
     apiClient.post<{ entries: string[] }>(`/api/servers/${id}/whitelist`, { uid }),
   removeWhitelist: (id: number, uid: string) =>
     apiClient.delete<{ entries: string[] }>(`/api/servers/${id}/whitelist`, { data: { uid } }),
+
+  // --- Process resource stats ---
+  // CPU / memory of the server's process tree. When the server is not running
+  // the backend returns 200 with { running: false, reason: 'not_running' }.
+  stats: (id: number) => apiClient.get<ProcessStats>(`/api/servers/${id}/stats`),
 }
 
 // --- Global mod library ---
@@ -223,7 +228,7 @@ export const steamApi = {
     apiClient.post<{ configured: boolean }>('/api/steam/webapi-key', { key }),
 }
 
-import type { VersionInfo, CheckResult, SystemSettings, UpdateStatus } from '@/types/system'
+import type { VersionInfo, CheckResult, SystemSettings, UpdateStatus, HostStats, ProcessStats } from '@/types/system'
 
 // --- System version & self-update ---
 export const systemApi = {
@@ -248,6 +253,8 @@ export const systemApi = {
   // Persists system settings.
   setSettings: (data: Partial<SystemSettings>) =>
     apiClient.put<SystemSettings>('/api/system/settings', data),
+  // Returns whole-host resource usage (CPU / memory / data disk). Poll ~5s.
+  stats: () => apiClient.get<HostStats>('/api/system/stats'),
 }
 
 export default apiClient;

@@ -90,6 +90,45 @@ definitions:
         description: auto-managed by GORM
         type: string
     type: object
+  sysstat.HostStats:
+    properties:
+      cpuPercent:
+        description: 0..100, normalized across cores
+        type: number
+      diskPercent:
+        type: number
+      diskTotal:
+        type: integer
+      diskUsed:
+        type: integer
+      memPercent:
+        type: number
+      memTotal:
+        type: integer
+      memUsed:
+        description: bytes
+        type: integer
+      numCpu:
+        type: integer
+    type: object
+  sysstat.ProcessStats:
+    properties:
+      cpuPercent:
+        type: number
+      memoryRss:
+        description: bytes, summed over the tree
+        type: integer
+      numCpu:
+        type: integer
+      pid:
+        type: integer
+      processCount:
+        type: integer
+      reason:
+        type: string
+      running:
+        type: boolean
+    type: object
 info:
   contact: {}
   description: REST API for managing Palworld dedicated servers
@@ -1694,6 +1733,38 @@ paths:
       summary: Start server
       tags:
       - servers
+  /servers/{id}/stats:
+    get:
+      description: Returns CPU and memory usage aggregated over the server's process
+        tree
+      parameters:
+      - description: Server ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/sysstat.ProcessStats'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get server process stats
+      tags:
+      - servers
   /servers/{id}/stop:
     post:
       description: Gracefully stops the running server process. Disconnects all online
@@ -2018,23 +2089,17 @@ paths:
       - system
   /system/stats:
     get:
-      description: Returns CPU, memory, and disk usage
+      description: Returns host CPU, memory, and data-disk usage
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/sysstat.HostStats'
       security:
       - BearerAuth: []
-      summary: Get system monitoring stats
+      summary: Get host resource stats
       tags:
       - system
   /system/update/apply:

@@ -2411,6 +2411,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/servers/{id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns CPU and memory usage aggregated over the server's process tree",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Get server process stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Server ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sysstat.ProcessStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/servers/{id}/stop": {
             "post": {
                 "security": [
@@ -2911,27 +2959,19 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns CPU, memory, and disk usage",
+                "description": "Returns host CPU, memory, and data-disk usage",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "system"
                 ],
-                "summary": "Get system monitoring stats",
+                "summary": "Get host resource stats",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/sysstat.HostStats"
                         }
                     }
                 }
@@ -3333,6 +3373,64 @@ const docTemplate = `{
                 "updated_at": {
                     "description": "auto-managed by GORM",
                     "type": "string"
+                }
+            }
+        },
+        "sysstat.HostStats": {
+            "type": "object",
+            "properties": {
+                "cpuPercent": {
+                    "description": "0..100, normalized across cores",
+                    "type": "number"
+                },
+                "diskPercent": {
+                    "type": "number"
+                },
+                "diskTotal": {
+                    "type": "integer"
+                },
+                "diskUsed": {
+                    "type": "integer"
+                },
+                "memPercent": {
+                    "type": "number"
+                },
+                "memTotal": {
+                    "type": "integer"
+                },
+                "memUsed": {
+                    "description": "bytes",
+                    "type": "integer"
+                },
+                "numCpu": {
+                    "type": "integer"
+                }
+            }
+        },
+        "sysstat.ProcessStats": {
+            "type": "object",
+            "properties": {
+                "cpuPercent": {
+                    "type": "number"
+                },
+                "memoryRss": {
+                    "description": "bytes, summed over the tree",
+                    "type": "integer"
+                },
+                "numCpu": {
+                    "type": "integer"
+                },
+                "pid": {
+                    "type": "integer"
+                },
+                "processCount": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "running": {
+                    "type": "boolean"
                 }
             }
         }

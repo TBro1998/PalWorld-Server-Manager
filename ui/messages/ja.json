@@ -141,7 +141,16 @@
       "version": "バージョン",
       "description": "説明",
       "noPlayers": "オンラインのプレイヤーはいません",
-      "refresh": "更新"
+      "refresh": "更新",
+      "resource": {
+        "title": "リソース使用状況",
+        "processCpu": "プロセス CPU",
+        "processMem": "プロセスメモリ",
+        "hostCpu": "ホスト CPU",
+        "hostMem": "ホストメモリ",
+        "hostDisk": "データディスク",
+        "cores": "コア"
+      }
     },
     "players": {
       "title": "オンラインプレイヤー",

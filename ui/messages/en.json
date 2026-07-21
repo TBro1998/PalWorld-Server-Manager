@@ -141,7 +141,16 @@
       "version": "Version",
       "description": "Description",
       "noPlayers": "No players online",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "resource": {
+        "title": "Resource Usage",
+        "processCpu": "Process CPU",
+        "processMem": "Process Memory",
+        "hostCpu": "Host CPU",
+        "hostMem": "Host Memory",
+        "hostDisk": "Data Disk",
+        "cores": "cores"
+      }
     },
     "players": {
       "title": "Online Players",

@@ -859,17 +859,4 @@ func (r *Router) serverExists(c *gin.Context, id int64) bool {
 	return true
 }
 
-// GetSystemStats returns system statistics
-// GetSystemStats godoc
-// @Summary      Get system monitoring stats
-// @Description  Returns CPU, memory, and disk usage
-// @Tags         system
-// @Produce      json
-// @Success      200  {object}  map[string]interface{}
-// @Failure      500  {object}  map[string]interface{}
-// @Security     BearerAuth
-// @Router       /system/stats [get]
-func (r *Router) GetSystemStats(c *gin.Context) {
-	// TODO: Implement system stats logic
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "System stats - to be implemented"})
-}
+// GetSystemStats returns whole-host resource usage. See stats_handlers.go.

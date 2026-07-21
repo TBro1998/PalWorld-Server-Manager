@@ -5,6 +5,7 @@ import (
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/config"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/logger"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/process"
+	"github.com/TBro1998/PalWorld-Server-Manager/internal/sysstat"
 	"github.com/TBro1998/PalWorld-Server-Manager/internal/update"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -18,6 +19,7 @@ type Router struct {
 	streams *logger.StreamManager
 	saves   *saveCache
 	checker *update.Checker
+	sys     *sysstat.Collector
 }
 
 // NewRouter creates a new API router
@@ -32,6 +34,7 @@ func NewRouter(db *gorm.DB, cfg *config.Config, buildInfo update.BuildInfo) *Rou
 		streams: streams,
 		saves:   newSaveCache(),
 		checker: checker,
+		sys:     sysstat.New(),
 	}
 }
 
@@ -112,6 +115,10 @@ func (r *Router) RegisterRoutes(rg *gin.RouterGroup) {
 				whitelist.POST("", r.AddWhitelistEntry)
 				whitelist.DELETE("", r.RemoveWhitelistEntry)
 			}
+
+			// Per-server process resource stats (CPU / memory of the process
+			// tree). Structured degradation when the server is not running.
+			servers.GET("/:id/stats", r.GetServerStats)
 		}
 
 		// Config schema (drives the structured config form)
